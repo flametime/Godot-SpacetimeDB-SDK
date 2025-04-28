@@ -80,12 +80,16 @@ func connect_to_database(base_url: String, database_name: String, connection_id:
 	# if light_mode:
 	#	 query_params += "&light=true"
 
+	# set token as query param for Web due to WebSocket API not allowing custom headers
+	if OS.get_name() == "Web":
+		query_params += "&token=" + _token
+	else:
+		var auth_header := "Authorization: Bearer " + _token
+		_websocket.handshake_headers = [auth_header] 
+
 	_target_url = ws_url_base + query_params
 
 	print_log("SpacetimeDBConnection: Attempting to connect to: " + _target_url)
-
-	var auth_header := "Authorization: Bearer " + _token
-	_websocket.handshake_headers = [auth_header] 
 
 	_websocket.supported_protocols = [BSATN_PROTOCOL]
 
