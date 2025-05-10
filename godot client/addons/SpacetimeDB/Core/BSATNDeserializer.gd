@@ -38,7 +38,8 @@ var debug_mode: bool = false # Controls verbose debug printing
 
 func _init(p_schema_path: String = "res://schema", p_debug_mode: bool = false) -> void:
 	debug_mode = p_debug_mode
-	_load_row_schemas(p_schema_path)
+	# Load table row schema scripts
+	_load_row_schemas("%s/tables" % p_schema_path)
 	# Load core types if they are defined as Resources with scripts
 	_load_row_schemas("res://addons/SpacetimeDB/CoreTypes")
 
@@ -252,22 +253,22 @@ func read_bsatn_row_list(spb: StreamPeerBuffer) -> Array[PackedByteArray]:
 # Helper to get a primitive reader Callable based on a BSATN type string.
 func _get_primitive_reader_from_bsatn_type(bsatn_type_str: String) -> Callable:
 	match bsatn_type_str:
-		"u64": return Callable(self, "read_u64_le")
-		"i64": return Callable(self, "read_i64_le")
-		"u32": return Callable(self, "read_u32_le")
-		"i32": return Callable(self, "read_i32_le")
-		"u16": return Callable(self, "read_u16_le")
-		"i16": return Callable(self, "read_i16_le")
-		"u8": return Callable(self, "read_u8")
-		"i8": return Callable(self, "read_i8")
-		"identity": return Callable(self, "read_identity")
-		"connection_id": return Callable(self, "read_connection_id")
-		"timestamp": return Callable(self, "read_timestamp")
-		"f64": return Callable(self, "read_f64_le")
-		"f32": return Callable(self, "read_f32_le")
-		"vec_u8": return Callable(self, "read_vec_u8")
-		"bool": return Callable(self, "read_bool")
-		"string": return Callable(self, "read_string_with_u32_len")
+		&"u64": return Callable(self, "read_u64_le")
+		&"i64": return Callable(self, "read_i64_le")
+		&"u32": return Callable(self, "read_u32_le")
+		&"i32": return Callable(self, "read_i32_le")
+		&"u16": return Callable(self, "read_u16_le")
+		&"i16": return Callable(self, "read_i16_le")
+		&"u8": return Callable(self, "read_u8")
+		&"i8": return Callable(self, "read_i8")
+		&"identity": return Callable(self, "read_identity")
+		&"connection_id": return Callable(self, "read_connection_id")
+		&"timestamp": return Callable(self, "read_timestamp")
+		&"f64": return Callable(self, "read_f64_le")
+		&"f32": return Callable(self, "read_f32_le")
+		&"vec_u8": return Callable(self, "read_vec_u8")
+		&"bool": return Callable(self, "read_bool")
+		&"string": return Callable(self, "read_string_with_u32_len")
 		_: return Callable() # Return invalid Callable if type is not primitive/known
 
 # Determines the correct reader function (Callable) for a given property.

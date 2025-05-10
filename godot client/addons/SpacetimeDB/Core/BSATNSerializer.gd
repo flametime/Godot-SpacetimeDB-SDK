@@ -153,20 +153,20 @@ func _get_specific_writer_method_name(bsatn_type_value) -> StringName:
 	if bsatn_type_value == null: return &""
 	var bsatn_type_str := str(bsatn_type_value).to_lower()
 	match bsatn_type_str:
-		"u64": return &"write_u64_le"
-		"i64": return &"write_i64_le"
-		"u32": return &"write_u32_le"
-		"i32": return &"write_i32_le"
-		"u16": return &"write_u16_le"
-		"i16": return &"write_i16_le"
-		"u8": return &"write_u8"
-		"i8": return &"write_i8"
-		"identity": return &"write_identity"
-		"connection_id": return &"write_connection_id"
-		"timestamp": return &"write_timestamp"
-		"f64": return &"write_f64_le"
-		"f32": return &"write_f32_le"
-		"vec_u8": return &"write_vec_u8"
+		&"u64": return &"write_u64_le"
+		&"i64": return &"write_i64_le"
+		&"u32": return &"write_u32_le"
+		&"i32": return &"write_i32_le"
+		&"u16": return &"write_u16_le"
+		&"i16": return &"write_i16_le"
+		&"u8": return &"write_u8"
+		&"i8": return &"write_i8"
+		&"identity": return &"write_identity"
+		&"connection_id": return &"write_connection_id"
+		&"timestamp": return &"write_timestamp"
+		&"f64": return &"write_f64_le"
+		&"f32": return &"write_f32_le"
+		&"vec_u8": return &"write_vec_u8"
 		# Add other specific types mapped to writer methods if needed
 		_: return &"" # Unknown or non-primitive type
 
@@ -318,17 +318,17 @@ func _write_argument_value(value, rust_type: String = "") -> bool:
 		TYPE_BOOL: write_bool(value)
 		TYPE_INT: 
 			match rust_type:
-				"u8": write_u8(value)
-				"u16": write_u16_le(value)
-				"u32": write_u32_le(value)
-				"u64": write_u64_le(value)
-				"i8": write_i8(value)
-				"i16": write_i16_le(value)
-				"i32": write_i32_le(value)
+				&"u8": write_u8(value)
+				&"u16": write_u16_le(value)
+				&"u32": write_u32_le(value)
+				&"u64": write_u64_le(value)
+				&"i8": write_i8(value)
+				&"i16": write_i16_le(value)
+				&"i32": write_i32_le(value)
 				_: write_i64_le(value) #Default i64
 		TYPE_FLOAT: 
 			match rust_type:
-				"f64": write_f64_le(value)
+				&"f64": write_f64_le(value)
 				_: write_f32_le(value) # Default f32
 		TYPE_STRING: write_string_with_u32_len(value)
 		TYPE_VECTOR2: write_vector2(value)
@@ -341,7 +341,7 @@ func _write_argument_value(value, rust_type: String = "") -> bool:
 			for v in value:
 				_write_argument_value(v, rust_type)
 		TYPE_OBJECT:
-			if rust_type == "enum":
+			if rust_type == &"enum":
 				write_rust_enum(value)
 			elif value is Resource:
 				# Serialize resource fields directly inline (recursive)
@@ -357,16 +357,16 @@ func _write_argument_value(value, rust_type: String = "") -> bool:
 #Helper to generate a zero struct from a rust type
 func _generate_default_type(rust_type: String) -> Variant:
 	match rust_type:
-		"i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64":
+		&"i8", &"i16", &"i32", &"i64", &"u8", &"u16", &"u32", &"u64":
 			return int(0)
-		"f32", "f64":
+		&"f32", &"f64":
 			return float(0)
-		"bool": return false
-		"String": return ""
-		"Vector3": return Vector3.ZERO
-		"Vector2": return Vector2.ZERO
-		"Color": return Color.BLACK
-		"Quaternion": return Quaternion.IDENTITY
+		&"bool": return false
+		&"String": return ""
+		&"Vector3": return Vector3.ZERO
+		&"Vector2": return Vector2.ZERO
+		&"Color": return Color.BLACK
+		&"Quaternion": return Quaternion.IDENTITY
 		_: return null
 
 # Helper to serialize a single Resource argument into raw bytes (e.g., for reducer calls)
