@@ -223,6 +223,7 @@ func connect_db(host_url:String, database_name:String, options: SpacetimeDBConne
 	self.compression = options.compression
 	self.one_time_token = options.one_time_token
 	self.debug_mode = options.debug_mode
+	self.schema_path = options.schema_path
 	if not _is_initialized:
 		initialize_and_connect()
 	elif not _connection.is_connected_db():
