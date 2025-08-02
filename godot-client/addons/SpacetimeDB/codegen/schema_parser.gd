@@ -36,7 +36,7 @@ const DEFAULT_TYPE_MAP: Dictionary[String, String] = {
 	"__connection_id__": "PackedByteArray",
 	"__timestamp_micros_since_unix_epoch__": "int",
 	"__time_duration_micros__": "int",
-	"U128": "PackedByteArray",
+	"U128": "NGUID",
 }
 
 const DEFAULT_META_TYPE_MAP: Dictionary[String, String] = {
