@@ -94,14 +94,14 @@ func write_f64_le(v: float) -> void:
 	_spb.put_double(v)
 
 func write_u128(v: NGUID) -> void:
-    var bytes = v.as_array()
-    if bytes == null or bytes.size() != U128_SIZE:
-        _set_error("Invalid U128 value (null or size != %d)" % U128_SIZE)
-        var default_bytes = PackedByteArray(); default_bytes.resize(U128_SIZE)
-        write_bytes(default_bytes) # Write default value to avoid stopping serialization
-        return
-    bytes.reverse()
-    write_bytes(bytes)
+	var bytes = v.as_array()
+	if bytes == null or bytes.size() != U128_SIZE:
+		_set_error("Invalid U128 value (null or size != %d)" % U128_SIZE)
+		var default_bytes = PackedByteArray(); default_bytes.resize(U128_SIZE)
+		write_bytes(default_bytes) # Write default value to avoid stopping serialization
+		return
+	bytes.reverse()
+	write_bytes(bytes)
 
 func write_bool(v: bool) -> void:
 	#print("write_bool(%s)" % v)
