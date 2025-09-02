@@ -394,7 +394,7 @@ func _generate_enum_gdscript(schema: SpacetimeParsedSchema, type_def: Dictionary
 	
 	content += "".join(get_funcs)
 	content += "static func create(p_type: int, p_data: Variant = null) -> %s:\n" % _class_name + \
-	"\tvar result = %s.new()\n" % _class_name + \
+	"\tvar result := %s.new()\n" % _class_name + \
 	"\tresult.value = p_type\n" + \
 	"\tresult.data = p_data\n" + \
     "\treturn result\n\n"
