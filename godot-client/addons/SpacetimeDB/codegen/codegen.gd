@@ -314,7 +314,11 @@ func _generate_struct_gdscript(schema: SpacetimeParsedSchema, type_def: Dictiona
 		content += "@export var %s: %s %s\n" % [field_name, gd_field_type, documentation_comment]
 		class_fields.append([field_name, gd_field_type])
 
-	content += "\nfunc _init() -> void:\n"
+	content += "\nfunc _init() -> void:\n\t_reset_metadata()\n"
+	content += "\nfunc _reset_metadata() -> void:\n"
+	content += "\t# Clear old metadata\n" + \
+				"\tfor key in get_meta_list():\n" + \
+				"\t\tset_meta(key, null)\n\n"
 	for m in meta_data:
 		content += "\t%s\n" % m
 	if meta_data.size() == 0:
@@ -341,6 +345,10 @@ func _generate_enum_gdscript(schema: SpacetimeParsedSchema, type_def: Dictionary
 	"class_name %s extends RustEnum\n\n" % _class_name + \
 	"enum Options {\n%s\n}\n\n" % variant_names + \
 	"func _init(): -> void\n" + \
+	"\t_reset_metadata()\n\nfunc _reset_metadata() -> void:\n" + \
+	"\t# Clear old metadata\n" + \
+	"\tfor key in get_meta_list():\n" + \
+	"\t\tset_meta(key, null)\n\n" + \
 	"\tset_meta('enum_options', [%s])\n" % \
 	[", ".join(variants.map(func(x):
 		var type = x.get("type", "")
