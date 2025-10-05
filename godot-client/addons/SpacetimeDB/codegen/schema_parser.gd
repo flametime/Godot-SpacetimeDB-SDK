@@ -461,6 +461,8 @@ static func _parse_field_type(field_type: Dictionary, data: Dictionary, schema_t
 				data["is_option_inside_array"] = true
 			else:
 				data["is_option"] = true
+		else:
+			data["should_scrap_first_byte"] = true
 		field_type = field_type.Sum.variants[0].get('algebraic_type', {})
 		return _parse_field_type(field_type, data, schema_types)
 	elif field_type.has("Ref"):

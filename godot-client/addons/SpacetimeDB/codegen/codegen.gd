@@ -303,7 +303,10 @@ func _generate_struct_gdscript(schema: SpacetimeParsedSchema, type_def: Dictiona
 			add_meta_for_field = true
 		else:
 			gd_field_type = schema.type_map.get(original_type_name, "Variant")
-			bsatn_meta_type_string = schema.meta_type_map.get(original_type_name, original_type_name)
+			if field.has("should_scrap_first_byte"):
+				bsatn_meta_type_string = "scrap_" + schema.meta_type_map.get(original_type_name, original_type_name)
+			else:
+				bsatn_meta_type_string = schema.meta_type_map.get(original_type_name, original_type_name)
 			create_func_documentation_comment += format_cfdc.call(i, field_name, nested_type)
 			add_meta_for_field = schema.meta_type_map.has(original_type_name) \
 				or not SpacetimeSchemaParser._is_gd_native(original_type_name)

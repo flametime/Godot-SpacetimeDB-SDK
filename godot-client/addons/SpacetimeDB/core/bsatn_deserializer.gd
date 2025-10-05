@@ -438,6 +438,11 @@ func read_bsatn_row_list(spb: StreamPeerBuffer) -> Array[PackedByteArray]:
 
 # Helper to get a primitive reader Callable based on a BSATN type string.
 func _get_primitive_reader_from_bsatn_type(bsatn_type_str: String) -> Callable:
+	if bsatn_type_str.begins_with("scrap"):
+		return func(spb: StreamPeerBuffer) -> Variant:
+			spb.get_u8()
+			return _get_primitive_reader_from_bsatn_type(bsatn_type_str.trim_prefix("scrap_")).call(spb)
+		
 	match bsatn_type_str:
 		&"u64": return Callable(self, "read_u64_le")
 		&"i64": return Callable(self, "read_i64_le")
