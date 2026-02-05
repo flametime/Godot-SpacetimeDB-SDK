@@ -15,22 +15,27 @@ const UI_PATH := "res://addons/SpacetimeDB/ui/ui.tscn"
 var http_request := HTTPRequest.new()
 var plugin_config: SpacetimeDBPluginConfig
 var ui: SpacetimePluginUI
+var dock : EditorDock
 
 static var instance: SpacetimePlugin
 
 func _enter_tree():
 	instance = self
 
-	if not is_instance_valid(ui):
+	if not is_instance_valid(dock):
 		var scene = load(UI_PATH)
 		if scene:
-			ui = scene.instantiate() as SpacetimePluginUI
+			if not is_instance_valid(ui):
+				ui = scene.instantiate() as SpacetimePluginUI
+			dock = EditorDock.new()
+			dock.title = "SpacetimeDB"
+			dock.available_layouts = EditorDock.DOCK_LAYOUT_ALL
+			dock.default_slot = EditorDock.DOCK_SLOT_BOTTOM
+			dock.add_child(ui)
+			add_dock(dock)
 		else:
 			printerr("SpacetimePlugin: Failed to load UI scene: ", UI_PATH)
 			return
-
-	if is_instance_valid(ui):
-		add_control_to_bottom_panel(ui, UI_PANEL_NAME)
 	else:
 		printerr("SpacetimePlugin: UI panel is not valid after instantiation")
 		return
@@ -185,6 +190,9 @@ static func print_err(text: Variant) -> void:
 func _exit_tree():
 	ui.destroy()
 	ui = null
+	remove_dock(dock)
+	dock.queue_free()
+	dock = null
 	http_request.queue_free()
 	http_request = null
 
