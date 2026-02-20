@@ -181,13 +181,20 @@ func _cleanup_unused_classes(dir_path: String = "res://schema", files: Array[Str
 		_cleanup_unused_classes(dir_path + "/" + folder, files)
 
 static func clear_logs():
-	instance.ui.clear_logs()
+	if instance != null and is_instance_valid(instance.ui):
+		instance.ui.clear_logs()
 
 static func print_log(text: Variant) -> void:
-	instance.ui.add_log(text)
+	if instance != null and is_instance_valid(instance.ui):
+		instance.ui.add_log(text)
+	else:
+		print(text)
 
 static func print_err(text: Variant) -> void:
-	instance.ui.add_err(text)
+	if instance != null and is_instance_valid(instance.ui):
+		instance.ui.add_err(text)
+	else:
+		printerr(text)
 
 func _exit_tree():
 	ui.destroy()
