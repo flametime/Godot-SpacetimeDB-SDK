@@ -41,6 +41,7 @@ var _is_initialized := false
 var _received_initial_subscription := false
 var _next_query_id := 0
 var _next_request_id := 0
+var _request_id_to_reducer_name: Dictionary[int, String] = { }
 
 # --- Signals ---
 signal connected(identity: PackedByteArray, token: String)
@@ -470,6 +471,7 @@ func call_reducer(reducer_name: String, args: Array = [], types: Array = []) -> 
 
 	var request_id := _next_request_id
 	_next_request_id += 1
+	_request_id_to_reducer_name[request_id] = reducer_name
 
 	var call_data := CallReducerMessage.new(reducer_name, args_bytes, request_id, 0)
 	var message_bytes := _serializer.serialize_client_message(
@@ -490,7 +492,7 @@ func call_reducer(reducer_name: String, args: Array = [], types: Array = []) -> 
 			print("SpacetimeDBClient: Error sending CallReducer JSON message: ", err)
 			return SpacetimeDBReducerCall.fail(err)
 
-		return SpacetimeDBReducerCall.create(self, request_id)
+		return SpacetimeDBReducerCall.create(self, request_id, reducer_name)
 
 	print("SpacetimeDBClient: Internal error - WebSocket peer not available in connection.")
 	return SpacetimeDBReducerCall.fail(ERR_CONNECTION_ERROR)
@@ -498,23 +500,26 @@ func call_reducer(reducer_name: String, args: Array = [], types: Array = []) -> 
 func wait_for_reducer_response(request_id_to_match: int, timeout_seconds: float = 10.0) -> TransactionUpdateMessage:
 	if request_id_to_match < 0:
 		return null
-	var timer:SceneTreeTimer = get_tree().create_timer(timeout_seconds)
+	var reducer_name_to_match: String = _request_id_to_reducer_name.get(request_id_to_match, "")
+	var timer: SceneTreeTimer = get_tree().create_timer(timeout_seconds)
+	var did_timeout: bool = false
+	timer.timeout.connect(func() -> void: did_timeout = true, CONNECT_ONE_SHOT)
 	var result_container = [null]
 	var connection:Callable = (
 		func(update: TransactionUpdateMessage):
-			if _check_reducer_response(update, request_id_to_match):
+			if _check_reducer_response(update, request_id_to_match, reducer_name_to_match):
 				if result_container[0] == null:
 					result_container[0] = update
-					timer.time_left = 0
 					)
 
 	transaction_update_received.connect(connection)
-
-	await timer.timeout
+	while result_container[0] == null and not did_timeout:
+		await get_tree().process_frame
 
 	transaction_update_received.disconnect(connection)
 
 	var signal_result = result_container[0]
+	_request_id_to_reducer_name.erase(request_id_to_match)
 	if signal_result == null:
 		printerr("SpacetimeDBClient: Timeout waiting for response for Req ID: %d" % request_id_to_match)
 		self.reducer_call_timeout.emit(request_id_to_match)
@@ -525,5 +530,20 @@ func wait_for_reducer_response(request_id_to_match: int, timeout_seconds: float 
 		self.reducer_call_response.emit(tx_update.reducer_call)
 		return tx_update
 
-func _check_reducer_response(update: TransactionUpdateMessage, request_id_to_match: int) -> bool:
-	return update != null and update.reducer_call != null and update.reducer_call.request_id == request_id_to_match
+func _check_reducer_response(update: TransactionUpdateMessage, request_id_to_match: int, reducer_name_to_match: String = "") -> bool:
+	if update == null or update.reducer_call == null:
+		return false
+
+	if _identity.size() > 0 and update.caller_identity != _identity:
+		return false
+
+	if update.reducer_call.request_id == request_id_to_match:
+		return true
+
+	if reducer_name_to_match.is_empty():
+		return false
+
+	if update.status == null or update.status.status_type != UpdateStatusData.StatusType.FAILED:
+		return false
+
+	return update.reducer_call.request_id == 0 and update.reducer_call.reducer_name == reducer_name_to_match
