@@ -6,7 +6,7 @@ var _cache: Dictionary[int, MainTestTableDatatypes] = {}
 
 func _init(p_local_db: LocalDatabase) -> void:
 	set_meta("table_name", "test_first_type_row")
-	set_meta("field_name", "t_u64")
+	set_meta("field_name", "t_u_64")
 	_connect_cache_to_db(_cache, p_local_db)
 
 func find(col_val: int) -> MainTestTableDatatypes:

@@ -324,7 +324,9 @@ func _handle_parsed_message(message_resource: Resource):
 
 		# Emit the full transaction update signal regardless of status
 		self.transaction_update_received.emit(tx_update)
-
+	elif message_resource is TransactionUpdateMessageLightmode:
+		var tx_update: TransactionUpdateMessageLightmode = message_resource
+		_local_db.apply_database_update(tx_update.committed_update)
 	else:
 		print_log("SpacetimeDBClient: Received unhandled message resource type: " + message_resource.get_class())
 

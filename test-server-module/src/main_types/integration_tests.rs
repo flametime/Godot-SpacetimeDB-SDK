@@ -13,7 +13,7 @@ pub struct  TestType {
     pub test_int: u64,
 }
 
-#[table(name = test_table_datatypes, public)]
+#[table(accessor = test_table_datatypes, public)]
 pub struct TestTableDatatypes {
     #[primary_key]
     #[auto_inc]
@@ -74,13 +74,13 @@ impl Default for TestTableDatatypes {
     }
 }
 
-#[table(name = test_scheduled_table, public, scheduled(test_scheduled_reducer), index(name = get_by_public_count, btree(columns = [public_count])))]
+#[table(accessor = test_scheduled_table, public, scheduled(test_scheduled_reducer), index(accessor = get_by_public_count, btree(columns = [public_count])))]
 pub struct TestScheduledTable {
     #[primary_key]
     #[auto_inc]
-    scheduled_id: u64,
+    pub scheduled_id: u64,
     pub h1: u16,
-    scheduled_at: spacetimedb::ScheduleAt,
+    pub scheduled_at: spacetimedb::ScheduleAt,
     pub h2: u16,
     pub public_count: u64,
     pub private_count: u64,
@@ -183,7 +183,7 @@ pub fn clear_integration_tests(ctx: &ReducerContext) {
     }
 }
 
-#[view(name = test_anonymous_all_types, public)]
+#[view(accessor = test_anonymous_all_types, public)]
 pub fn view_test_anonymous_all_types(ctx: &AnonymousViewContext) -> Vec<TestTableDatatypes> {
     ctx.db
         .test_table_datatypes()
@@ -192,7 +192,7 @@ pub fn view_test_anonymous_all_types(ctx: &AnonymousViewContext) -> Vec<TestTabl
         .collect::<Vec<TestTableDatatypes>>()
 }
 
-#[view(name = test_first_type_row, public)]
+#[view(accessor = test_first_type_row, public)]
 pub fn view_test_first_type_row(ctx: &ViewContext) -> Vec<TestTableDatatypes> {
     if let Some(row) = ctx
         .db
@@ -207,7 +207,7 @@ pub fn view_test_first_type_row(ctx: &ViewContext) -> Vec<TestTableDatatypes> {
     }
 }
 
-#[view(name = test_u32_at_30, public)]
+#[view(accessor = test_u32_at_30, public)]
 pub fn view_test_u32_at_30(ctx: &AnonymousViewContext) -> Vec<TestTableDatatypes> {
     ctx.db
         .test_table_datatypes()
@@ -216,7 +216,7 @@ pub fn view_test_u32_at_30(ctx: &AnonymousViewContext) -> Vec<TestTableDatatypes
         .collect::<Vec<TestTableDatatypes>>()
 }
 
-#[view(name = test_public_scheduled_count, public)]
+#[view(accessor = test_public_scheduled_count, public)]
 pub fn view_test_public_scheduled_count(ctx: &ViewContext) -> Vec<TestScheduledTable> {
     if let Some(row) = ctx
         .db
@@ -238,7 +238,7 @@ pub fn view_test_public_scheduled_count(ctx: &ViewContext) -> Vec<TestScheduledT
     }
 }
 
-#[view(name = test_private_scheduled_count, public)]
+#[view(accessor = test_private_scheduled_count, public)]
 pub fn view_test_private_scheduled_count(ctx: &ViewContext) -> Vec<TestScheduledTable> {
     if let Some(row) = ctx
         .db
@@ -260,37 +260,37 @@ pub fn view_test_private_scheduled_count(ctx: &ViewContext) -> Vec<TestScheduled
     }
 }
 
-#[table(name = test_no_pk_table)]
+#[table(accessor = test_no_pk_table)]
 pub struct ViewType{
     #[index(btree)]
     pub row: u64,
     pub name: String,
 }
 
-#[view(name = test_no_pk_option, public)]
+#[view(accessor = test_no_pk_option, public)]
 pub fn view_test_no_pk_option(ctx: &AnonymousViewContext) -> Option<ViewType>{
     ctx.db.test_no_pk_table().row().filter(0..u64::MAX).next()
 }
 
-#[view(name = test_no_pk_query, public)]
-pub fn view_test_no_pk_query(ctx: &AnonymousViewContext) -> Query<ViewType>{
-    ctx.from.test_no_pk_table().r#where(|row| row.row.gt(0)).build()
+#[view(accessor = test_no_pk_query, public)]
+pub fn view_test_no_pk_query(ctx: &AnonymousViewContext) -> impl Query<ViewType>{
+    ctx.from.test_no_pk_table().r#where(|row| row.row.gt(0))
 }
 
-#[view(name = test_no_pk_vec, public)]
+#[view(accessor = test_no_pk_vec, public)]
 pub fn view_test_no_pk_vec(ctx: &AnonymousViewContext) -> Vec<ViewType>{
     ctx.db.test_no_pk_table().row().filter(0..u64::MAX).collect::<Vec<ViewType>>()
 }
 
 
-#[view(name = test_option, public)]
+#[view(accessor = test_option, public)]
 pub fn view_test_option(ctx:&ViewContext)-> Option<TestScheduledTable>{
     ctx.db.test_scheduled_table().get_by_public_count().filter(5u64..100u64).next()
 }
 
-#[view(name = test_query, public)]
-pub fn view_test_query(ctx:&ViewContext)-> Query<TestScheduledTable>{
-    ctx.from.test_scheduled_table().r#where(|row| row.h1.eq(1)).build()
+#[view(accessor = test_query, public)]
+pub fn view_test_query(ctx:&ViewContext)-> impl Query<TestScheduledTable>{
+    ctx.from.test_scheduled_table().r#where(|row| row.h1.eq(1))
 }
 
 #[procedure]

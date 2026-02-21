@@ -4,24 +4,24 @@
 class_name MainTestTableDatatypes extends _ModuleTableType
 
 const module_name : String = "Main"
-const table_names: Array[String] = ['test_table_datatypes', 'test_anonymous_all_types', 'test_first_type_row', 'test_u32_at_30']
+const table_names: Array[String] = ['test_table_datatypes', 'test_anonymous_all_types', 'test_first_type_row', 'test_u_32_at_30']
 
-@export var t_u64: int
-@export var t_u8: int
-@export var t_u16: int
-@export var t_u32: int
-@export var t_u128: PackedByteArray
-@export var t_f32: float
-@export var t_f64: float
-@export var t_i8: int
-@export var t_i16: int
-@export var t_i32: int
-@export var t_i64: int
+@export var t_u_64: int
+@export var t_u_8: int
+@export var t_u_16: int
+@export var t_u_32: int
+@export var t_u_128: PackedByteArray
+@export var t_f_32: float
+@export var t_f_64: float
+@export var t_i_8: int
+@export var t_i_16: int
+@export var t_i_32: int
+@export var t_i_64: int
 @export var t_string: String
 @export var t_vec_string: Array[String]
-@export var t_vec_u8: Array[int]
+@export var t_vec_u_8: Array[int]
 @export var t_opt_string: Option ## Option of String
-@export var t_opt_u64: Option ## Option of int
+@export var t_opt_u_64: Option ## Option of int
 @export var t_test_enum: MainModuleClient.Types.TestEnum
 @export var t_test_enum_vec: Array[MainModuleClient.Types.TestEnum]
 @export var t_test_enum_option: Option ## Option of MainModuleClient.Types.TestEnum
@@ -37,25 +37,25 @@ func _reset_metadata() -> void:
 	for key : StringName in get_meta_list():
 		set_meta(key, null)
 
-	set_meta('primary_key', 't_u64')
-	set_meta('bsatn_type_t_u64', &'u64')
-	set_meta('bsatn_type_t_u8', &'u8')
-	set_meta('bsatn_type_t_u16', &'u16')
-	set_meta('bsatn_type_t_u32', &'u32')
-	set_meta('bsatn_type_t_u128', &'u128')
-	set_meta('bsatn_type_t_f32', &'f32')
-	set_meta('bsatn_type_t_f64', &'f64')
-	set_meta('bsatn_type_t_i8', &'i8')
-	set_meta('bsatn_type_t_i16', &'i16')
-	set_meta('bsatn_type_t_i32', &'i32')
-	set_meta('bsatn_type_t_i64', &'i64')
+	set_meta('primary_key', 't_u_64')
+	set_meta('bsatn_type_t_u_64', &'u64')
+	set_meta('bsatn_type_t_u_8', &'u8')
+	set_meta('bsatn_type_t_u_16', &'u16')
+	set_meta('bsatn_type_t_u_32', &'u32')
+	set_meta('bsatn_type_t_u_128', &'u128')
+	set_meta('bsatn_type_t_f_32', &'f32')
+	set_meta('bsatn_type_t_f_64', &'f64')
+	set_meta('bsatn_type_t_i_8', &'i8')
+	set_meta('bsatn_type_t_i_16', &'i16')
+	set_meta('bsatn_type_t_i_32', &'i32')
+	set_meta('bsatn_type_t_i_64', &'i64')
 	set_meta('bsatn_type_t_string', &'string')
 	set_meta('bsatn_type_t_vec_string', &'string')
-	set_meta('bsatn_type_t_vec_u8', &'u8')
+	set_meta('bsatn_type_t_vec_u_8', &'u8')
 	set_meta('underlying_type_t_opt_string', &'String')
 	set_meta('bsatn_type_t_opt_string', &'string')
-	set_meta('underlying_type_t_opt_u64', &'int')
-	set_meta('bsatn_type_t_opt_u64', &'u64')
+	set_meta('underlying_type_t_opt_u_64', &'int')
+	set_meta('bsatn_type_t_opt_u_64', &'u64')
 	set_meta('bsatn_type_t_test_enum', &'u8')
 	set_meta('bsatn_type_t_test_enum_vec', &'u8')
 	set_meta('underlying_type_t_test_enum_option', &'MainModuleClient.Types.TestEnum')
@@ -65,46 +65,46 @@ func _reset_metadata() -> void:
 	set_meta('underlying_type_t_test_type_option', &'MainTestType')
 	set_meta('bsatn_type_t_test_type_option', &'MainTestType')
 
-## 0. t_u64: int[br]
-## 1. t_u8: int[br]
-## 2. t_u16: int[br]
-## 3. t_u32: int[br]
-## 4. t_u128: PackedByteArray[br]
-## 5. t_f32: float[br]
-## 6. t_f64: float[br]
-## 7. t_i8: int[br]
-## 8. t_i16: int[br]
-## 9. t_i32: int[br]
-## 10. t_i64: int[br]
+## 0. t_u_64: int[br]
+## 1. t_u_8: int[br]
+## 2. t_u_16: int[br]
+## 3. t_u_32: int[br]
+## 4. t_u_128: PackedByteArray[br]
+## 5. t_f_32: float[br]
+## 6. t_f_64: float[br]
+## 7. t_i_8: int[br]
+## 8. t_i_16: int[br]
+## 9. t_i_32: int[br]
+## 10. t_i_64: int[br]
 ## 11. t_string: String[br]
 ## 12. t_vec_string: Array of String[br]
-## 13. t_vec_u8: Array of int[br]
+## 13. t_vec_u_8: Array of int[br]
 ## 14. t_opt_string: Option of String[br]
-## 15. t_opt_u64: Option of int[br]
+## 15. t_opt_u_64: Option of int[br]
 ## 16. t_test_enum: MainModuleClient.Types.TestEnum[br]
 ## 17. t_test_enum_vec: Array of MainModuleClient.Types.TestEnum[br]
 ## 18. t_test_enum_option: Option of MainModuleClient.Types.TestEnum[br]
 ## 19. t_test_type: MainTestType[br]
 ## 20. t_test_type_vec: Array of MainTestType[br]
 ## 21. t_test_type_option: Option of MainTestType[br]
-static func create(p_t_u64: int, p_t_u8: int, p_t_u16: int, p_t_u32: int, p_t_u128: PackedByteArray, p_t_f32: float, p_t_f64: float, p_t_i8: int, p_t_i16: int, p_t_i32: int, p_t_i64: int, p_t_string: String, p_t_vec_string: Array[String], p_t_vec_u8: Array[int], p_t_opt_string: Option, p_t_opt_u64: Option, p_t_test_enum: MainModuleClient.Types.TestEnum, p_t_test_enum_vec: Array[MainModuleClient.Types.TestEnum], p_t_test_enum_option: Option, p_t_test_type: MainTestType, p_t_test_type_vec: Array[MainTestType], p_t_test_type_option: Option) -> MainTestTableDatatypes:
+static func create(p_t_u_64: int, p_t_u_8: int, p_t_u_16: int, p_t_u_32: int, p_t_u_128: PackedByteArray, p_t_f_32: float, p_t_f_64: float, p_t_i_8: int, p_t_i_16: int, p_t_i_32: int, p_t_i_64: int, p_t_string: String, p_t_vec_string: Array[String], p_t_vec_u_8: Array[int], p_t_opt_string: Option, p_t_opt_u_64: Option, p_t_test_enum: MainModuleClient.Types.TestEnum, p_t_test_enum_vec: Array[MainModuleClient.Types.TestEnum], p_t_test_enum_option: Option, p_t_test_type: MainTestType, p_t_test_type_vec: Array[MainTestType], p_t_test_type_option: Option) -> MainTestTableDatatypes:
 	var result: MainTestTableDatatypes = MainTestTableDatatypes.new()
-	result.t_u64 = p_t_u64
-	result.t_u8 = p_t_u8
-	result.t_u16 = p_t_u16
-	result.t_u32 = p_t_u32
-	result.t_u128 = p_t_u128
-	result.t_f32 = p_t_f32
-	result.t_f64 = p_t_f64
-	result.t_i8 = p_t_i8
-	result.t_i16 = p_t_i16
-	result.t_i32 = p_t_i32
-	result.t_i64 = p_t_i64
+	result.t_u_64 = p_t_u_64
+	result.t_u_8 = p_t_u_8
+	result.t_u_16 = p_t_u_16
+	result.t_u_32 = p_t_u_32
+	result.t_u_128 = p_t_u_128
+	result.t_f_32 = p_t_f_32
+	result.t_f_64 = p_t_f_64
+	result.t_i_8 = p_t_i_8
+	result.t_i_16 = p_t_i_16
+	result.t_i_32 = p_t_i_32
+	result.t_i_64 = p_t_i_64
 	result.t_string = p_t_string
 	result.t_vec_string = p_t_vec_string
-	result.t_vec_u8 = p_t_vec_u8
+	result.t_vec_u_8 = p_t_vec_u_8
 	result.t_opt_string = p_t_opt_string
-	result.t_opt_u64 = p_t_opt_u64
+	result.t_opt_u_64 = p_t_opt_u_64
 	result.t_test_enum = p_t_test_enum
 	result.t_test_enum_vec = p_t_test_enum_vec
 	result.t_test_enum_option = p_t_test_enum_option

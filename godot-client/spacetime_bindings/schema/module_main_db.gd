@@ -2,7 +2,7 @@
 # FILE WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 class_name MainModuleDb extends RefCounted
 
-const table_names : Array[String] = ["lobby", "test_scheduled_table", "test_table_datatypes", "user", "user_data", "user_next", "test_anonymous_all_types", "test_first_type_row", "test_no_pk_option", "test_no_pk_query", "test_no_pk_vec", "test_option", "test_private_scheduled_count", "test_public_scheduled_count", "test_query", "test_u32_at_30"]
+const table_names : Array[String] = ["lobby", "test_scheduled_table", "test_table_datatypes", "user", "user_data", "user_next", "test_anonymous_all_types", "test_first_type_row", "test_no_pk_option", "test_no_pk_query", "test_no_pk_vec", "test_option", "test_private_scheduled_count", "test_public_scheduled_count", "test_query", "test_u_32_at_30"]
 
 var lobby: MainLobbyTable
 var test_scheduled_table: MainTestScheduledTableTable

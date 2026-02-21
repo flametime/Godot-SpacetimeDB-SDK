@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://bbffb4bvr3yin"]
+[gd_scene format=3 uid="uid://bbffb4bvr3yin"]
 
 [ext_resource type="Script" uid="uid://b2l7hyu8fw2wg" path="res://main.gd" id="1_u1py6"]
 [ext_resource type="Script" uid="uid://dem1ds2t7l6l4" path="res://example_code/lobby_holder.gd" id="2_6b2w0"]

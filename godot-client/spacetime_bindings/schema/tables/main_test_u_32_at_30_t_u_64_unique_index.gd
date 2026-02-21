@@ -5,8 +5,8 @@ class_name MainTestU32At30TU64UniqueIndex extends _ModuleTableUniqueIndex
 var _cache: Dictionary[int, MainTestTableDatatypes] = {}
 
 func _init(p_local_db: LocalDatabase) -> void:
-	set_meta("table_name", "test_u32_at_30")
-	set_meta("field_name", "t_u64")
+	set_meta("table_name", "test_u_32_at_30")
+	set_meta("field_name", "t_u_64")
 	_connect_cache_to_db(_cache, p_local_db)
 
 func find(col_val: int) -> MainTestTableDatatypes:

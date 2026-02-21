@@ -2,12 +2,12 @@
 # FILE WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 class_name MainTestU32At30Table extends _ModuleTable
 
-var t_u64: MainTestU32At30TU64UniqueIndex
+var t_u_64: MainTestU32At30TU64UniqueIndex
 
 func _init(p_local_db: LocalDatabase) -> void:
 	super(p_local_db)
-	set_meta("table_name", "test_u32_at_30")
-	t_u64 = MainTestU32At30TU64UniqueIndex.new(p_local_db)
+	set_meta("table_name", "test_u_32_at_30")
+	t_u_64 = MainTestU32At30TU64UniqueIndex.new(p_local_db)
 
 func iter() -> Array[MainTestTableDatatypes]:
 	var rows: Array = super()

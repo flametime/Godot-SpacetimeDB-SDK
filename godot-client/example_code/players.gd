@@ -12,7 +12,7 @@ func spawn(user: MainUser) -> void:
 	player.set_meta("local", user.identity == SpacetimeDB.Main.get_local_identity())
 	player.name = user.identity.hex_encode()
 	add_child(player)
-	
+
 func despawn(user: MainUser) -> void:
 	var player := get_node_or_null(str(user.identity.hex_encode()))
 	if player != null:

@@ -9,14 +9,14 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-spacetimedb = { version = "1.11.*", features = ["unstable"] }
+spacetimedb = { version = "2.0.0-rc1", features = ["unstable"] }
 log = "0.4"
 
-[build-dependencies]
-syn = { version = "2.0", features = [
-    "full",
-    "parsing",
-] } # Нужен для парсинга Rust кода
-quote = "1.0" # Помогает генерировать Rust код (может быть полезен при работе с syn)
-# serde = { version = "1.0", features = ["derive"] } # Если будете генерировать JSON
-# serde_json = "1.0" # Если будете генерировать JSON
+#[build-dependencies]
+#syn = { version = "2.0", features = [
+#    "full",
+#    "parsing",
+#] } # Нужен для парсинга Rust кода
+#quote = "1.0" # Помогает генерировать Rust код (может быть полезен при работе с syn)
+## serde = { version = "1.0", features = ["derive"] } # Если будете генерировать JSON
+## serde_json = "1.0" # Если будете генерировать JSON

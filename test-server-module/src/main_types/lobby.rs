@@ -2,12 +2,12 @@ use spacetimedb::{table, Identity, ReducerContext, Table};
 
 use crate::{user, user_data};
 
-#[table(name = lobby, public)]
+#[table(accessor = lobby, public)]
 pub struct Lobby {
     #[primary_key]
     #[auto_inc]
-    id: u64,
-    player_count: u32,
+    pub id: u64,
+    pub player_count: u32,
 }
 
 const MAX_PLAYERS_PER_LOBBY: u32 = 16;

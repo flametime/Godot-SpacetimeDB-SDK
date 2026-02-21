@@ -12,62 +12,62 @@ use spacetimedb::{
 
 const PLAYER_SPEED: f32 = 10.0;
 
-#[table(name = user, public)]
-#[table(name = user_next, public)]
+#[table(accessor = user, public)]
+#[table(accessor = user_next, public)]
 pub struct User {
     #[primary_key]
-    identity: Identity,
-    online: bool,
-    lobby_id: u64,
-    damage: Damage,
-    test_option_string: Option<Vec<String>>,
-    test_option_message: Option<Message>,
+    pub identity: Identity,
+    pub online: bool,
+    pub lobby_id: u64,
+    pub damage: Damage,
+    pub test_option_string: Option<Vec<String>>,
+    pub test_option_message: Option<Message>,
 }
 #[derive(SpacetimeType, Debug)]
 pub struct Damage {
-    amount: u32,
-    source: Identity,
-    int_vec: Vec<u8>,
+    pub amount: u32,
+    pub source: Identity,
+    pub int_vec: Vec<u8>,
 }
 
 #[derive(SpacetimeType, Debug)]
 pub struct Message {
-    int_value: u8,
-    string_value: String,
-    int_vec: Vec<u8>,
-    string_vec: Vec<String>,
-    test_option: Option<String>,
-    test_option_vec: Option<Vec<String>>,
-    test_inner: Option<Damage>,
+    pub int_value: u8,
+    pub string_value: String,
+    pub int_vec: Vec<u8>,
+    pub string_vec: Vec<String>,
+    pub test_option: Option<String>,
+    pub test_option_vec: Option<Vec<String>>,
+    pub test_inner: Option<Damage>,
 }
 
-#[table(name = user_data, public)]
-#[table(name = user_data_hidden)]
+#[table(accessor = user_data, public)]
+#[table(accessor = user_data_hidden)]
 pub struct UserData {
     #[primary_key]
-    identity: Identity,
-    online: bool,
-    name: String,
-    lobby_id: u64,
-    color: Color,
-    test_vec: Vec<String>,
-    test_bytes_array: Vec<u8>,
-    test_dynamic_arraylike: Vector4,
-    last_position: Vector3,
-    direction: Vector2,
-    player_speed: f32,
-    last_update: Timestamp,
+    pub identity: Identity,
+    pub online: bool,
+    pub name: String,
+    pub lobby_id: u64,
+    pub color: Color,
+    pub test_vec: Vec<String>,
+    pub test_bytes_array: Vec<u8>,
+    pub test_dynamic_arraylike: Vector4,
+    pub last_position: Vector3,
+    pub direction: Vector2,
+    pub player_speed: f32,
+    pub last_update: Timestamp,
 }
 
 #[reducer(client_connected)]
 pub fn client_connected(ctx: &ReducerContext) {
-    if let Some(user) = ctx.db.user().identity().find(ctx.sender) {
-        if let Some(connection_id) = ctx.connection_id {
+    if let Some(user) = ctx.db.user().identity().find(ctx.sender()) {
+        if let Some(connection_id) = ctx.connection_id() {
             log::info!("ConnectionID : {}", connection_id);
         }
 
         if user.lobby_id == 0 {
-            assign_user_to_lobby(ctx, ctx.sender);
+            assign_user_to_lobby(ctx, ctx.sender());
         }
     } else {
         let new_name = get_random_name(&ctx);
@@ -82,7 +82,7 @@ pub fn client_connected(ctx: &ReducerContext) {
 
         let test_damage: Damage = Damage {
             amount: 16,
-            source: ctx.sender,
+            source: ctx.sender(),
             int_vec: new_int_vec.clone(),
         };
         let test_message = Message {
@@ -95,12 +95,12 @@ pub fn client_connected(ctx: &ReducerContext) {
             test_option_vec: Some(string_vec.clone()),
         };
         ctx.db.user().insert(User {
-            identity: ctx.sender,
+            identity: ctx.sender(),
             online: true,
             lobby_id: 0,
             damage: Damage {
                 amount: 0,
-                source: ctx.sender,
+                source: ctx.sender(),
                 int_vec: new_int_vec,
             },
             test_option_string: Some(string_vec),
@@ -113,7 +113,7 @@ pub fn client_connected(ctx: &ReducerContext) {
         test_vec.push("three".to_string());
 
         ctx.db.user_data().insert(UserData {
-            identity: ctx.sender,
+            identity: ctx.sender(),
             online: true,
             name: new_name.clone(),
             lobby_id: 0,
@@ -127,19 +127,19 @@ pub fn client_connected(ctx: &ReducerContext) {
             last_update: ctx.timestamp,
         });
 
-        if let Some(connection_id) = ctx.connection_id {
+        if let Some(connection_id) = ctx.connection_id() {
             log::info!("ConnectionID : {}", connection_id);
         }
 
         log::info!("New user {} : online", new_name);
 
-        assign_user_to_lobby(ctx, ctx.sender);
+        assign_user_to_lobby(ctx, ctx.sender());
     }
 }
 
 #[reducer(client_disconnected)]
 pub fn client_disconnected(ctx: &ReducerContext) {
-    if let Some(user) = ctx.db.user().identity().find(ctx.sender) {
+    if let Some(user) = ctx.db.user().identity().find(ctx.sender()) {
         let lobby_id = user.lobby_id.clone();
 
         ctx.db.user().identity().update(User {
@@ -148,7 +148,7 @@ pub fn client_disconnected(ctx: &ReducerContext) {
             ..user
         });
 
-        if let Some(user_data) = ctx.db.user_data().identity().find(ctx.sender) {
+        if let Some(user_data) = ctx.db.user_data().identity().find(ctx.sender()) {
             let name = user_data.name.clone();
 
             ctx.db.user_data().identity().update(UserData {
@@ -158,12 +158,12 @@ pub fn client_disconnected(ctx: &ReducerContext) {
             });
             log::info!(
                 "Reset UserData lobby_id for disconnected user {:?}. User {} offline",
-                ctx.sender,
+                ctx.sender(),
                 name
             );
         } else {
             // This branch should be unreachable
-            log::warn!("UserData not found for disconnecting user {:?}", ctx.sender);
+            log::warn!("UserData not found for disconnecting user {:?}", ctx.sender());
         }
 
         if lobby_id != 0 {
@@ -174,7 +174,7 @@ pub fn client_disconnected(ctx: &ReducerContext) {
         // This branch should be unreachable
         log::warn!(
             "Disconnect event for unknown user with identity {:?}",
-            ctx.sender
+            ctx.sender()
         );
     }
 }
@@ -221,7 +221,7 @@ pub fn test_option_single(ctx: &ReducerContext, option: Option<String>) -> Resul
 }
 #[reducer]
 pub fn save_my_bytes(ctx: &ReducerContext, bytes: Vec<u8>) {
-    if let Some(mut user_data) = ctx.db.user_data().identity().find(ctx.sender) {
+    if let Some(mut user_data) = ctx.db.user_data().identity().find(ctx.sender()) {
         log::info!("{}", bytes.len());
         user_data.test_bytes_array = bytes;
         ctx.db.user_data().identity().update(user_data);
@@ -231,7 +231,7 @@ pub fn save_my_bytes(ctx: &ReducerContext, bytes: Vec<u8>) {
 
 #[reducer]
 pub fn change_color_random(ctx: &ReducerContext) {
-    if let Some(user) = ctx.db.user_data().identity().find(ctx.sender) {
+    if let Some(user) = ctx.db.user_data().identity().find(ctx.sender()) {
         // --- Update User State ---
         ctx.db.user_data().identity().update(UserData {
             color: Color::random(ctx),
@@ -247,7 +247,7 @@ pub fn move_user(
 ) -> Result<(), String> {
     let current_time = ctx.timestamp;
 
-    if let Some(user) = ctx.db.user_data().identity().find(ctx.sender) {
+    if let Some(user) = ctx.db.user_data().identity().find(ctx.sender()) {
         // --- Update User State ---
         ctx.db.user_data().identity().update(UserData {
             last_position: global_position,

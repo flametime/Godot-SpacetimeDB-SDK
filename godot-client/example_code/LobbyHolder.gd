@@ -21,7 +21,7 @@ func on_self_update(user: MainUser):
 
 func subscibe_whole_lobby(lobby_to_sub: int, user_identity: PackedByteArray):
 	var query = [
-		"SELECT * FROM user WHERE online == true AND lobby_id == " + str(lobby_to_sub), 
+		"SELECT * FROM user WHERE online == true AND lobby_id == " + str(lobby_to_sub),
 		"SELECT * FROM user_data WHERE lobby_id == " + str(lobby_to_sub),
 	]
 	SpacetimeDB.Main.subscribe(query)

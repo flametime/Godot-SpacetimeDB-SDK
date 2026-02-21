@@ -23,6 +23,6 @@ static func get_resource_path(msg_type: int) -> String:
 		SUBSCRIPTION_ERROR:        return "res://addons/SpacetimeDB/core_types/server_message/subscription_error.gd" # Uses manual reader
 		SUBSCRIBE_MULTI_APPLIED:   return "res://addons/SpacetimeDB/core_types/server_message/subscribe_multi_applied.gd"
 		UNSUBSCRIBE_MULTI_APPLIED: return "res://addons/SpacetimeDB/core_types/server_message/unsubscribe_multi_applied.gd"
-		# TRANSACTION_UPDATE_LIGHT (0x02) is not handled yet
+		TRANSACTION_UPDATE_LIGHT:  return "res://addons/SpacetimeDB/core_types/server_message/transaction_update_lightmode.gd"
 		_:
 			return ""
