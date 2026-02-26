@@ -486,9 +486,9 @@ func _get_reader_callable_for_property(resource: Resource, prop: Dictionary) -> 
 	# --- Special Cases First ---
 	# Handle specific properties requiring custom logic before generic checks
 	if resource is TransactionUpdateMessage and prop_name == "query_sets":
-		reader_callable = Callable(self, "_read_update_status")
+		reader_callable = Callable(self, "_read_query_sets")
 	# Add other special cases here if needed (e.g., Option<T> fields if handled generically later)
-	if prop.class_name == &'Option':
+	elif prop.class_name == &'Option':
 		reader_callable = Callable(self, "_read_option")
 
 	# --- Generic Type Handling (if not a special case) ---
@@ -543,7 +543,7 @@ func _call_reader_callable(reader_callable: Callable, spb: StreamPeerBuffer, res
 		# Special handling for _read_option when it's an array element
 		"_read_option":
 			return reader_callable.call(spb, resource, prop, inner_type_for_option_elements)
-		"_read_array", "_read_native_arraylike", "_read_nested_resource", "_read_array_of_table_updates":
+		"_read_array", "_read_native_arraylike", "_read_nested_resource", "_read_array_of_table_updates", "_read_query_sets":
 			return reader_callable.call(spb, resource, prop)
 		_:
 			# Standard primitive/simple readers usually only need the buffer.
@@ -590,6 +590,13 @@ func _read_value_from_bsatn_type(spb: StreamPeerBuffer, bsatn_type_str: String, 
 		var element_bsatn_type_str = bsatn_type_str.right(-4) # This will also be lowercase
 		var option = _read_option(spb, null, {"name": context_prop_name_for_error}, element_bsatn_type_str)
 		return option
+
+	# 3.5. Protocol type: TransactionUpdateMessage (e.g. ReducerResult ok payload)
+	# Not in module schema; use dedicated reader.
+	var protocol_key := bsatn_type_str.replace("_", "")
+	if protocol_key == "transactionupdatemessage":
+		var tx_msg := _read_transaction_update_message(spb)
+		return tx_msg if not has_error() else null
 
 	# 4. Handle Custom Resource (non-array)
 	# schema type names are table_name.to_lower().replace("_", "")
@@ -695,6 +702,21 @@ func _populate_enum_from_bytes(spb: StreamPeerBuffer, resource: Resource) -> boo
 func _populate_enum_data_from_bytes(resource: Resource, spb: StreamPeerBuffer) -> bool:
 	var enum_type: StringName = resource.get_meta("enum_options")[resource.value]
 	if enum_type == &"": return true
+	# ReducerOutcome "ok" carries ReducerOk { ret_value: Bytes, transaction_update: TransactionUpdate }.
+	# We must read and skip ret_value, then read transaction_update; otherwise we misread ret_value length as query_sets count.
+	if resource is ReducerOutcomeEnum and resource.value == ReducerOutcomeEnum.Options.ok:
+		var ret_len := read_u32_le(spb)
+		if has_error(): return false
+		if ret_len > MAX_BYTE_ARRAY_LEN:
+			_set_error("ReducerOk ret_value length %d exceeds limit %d" % [ret_len, MAX_BYTE_ARRAY_LEN], spb.get_position() - 4)
+			return false
+		if ret_len > 0:
+			var _discard := read_bytes(spb, ret_len)
+			if has_error(): return false
+		var tx_msg := _read_transaction_update_message(spb)
+		if has_error() or tx_msg == null: return false
+		resource.data = tx_msg
+		return true
 	var data = _read_value_from_bsatn_type(spb, enum_type.to_lower(), &"")
 	if data:
 		resource.data = data
@@ -750,6 +772,31 @@ func _read_array_of_table_updates(spb: StreamPeerBuffer, resource: Resource, pro
 		result_array[i] = table_update_instance
 
 	return result_array
+
+# Reads the query_sets structure (v2: u32 count, then for each: query_set_id, table_count, TableUpdate[]).
+# Each TableUpdate in v2 is: table_name (string), rows (array of TableUpdateRows).
+# TableUpdateRows enum: 0 = PersistentTable(inserts, deletes), 1 = EventTable(events).
+# Used for TransactionUpdateMessage.query_sets (generic populate path and shared with _read_transaction_update_message).
+func _read_query_sets(spb: StreamPeerBuffer, _resource: Resource, _prop: Dictionary) -> Array:
+	var count := read_u32_le(spb)
+	if has_error(): return []
+	var result: Array = []
+	for i in range(count):
+		var dataset := DatabaseUpdateData.new()
+		if dataset.query_id == null:
+			dataset.query_id = QueryIdData.new()
+		dataset.query_id.id = read_u32_le(spb)
+		if has_error(): return result
+		var table_count := read_u32_le(spb)
+		if has_error(): return result
+		for j in range(table_count):
+			var table := TableUpdateData.new()
+			if not _read_table_update_instance_v2(spb, table):
+				if not has_error(): _set_error("Failed reading TableUpdate element %d in query_sets" % j, spb.get_position())
+				return result
+			dataset.tables.append(table)
+		result.append(dataset)
+	return result
 
 # Reads the content of a SINGLE TableUpdate structure into an existing instance.
 # Handles the custom CompressableQueryUpdate format for deletes/inserts.
@@ -846,6 +893,70 @@ func _read_table_update_instance(spb: StreamPeerBuffer, resource: TableUpdateDat
 	resource.inserts.assign(all_parsed_inserts)
 	return true
 
+# V2 TableUpdate: table_name (string), rows (array of TableUpdateRows).
+# TableUpdateRows: 0 = PersistentTable(inserts BsatnRowList, deletes BsatnRowList), 1 = EventTable(events BsatnRowList).
+# No compression, no table_id/num_rows/updates_count.
+func _read_table_update_instance_v2(spb: StreamPeerBuffer, resource: TableUpdateData) -> bool:
+	resource.table_id = 0
+	resource.table_name = read_string_with_u32_len(spb)
+	if has_error(): return false
+	var rows_count := read_u32_le(spb)
+	if has_error(): return false
+
+	var all_parsed_deletes: Array[Resource] = []
+	var all_parsed_inserts: Array[Resource] = []
+	var table_name_lower := resource.table_name.to_lower().replace("_", "")
+	var row_schema_script := _schema.get_type(table_name_lower)
+	var row_spb := StreamPeerBuffer.new()
+
+	for k in range(rows_count):
+		if has_error(): break
+		var tag := read_u8(spb)
+		if has_error(): break
+		var raw_deletes: Array[PackedByteArray] = []
+		var raw_inserts: Array[PackedByteArray] = []
+		if tag == 0:  # PersistentTableRows
+			raw_inserts = read_bsatn_row_list(spb)
+			if has_error(): break
+			raw_deletes = read_bsatn_row_list(spb)
+			if has_error(): break
+		elif tag == 1:  # EventTableRows
+			var raw_events := read_bsatn_row_list(spb)
+			if has_error(): break
+			raw_inserts = raw_events  # Treat events as inserts for client
+		else:
+			_set_error("Unknown TableUpdateRows tag %d for table '%s'" % [tag, resource.table_name], spb.get_position() - 1)
+			return false
+
+		if not row_schema_script:
+			continue  # Already consumed bytes above
+		for raw_row_bytes in raw_deletes:
+			var row_resource = row_schema_script.new()
+			row_spb.data_array = raw_row_bytes
+			row_spb.seek(0)
+			if _populate_resource_from_bytes(row_resource, row_spb):
+				all_parsed_deletes.append(row_resource)
+			else:
+				push_error("Stopping v2 table update for table '%s' due to delete row parsing failure." % resource.table_name)
+				break
+		if has_error(): break
+		for raw_row_bytes in raw_inserts:
+			var row_resource = row_schema_script.new()
+			row_spb.data_array = raw_row_bytes
+			row_spb.seek(0)
+			if _populate_resource_from_bytes(row_resource, row_spb):
+				all_parsed_inserts.append(row_resource)
+			else:
+				push_error("Stopping v2 table update for table '%s' due to insert row parsing failure." % resource.table_name)
+				break
+		if has_error(): break
+
+	if has_error(): return false
+	resource.num_rows = all_parsed_inserts.size() + all_parsed_deletes.size()
+	resource.deletes.assign(all_parsed_deletes)
+	resource.inserts.assign(all_parsed_inserts)
+	return true
+
 # Helper to handle potential compression of a QueryUpdate block.
 func _get_query_update_stream(spb: StreamPeerBuffer, table_name_for_error: String) -> StreamPeerBuffer:
 	var compression_tag_raw := read_u8(spb)
@@ -897,48 +1008,56 @@ func _read_reducer_result_message(spb: StreamPeerBuffer)-> ReducerResultMessage:
 	resource.reducer_result = outcome
 	if not _populate_enum_from_bytes(spb, outcome):
 		if not has_error(): _set_error("failed to parse reducer result Enum")
-		return
+		return null
 	return resource
 
-func _read_transaction_update_message(spb: StreamPeerBuffer) -> TransactionUpdateMessage :
+func _read_transaction_update_message(spb: StreamPeerBuffer) -> TransactionUpdateMessage:
 	var tx_update_resource: TransactionUpdateMessage = TransactionUpdateMessage.new()
-	var query_set_count: int = read_u32_le(spb)
-	if has_error():
-		return
-	for i in query_set_count:
-		var dataset : DatabaseUpdateData = DatabaseUpdateData.new()
-		tx_update_resource.query_sets.append(dataset)
-		dataset.query_id.id = read_u32_le(spb)
-		if has_error():
-			return
-		var table_count = read_u32_le(spb)
-		if has_error():
-			return
-		for i2 in table_count:
-			var table : TableUpdateData = TableUpdateData.new()
-			dataset.tables.append(table)
-			if not _read_table_update_instance(spb, table):
-				if not has_error(): _set_error("Failed reading TableUpdate element %d" % i2)
-				return
-
+	var query_sets_array := _read_query_sets(spb, tx_update_resource, {})
+	if has_error(): return null
+	tx_update_resource.query_sets.assign(query_sets_array)
 	return tx_update_resource
 
+# V2 SubscribeApplied: request_id, query_set_id, rows (QueryRows = tables: [SingleTableRows]).
+# Each SingleTableRows = table (RawIdentifier string), rows (BsatnRowList) — no compression tag.
 func _read_subscripton_applied_message(spb: StreamPeerBuffer) -> SubscribeAppliedMessage:
 	var sub_app_resource: SubscribeAppliedMessage = SubscribeAppliedMessage.new()
 	sub_app_resource.request_id = read_u32_le(spb)
-	sub_app_resource.query_id.id = read_f32_le(spb)
+	if sub_app_resource.query_id == null:
+		sub_app_resource.query_id = QueryIdData.new()
+	sub_app_resource.query_id.id = read_u32_le(spb)  # query_set_id in v2
 	if has_error(): return null
-	#var table_count = read_u32_le(spb)
-	#if has_error():
-		#return
-	#for i in table_count:
-		#print("subscription applied table: %s", i)
-	var table : TableUpdateData = TableUpdateData.new()
-	sub_app_resource.tables.append(table)
-	if not _read_table_update_instance(spb, table,true):
-		if not has_error(): _set_error("Failed reading TableUpdate element")
-		return
-
+	# QueryRows.tables: array of SingleTableRows
+	var tables_count := read_u32_le(spb)
+	if has_error(): return null
+	var row_spb := StreamPeerBuffer.new()
+	for i in range(tables_count):
+		var table_name := read_string_with_u32_len(spb)
+		if has_error(): return null
+		# BsatnRowList directly (no CompressableQueryUpdate / compression tag)
+		var raw_inserts: Array[PackedByteArray] = read_bsatn_row_list(spb)
+		if has_error(): return null
+		var table_data: TableUpdateData = TableUpdateData.new()
+		table_data.table_id = i
+		table_data.table_name = table_name
+		table_data.num_rows = raw_inserts.size()
+		table_data.deletes.assign([])
+		var table_name_lower := table_name.to_lower().replace("_", "")
+		var row_schema_script = _schema.get_type(table_name_lower)
+		var parsed_inserts: Array[Resource] = []
+		if row_schema_script:
+			for raw_row_bytes in raw_inserts:
+				var row_resource: Resource = row_schema_script.new()
+				row_spb.data_array = raw_row_bytes
+				row_spb.seek(0)
+				if _populate_resource_from_bytes(row_resource, row_spb):
+					parsed_inserts.append(row_resource)
+				else:
+					push_error("SubscribeApplied: failed to parse row for table '%s'" % table_name)
+		else:
+			if debug_mode: push_warning("SubscribeApplied: No schema for table '%s', skipping row parse." % table_name)
+		table_data.inserts.assign(parsed_inserts)
+		sub_app_resource.tables.append(table_data)
 	return sub_app_resource
 
 func _read_generic_server_message(msg_type:int, script_path:String, spb:StreamPeerBuffer)-> Resource:

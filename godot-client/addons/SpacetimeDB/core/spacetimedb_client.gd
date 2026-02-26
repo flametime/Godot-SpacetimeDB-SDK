@@ -302,15 +302,34 @@ func _handle_parsed_message(message_resource: Resource):
 
 	elif message_resource is ReducerResultMessage:
 		print_log("SpacetimeDBClient: Handle Reducer result message")
+		var req_id: int = message_resource.request_id
 		match message_resource.reducer_result.value:
 			ReducerOutcomeEnum.Options.ok:
-				_handle_transaction_update(message_resource.reducer_result.get_ok())
+				var ok_payload: TransactionUpdateMessage = message_resource.reducer_result.get_ok()
+				if ok_payload:
+					ok_payload.reducer_request_id = req_id
+					ok_payload.reducer_status = _make_committed_status()
+					_handle_transaction_update(ok_payload)
 			ReducerOutcomeEnum.Options.okEmpty:
-				pass
+				var empty_tx: TransactionUpdateMessage = TransactionUpdateMessage.new()
+				empty_tx.reducer_request_id = req_id
+				empty_tx.reducer_status = _make_committed_status()
+				_handle_transaction_update(empty_tx)
 			ReducerOutcomeEnum.Options.err:
-				print_log(message_resource.reducer_result.get_err())
+				var err_data: PackedByteArray = message_resource.reducer_result.get_err()
+				var err_msg: String = err_data.get_string_from_utf16() if err_data != null else "Reducer failed"
+				print_log("SpacetimeDBClient: Reducer err (ReqID %d): %s" % [req_id, err_msg])
+				var failed_tx: TransactionUpdateMessage = TransactionUpdateMessage.new()
+				failed_tx.reducer_request_id = req_id
+				failed_tx.reducer_status = _make_failed_status(err_msg)
+				_handle_transaction_update(failed_tx)
 			ReducerOutcomeEnum.Options.internalError:
-				print_log(message_resource.reducer_result.get_internal_error())
+				var internal_msg: String = message_resource.reducer_result.get_internal_error()
+				print_log("SpacetimeDBClient: Reducer internalError (ReqID %d): %s" % [req_id, internal_msg])
+				var failed_tx: TransactionUpdateMessage = TransactionUpdateMessage.new()
+				failed_tx.reducer_request_id = req_id
+				failed_tx.reducer_status = _make_failed_status(internal_msg)
+				_handle_transaction_update(failed_tx)
 		pass
 		## pass
 
@@ -320,8 +339,19 @@ func _handle_parsed_message(message_resource: Resource):
 	else:
 		print_log("SpacetimeDBClient: Received unhandled message resource type: " + message_resource.get_class())
 
+func _make_committed_status() -> UpdateStatusData:
+	var s := UpdateStatusData.new()
+	s.status_type = UpdateStatusData.StatusType.COMMITTED
+	return s
+
+func _make_failed_status(failure_message: String) -> UpdateStatusData:
+	var s := UpdateStatusData.new()
+	s.status_type = UpdateStatusData.StatusType.FAILED
+	s.failure_message = failure_message
+	return s
+
 func _handle_transaction_update(update_sets : TransactionUpdateMessage):
-	for tx_update: DatabaseUpdateData in update_sets:
+	for tx_update: DatabaseUpdateData in update_sets.query_sets:
 		_local_db.apply_database_update(tx_update)
 		if not _received_initial_subscription:
 			_received_initial_subscription = true
@@ -527,23 +557,13 @@ func wait_for_reducer_response(request_id_to_match: int, timeout_seconds: float 
 	else:
 		var tx_update: TransactionUpdateMessage = signal_result
 		print_log("SpacetimeDBClient: Received matching response for Req ID: %d" % request_id_to_match)
-		self.reducer_call_response.emit(tx_update.reducer_call)
+		self.reducer_call_response.emit(tx_update)
 		return tx_update
 
-func _check_reducer_response(update: TransactionUpdateMessage, request_id_to_match: int, reducer_name_to_match: String = "") -> bool:
-	if update == null or update.reducer_call == null:
+func _check_reducer_response(update: TransactionUpdateMessage, request_id_to_match: int, _reducer_name_to_match: String = "") -> bool:
+	if update == null:
 		return false
-
-	if _identity.size() > 0 and update.caller_identity != _identity:
-		return false
-
-	if update.reducer_call.request_id == request_id_to_match:
+	# In 2.0, reducer results are tagged with reducer_request_id by the addon when handling ReducerResultMessage.
+	if update.reducer_request_id >= 0 and update.reducer_request_id == request_id_to_match:
 		return true
-
-	if reducer_name_to_match.is_empty():
-		return false
-
-	if update.status == null or update.status.status_type != UpdateStatusData.StatusType.FAILED:
-		return false
-
-	return update.reducer_call.request_id == 0 and update.reducer_call.reducer_name == reducer_name_to_match
+	return false
