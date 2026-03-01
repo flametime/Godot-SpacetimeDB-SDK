@@ -41,6 +41,7 @@ var _is_initialized := false
 var _received_initial_subscription := false
 var _next_query_id := 0
 var _next_request_id := 0
+var _request_id_to_reducer_name: Dictionary[int, String] = { }
 
 # --- Signals ---
 signal connected(identity: PackedByteArray, token: String)
@@ -301,15 +302,34 @@ func _handle_parsed_message(message_resource: Resource):
 
 	elif message_resource is ReducerResultMessage:
 		print_log("SpacetimeDBClient: Handle Reducer result message")
+		var req_id: int = message_resource.request_id
 		match message_resource.reducer_result.value:
 			ReducerOutcomeEnum.Options.ok:
-				_handle_transaction_update(message_resource.reducer_result.get_ok())
+				var ok_payload: TransactionUpdateMessage = message_resource.reducer_result.get_ok()
+				if ok_payload:
+					ok_payload.reducer_request_id = req_id
+					ok_payload.reducer_status = _make_committed_status()
+					_handle_transaction_update(ok_payload)
 			ReducerOutcomeEnum.Options.okEmpty:
-				pass
+				var empty_tx: TransactionUpdateMessage = TransactionUpdateMessage.new()
+				empty_tx.reducer_request_id = req_id
+				empty_tx.reducer_status = _make_committed_status()
+				_handle_transaction_update(empty_tx)
 			ReducerOutcomeEnum.Options.err:
-				print_log(message_resource.reducer_result.get_err())
+				var err_data: PackedByteArray = message_resource.reducer_result.get_err()
+				var err_msg: String = err_data.get_string_from_utf16() if err_data != null else "Reducer failed"
+				print_log("SpacetimeDBClient: Reducer err (ReqID %d): %s" % [req_id, err_msg])
+				var failed_tx: TransactionUpdateMessage = TransactionUpdateMessage.new()
+				failed_tx.reducer_request_id = req_id
+				failed_tx.reducer_status = _make_failed_status(err_msg)
+				_handle_transaction_update(failed_tx)
 			ReducerOutcomeEnum.Options.internalError:
-				print_log(message_resource.reducer_result.get_internal_error())
+				var internal_msg: String = message_resource.reducer_result.get_internal_error()
+				print_log("SpacetimeDBClient: Reducer internalError (ReqID %d): %s" % [req_id, internal_msg])
+				var failed_tx: TransactionUpdateMessage = TransactionUpdateMessage.new()
+				failed_tx.reducer_request_id = req_id
+				failed_tx.reducer_status = _make_failed_status(internal_msg)
+				_handle_transaction_update(failed_tx)
 		pass
 		## pass
 
@@ -319,8 +339,19 @@ func _handle_parsed_message(message_resource: Resource):
 	else:
 		print_log("SpacetimeDBClient: Received unhandled message resource type: " + message_resource.get_class())
 
+func _make_committed_status() -> UpdateStatusData:
+	var s := UpdateStatusData.new()
+	s.status_type = UpdateStatusData.StatusType.COMMITTED
+	return s
+
+func _make_failed_status(failure_message: String) -> UpdateStatusData:
+	var s := UpdateStatusData.new()
+	s.status_type = UpdateStatusData.StatusType.FAILED
+	s.failure_message = failure_message
+	return s
+
 func _handle_transaction_update(update_sets : TransactionUpdateMessage):
-	for tx_update: DatabaseUpdateData in update_sets:
+	for tx_update: DatabaseUpdateData in update_sets.query_sets:
 		_local_db.apply_database_update(tx_update)
 		if not _received_initial_subscription:
 			_received_initial_subscription = true
@@ -470,6 +501,7 @@ func call_reducer(reducer_name: String, args: Array = [], types: Array = []) -> 
 
 	var request_id := _next_request_id
 	_next_request_id += 1
+	_request_id_to_reducer_name[request_id] = reducer_name
 
 	var call_data := CallReducerMessage.new(reducer_name, args_bytes, request_id, 0)
 	var message_bytes := _serializer.serialize_client_message(
@@ -490,7 +522,7 @@ func call_reducer(reducer_name: String, args: Array = [], types: Array = []) -> 
 			print("SpacetimeDBClient: Error sending CallReducer JSON message: ", err)
 			return SpacetimeDBReducerCall.fail(err)
 
-		return SpacetimeDBReducerCall.create(self, request_id)
+		return SpacetimeDBReducerCall.create(self, request_id, reducer_name)
 
 	print("SpacetimeDBClient: Internal error - WebSocket peer not available in connection.")
 	return SpacetimeDBReducerCall.fail(ERR_CONNECTION_ERROR)
@@ -498,23 +530,26 @@ func call_reducer(reducer_name: String, args: Array = [], types: Array = []) -> 
 func wait_for_reducer_response(request_id_to_match: int, timeout_seconds: float = 10.0) -> TransactionUpdateMessage:
 	if request_id_to_match < 0:
 		return null
-	var timer:SceneTreeTimer = get_tree().create_timer(timeout_seconds)
+	var reducer_name_to_match: String = _request_id_to_reducer_name.get(request_id_to_match, "")
+	var timer: SceneTreeTimer = get_tree().create_timer(timeout_seconds)
+	var did_timeout: bool = false
+	timer.timeout.connect(func() -> void: did_timeout = true, CONNECT_ONE_SHOT)
 	var result_container = [null]
 	var connection:Callable = (
 		func(update: TransactionUpdateMessage):
-			if _check_reducer_response(update, request_id_to_match):
+			if _check_reducer_response(update, request_id_to_match, reducer_name_to_match):
 				if result_container[0] == null:
 					result_container[0] = update
-					timer.time_left = 0
 					)
 
 	transaction_update_received.connect(connection)
-
-	await timer.timeout
+	while result_container[0] == null and not did_timeout:
+		await get_tree().process_frame
 
 	transaction_update_received.disconnect(connection)
 
 	var signal_result = result_container[0]
+	_request_id_to_reducer_name.erase(request_id_to_match)
 	if signal_result == null:
 		printerr("SpacetimeDBClient: Timeout waiting for response for Req ID: %d" % request_id_to_match)
 		self.reducer_call_timeout.emit(request_id_to_match)
@@ -522,8 +557,13 @@ func wait_for_reducer_response(request_id_to_match: int, timeout_seconds: float 
 	else:
 		var tx_update: TransactionUpdateMessage = signal_result
 		print_log("SpacetimeDBClient: Received matching response for Req ID: %d" % request_id_to_match)
-		self.reducer_call_response.emit(tx_update.reducer_call)
+		self.reducer_call_response.emit(tx_update)
 		return tx_update
 
-func _check_reducer_response(update: TransactionUpdateMessage, request_id_to_match: int) -> bool:
-	return update != null and update.reducer_call != null and update.reducer_call.request_id == request_id_to_match
+func _check_reducer_response(update: TransactionUpdateMessage, request_id_to_match: int, _reducer_name_to_match: String = "") -> bool:
+	if update == null:
+		return false
+	# In 2.0, reducer results are tagged with reducer_request_id by the addon when handling ReducerResultMessage.
+	if update.reducer_request_id >= 0 and update.reducer_request_id == request_id_to_match:
+		return true
+	return false

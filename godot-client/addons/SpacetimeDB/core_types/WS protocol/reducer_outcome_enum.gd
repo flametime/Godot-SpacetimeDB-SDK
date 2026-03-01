@@ -29,10 +29,10 @@ static func parse_enum_name(i: int) -> String:
 			printerr("Enum does not have value for %d. This is out of bounds." % i)
 			return &'Unknown'
 
-func get_ok() -> int:
+func get_ok() -> TransactionUpdateMessage:
 	return data
 
-func get_err() -> Array[int]:
+func get_err() -> PackedByteArray:
 	return data
 
 func get_internal_error() -> String:
@@ -44,13 +44,13 @@ static func create(p_type: int, p_data: Variant = null) -> ReducerOutcomeEnum:
 	result.data = p_data
 	return result
 
-static func create_ok(_data: int) -> ReducerOutcomeEnum:
+static func create_ok(_data: TransactionUpdateMessage) -> ReducerOutcomeEnum:
 	return create(Options.ok, _data)
 
 static func create_ok_empty() -> ReducerOutcomeEnum:
 	return create(Options.okEmpty)
 
-static func create_err(_data: Array[int]) -> ReducerOutcomeEnum:
+static func create_err(_data: PackedByteArray) -> ReducerOutcomeEnum:
 	return create(Options.err, _data)
 
 static func create_internal_error(_data: String) -> ReducerOutcomeEnum:
