@@ -5,7 +5,7 @@ extends Control
 func _ready() -> void:
 	var options :SpacetimeDBConnectionOptions = SpacetimeDBConnectionOptions.new()
 	options.one_time_token = true # <--- anonymous-like. set to false to persist
-	options.debug_mode = true # <--- enables lots of additional debug prints and warnings
+	options.debug_mode = false # <--- enables lots of additional debug prints and warnings
 	options.compression = SpacetimeDBConnection.CompressionPreference.GZIP
 	options.threading = false
 	# Increase buffer size. In general, you don't need this.
@@ -28,13 +28,19 @@ func _on_spacetimedb_connected(identity: PackedByteArray, _token: String) -> voi
 	print("Game: Connected to SpacetimeDB!")
 	print("Game: My Identity: 0x%s" % [identity.hex_encode()])
 	#var id := SpacetimeDB.Main.get_local_identity()
-	#var query_string := [
-		#"SELECT * FROM *$)§"
-	#]
-	#var sub := SpacetimeDB.Main.subscribe(query_string)
-	#if sub.error:
-		#printerr("Game: Failed to send subscription request.")
-		#return
+	var query_string := [
+		"SELECT * FROM user"
+	]
+	var sub := SpacetimeDB.Main.subscribe(query_string)
+	sub.applied.connect(func() -> void:
+		print("User Subscription Applied")
+		await get_tree().create_timer(3).timeout
+		sub.unsubscribe()
+		)
+	sub.end.connect(func() -> void: print("User Subscription ended"))
+	if sub.error:
+		printerr("Game: Failed to send subscription request.")
+		return
 	#print("Game: Subscription request sent (Query ID: %d)." % sub.query_id)
 
 func _on_spacetimedb_disconnected() -> void:

@@ -276,7 +276,6 @@ func _handle_parsed_message(message_resource: Resource):
 			_token = identity_token.token
 		_connection_id = identity_token.connection_id
 		self.connected.emit(_identity, _token)
-		## TODO: initialise the local_db.
 
 	elif message_resource is SubscribeAppliedMessage:
 		var message: SubscribeAppliedMessage = message_resource
@@ -284,21 +283,33 @@ func _handle_parsed_message(message_resource: Resource):
 		if not _received_initial_subscription:
 			_received_initial_subscription = true
 			self.database_initialized.emit()
+		var sub : SpacetimeDBSubscription= pending_subscriptions.get(message.query_id.id)
+		sub.applied.emit()
+		pending_subscriptions.erase(sub.query_id)
+		current_subscriptions.set(sub.query_id, sub)
+		return
 
 	elif message_resource is UnsubscribeAppliedMessage:
+		var message : UnsubscribeAppliedMessage = message_resource
+		var sub : SpacetimeDBSubscription= current_subscriptions.get(message.query_id.id)
+		_local_db.apply_database_unsubscription_applied(message)
+		sub.end.emit()
+		current_subscriptions.erase(sub.query_id)
+		sub.queue_free()
 		print_log("SpacetimeDBClient: Received unhandled message resource type: UnsubscribeAppliedMessage")
-		pass
+		return
 
 	elif message_resource is SubscriptionErrorMessage:
 		print_log("SpacetimeDBClient: Received unhandled message resource type: SubscriptionErrorMessage")
-		pass
+		return
 
 	elif message_resource is TransactionUpdateMessage:
 		_handle_transaction_update(message_resource)
+		return
 
 	elif message_resource is OneOffQueryMessage:
 		print_log("SpacetimeDBClient: Received unhandled message resource type: OneOffQueryMessage")
-		pass
+		return
 
 	elif message_resource is ReducerResultMessage:
 		print_log("SpacetimeDBClient: Handle Reducer result message")
@@ -330,11 +341,8 @@ func _handle_parsed_message(message_resource: Resource):
 				failed_tx.reducer_request_id = req_id
 				failed_tx.reducer_status = _make_failed_status(internal_msg)
 				_handle_transaction_update(failed_tx)
-		pass
-		## pass
+		return
 
-	## elif message_resource is procedure result message:
-		## pass
 
 	else:
 		print_log("SpacetimeDBClient: Received unhandled message resource type: " + message_resource.get_class())
@@ -455,7 +463,7 @@ func subscribe(queries: PackedStringArray) -> SpacetimeDBSubscription:
 	subscription._ended = true
 	return subscription
 
-func unsubscribe(query_id: int) -> Error:
+func unsubscribe(query_id: int, send_deletes: UnsubscribeMessage.UnsubscribeFlags = UnsubscribeMessage.UnsubscribeFlags.Default) -> Error:
 	if not is_connected_db():
 		printerr("SpacetimeDBClient: Cannot unsubscribe, not connected.")
 		return ERR_CONNECTION_ERROR
@@ -464,7 +472,7 @@ func unsubscribe(query_id: int) -> Error:
 	_next_request_id += 1
 	# 1. Create the correct payload Resource
 	var payload_data := UnsubscribeMessage.new(request_id, query_id)
-
+	payload_data.flags = send_deletes
 	# 2. Serialize the complete ClientMessage using the universal function
 	var message_bytes := _serializer.serialize_client_message(
 		SpacetimeDBClientMessage.UNSUBSCRIBE,
