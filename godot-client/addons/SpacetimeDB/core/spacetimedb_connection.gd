@@ -102,7 +102,7 @@ func send_bytes(bytes: PackedByteArray) -> Error:
 		total_bytes.emit(_total_bytes_send, _total_bytes_received)
 	return err
 
-func connect_to_database(base_url: String, database_name: String, connection_id: String): # Added connection_id
+func connect_to_database(base_url: String, database_name: String, connection_id: String, confirmed_reads:bool): # Added connection_id
 	if _is_connected or _connection_requested:
 		_print_log("SpacetimeDBConnection: Already connected or connecting.")
 		return
@@ -134,7 +134,7 @@ func connect_to_database(base_url: String, database_name: String, connection_id:
 
 
 	query_params += "&compression=" + compression_str
-	query_params += "&confirmed=false"
+	query_params += "&confirmed=%s" % confirmed_reads
 
 	if OS.get_name() == "Web":
 		query_params += "&token=" + _token

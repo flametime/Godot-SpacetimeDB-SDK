@@ -170,7 +170,7 @@ func _on_token_received(received_token: String):
 	_rest_api.set_token(self._token) # REST API might also need it
 
 	# Now attempt to connect WebSocket
-	_connection.connect_to_database(base_url, database_name, conn_id)
+	_connection.connect_to_database(base_url, database_name, conn_id, connection_options.confirmed_reads)
 
 func _on_token_request_failed(error_code: int, response_body: String):
 	printerr("SpacetimeDBClient: Failed to acquire token. Cannot connect.")
