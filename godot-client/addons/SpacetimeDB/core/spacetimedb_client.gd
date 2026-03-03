@@ -25,6 +25,7 @@ var _message_limit_in_frame: int = 5
 
 var connection_options: SpacetimeDBConnectionOptions
 var pending_subscriptions: Dictionary[int, SpacetimeDBSubscription]
+var pending_one_off_query_callbacks: Dictionary[int,Callable]
 
 # --- Components ---
 var _connection: SpacetimeDBConnection
@@ -296,19 +297,32 @@ func _handle_parsed_message(message_resource: Resource):
 		sub.end.emit()
 		current_subscriptions.erase(sub.query_id)
 		sub.queue_free()
-		print_log("SpacetimeDBClient: Received unhandled message resource type: UnsubscribeAppliedMessage")
+		print_log("SpacetimeDBClient: Received UnsubscribeAppliedMessage")
 		return
 
 	elif message_resource is SubscriptionErrorMessage:
-		print_log("SpacetimeDBClient: Received unhandled message resource type: SubscriptionErrorMessage")
+		var message : SubscriptionErrorMessage = message_resource
+		var sub : SpacetimeDBSubscription= pending_subscriptions.get(message.query_id.id)
+		if sub:
+			sub.end.emit()
+			pending_subscriptions.erase(sub.query_id)
+			sub.queue_free()
+		printerr("SpacetimeDBClient: Received SubscriptionErrorMessage: %s", message.error_message)
 		return
 
 	elif message_resource is TransactionUpdateMessage:
 		_handle_transaction_update(message_resource)
 		return
 
-	elif message_resource is OneOffQueryMessage:
-		print_log("SpacetimeDBClient: Received unhandled message resource type: OneOffQueryMessage")
+	elif message_resource is OneOffQueryResponseMessage:
+		var message : OneOffQueryResponseMessage = message_resource
+		var callback: Callable = pending_one_off_query_callbacks.get(message.request_id, Callable())
+		if callback.is_valid():
+			callback.call(message)
+		else:
+			printerr("Callback for one off query request %s is invalid" % message.request_id)
+		pending_one_off_query_callbacks.erase(message.request_id)
+		print_log("SpacetimeDBClient: Received message resource type: OneOffQueryResponseMessage")
 		return
 
 	elif message_resource is ReducerResultMessage:
@@ -495,6 +509,29 @@ func unsubscribe(query_id: int, send_deletes: UnsubscribeMessage.UnsubscribeFlag
 
 	printerr("SpacetimeDBClient: Internal error - WebSocket peer not available in connection.")
 	return ERR_CONNECTION_ERROR
+
+func one_off_query(query: String, callback: Callable = func(ctx: OneOffQueryResponseMessage)->void: return) -> Error:
+	if not is_connected_db():
+		printerr("SpacetimeDBClient: Cannot call a one off query, not connected.")
+		return ERR_CONNECTION_ERROR
+	var request_id:= _next_request_id
+	_next_request_id += 1
+	var payload_data := OneOffQueryMessage.new(request_id, query)
+	var message_bytes := _serializer.serialize_client_message(
+		SpacetimeDBClientMessage.ONEOFF_QUERY,
+		payload_data
+	)
+	if _connection and _connection._websocket:
+		var err := _connection.send_bytes(message_bytes)
+		if err != OK:
+			printerr("SpacetimeDBClient: Error sending One-off query BSATN message: %s" % error_string(err))
+		else:
+			pending_one_off_query_callbacks.set(request_id, callback)
+			print_log("SpacetimeDBClient: One-off query request sent successfully (BSATN), Query: %s" % query)
+
+	return OK
+
+
 
 func call_reducer(reducer_name: String, args: Array = [], types: Array = []) -> SpacetimeDBReducerCall:
 	if not is_connected_db():

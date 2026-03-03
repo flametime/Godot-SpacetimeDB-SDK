@@ -37,7 +37,12 @@ func _on_spacetimedb_connected(identity: PackedByteArray, _token: String) -> voi
 		await get_tree().create_timer(3).timeout
 		sub.unsubscribe()
 		)
-	sub.end.connect(func() -> void: print("User Subscription ended"))
+	sub.end.connect(func() -> void:
+		print("User Subscription ended")
+		var osub := SpacetimeDB.Main.one_off_query("SELECT * FROM user2", func(ctx: OneOffQueryResponseMessage)->void: print("OneOffQuery callback: %s" %ctx.result_ok))
+		if not osub == OK:
+			pass
+		)
 	if sub.error:
 		printerr("Game: Failed to send subscription request.")
 		return

@@ -48,7 +48,7 @@ func _init(p_schema: SpacetimeDBSchema, p_debug_mode: bool = false) -> void:
 #region --- Error Handling ---
 func print_log(...text):
 	if debug_mode:
-		prints(text.map(func(t): str(t)))
+		prints(text)
 
 func has_error() -> bool: return _last_error != ""
 func get_last_error() -> String: var err := _last_error; _last_error = ""; return err
@@ -1110,6 +1110,48 @@ func _read_unsubscripton_applied_message(spb: StreamPeerBuffer) -> UnsubscribeAp
 		print("unsub option None")
 	return sub_app_resource
 
+func _read_one_off_query_message(spb: StreamPeerBuffer)-> OneOffQueryResponseMessage:
+	var response_res :OneOffQueryResponseMessage = OneOffQueryResponseMessage.new()
+	response_res.request_id = read_u32_le(spb)
+	if has_error(): return null
+	var result_tag := read_u8(spb)
+	if result_tag == 0:
+		var tables_count := read_u32_le(spb)
+		if has_error(): return null
+		var row_spb := StreamPeerBuffer.new()
+		for i in range(tables_count):
+			var table_name := read_string_with_u32_len(spb)
+			if has_error(): return null
+			# BsatnRowList directly (no CompressableQueryUpdate / compression tag)
+			var raw_inserts: Array[PackedByteArray] = read_bsatn_row_list(spb)
+			if has_error(): return null
+			var table_data: TableUpdateData = TableUpdateData.new()
+			table_data.table_id = i
+			table_data.table_name = table_name
+			table_data.num_rows = raw_inserts.size()
+			table_data.deletes.assign([])
+			var table_name_lower := table_name.to_lower().replace("_", "")
+			var row_schema_script = _schema.get_type(table_name_lower)
+			var parsed_inserts: Array[Resource] = []
+			if row_schema_script:
+				for raw_row_bytes in raw_inserts:
+					var row_resource: Resource = row_schema_script.new()
+					row_spb.data_array = raw_row_bytes
+					row_spb.seek(0)
+					if _populate_resource_from_bytes(row_resource, row_spb):
+						parsed_inserts.append(row_resource)
+					else:
+						push_error("SubscribeApplied: failed to parse row for table '%s'" % table_name)
+			else:
+				if debug_mode: push_warning("SubscribeApplied: No schema for table '%s', skipping row parse." % table_name)
+			table_data.inserts.assign(parsed_inserts)
+			response_res.result_ok.append(table_data)
+	else:
+		response_res.result_err = read_string_with_u32_len(spb)
+		if has_error(): return null
+
+	return response_res
+
 func _read_generic_server_message(msg_type:int, script_path:String, spb:StreamPeerBuffer)-> Resource:
 		if not ResourceLoader.exists(script_path):
 			_set_error("Script not found for message type 0x%02X: %s" % [msg_type, script_path], 1)
@@ -1128,6 +1170,7 @@ func _read_generic_server_message(msg_type:int, script_path:String, spb:StreamPe
 func process_bytes_and_extract_messages(new_data: PackedByteArray) -> Array[Resource]:
 	if new_data.is_empty():
 		return []
+	_pending_data.clear()
 	_pending_data.append_array(new_data)
 	var parsed_messages: Array[Resource] = []
 	var spb := StreamPeerBuffer.new()
@@ -1208,8 +1251,8 @@ func _parse_message_from_stream(spb: StreamPeerBuffer) -> Resource:
 
 	# --- TODO: Implement reader for OneOffQueryResponseData ---
 	elif msg_type == SpacetimeDBServerMessage.ONE_OFF_QUERY_RESPONSE:
-		_set_error("Reader for OneOffQueryResponse (0x04) not implemented.", spb.get_position() -1)
-		return null # Or return an empty resource shell if preferred
+		result_resource = _read_one_off_query_message(spb)
+		return result_resource # Or return an empty resource shell if preferred
 
 	elif msg_type == SpacetimeDBServerMessage.REDUCER_RESULT:
 		result_resource = _read_reducer_result_message(spb)
