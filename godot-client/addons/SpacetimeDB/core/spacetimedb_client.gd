@@ -317,17 +317,12 @@ func _handle_parsed_message(message_resource: Resource):
 	elif message_resource is OneOffQueryResponseMessage:
 		var message : OneOffQueryResponseMessage = message_resource
 		var callback: Callable
-		if pending_one_off_query_callbacks.size() == 1:
-			callback = pending_one_off_query_callbacks.values()[0]
-			pending_one_off_query_callbacks.clear()
-		else:
-			callback = pending_one_off_query_callbacks.get(message.request_id, Callable())
-			pending_one_off_query_callbacks.erase(message.request_id)
+		callback = pending_one_off_query_callbacks.get(message.request_id, Callable())
+		pending_one_off_query_callbacks.erase(message.request_id)
 		if callback.is_valid():
 			callback.call(message)
 		else:
 			printerr("Callback for one off query request %s is invalid" % message.request_id)
-
 		print_log("SpacetimeDBClient: Received message resource type: OneOffQueryResponseMessage")
 		return
 
@@ -516,7 +511,6 @@ func unsubscribe(query_id: int, send_deletes: UnsubscribeMessage.UnsubscribeFlag
 	printerr("SpacetimeDBClient: Internal error - WebSocket peer not available in connection.")
 	return ERR_CONNECTION_ERROR
 
-### always wait for the callback before calling the next one as there is a bug in the servers response message and the request_id get's lost
 func one_off_query(query: String, callback: Callable = func(ctx: OneOffQueryResponseMessage)->void: return) -> Error:
 	if not is_connected_db():
 		printerr("SpacetimeDBClient: Cannot call a one off query, not connected.")

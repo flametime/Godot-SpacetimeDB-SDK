@@ -12,7 +12,6 @@ hide_private_tables = false
 
 [resource]
 script = ExtResource("2_l02ds")
-uri = &"https://maincloud.spacetimedb.com"
 module_configs = Dictionary[String, ExtResource("1_uknru")]({
 "main": SubResource("Resource_uknru")
 })

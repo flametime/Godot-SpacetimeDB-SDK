@@ -1,3 +1,4 @@
+@tool
 class_name CallReducerMessage extends Resource
 
 enum CallReducerFlags {
@@ -9,7 +10,7 @@ enum CallReducerFlags {
 @export var reducer_name: String
 @export var args: PackedByteArray
 
-func _init(p_reducer_name: String = "", p_args: PackedByteArray = PackedByteArray(), p_request_id: int = 0, p_flags: CallReducerFlags = CallReducerFlags.Default):
+func _init(p_reducer_name: String = "", p_args: PackedByteArray = PackedByteArray(), p_request_id: int = -1, p_flags: CallReducerFlags = CallReducerFlags.Default):
 	reducer_name = p_reducer_name
 	args = p_args
 	request_id = p_request_id
