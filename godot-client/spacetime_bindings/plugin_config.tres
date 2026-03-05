@@ -7,6 +7,8 @@
 script = ExtResource("1_uknru")
 name = "main"
 alias = "main"
+hide_scheduled_reducers = false
+hide_private_tables = false
 
 [resource]
 script = ExtResource("2_l02ds")

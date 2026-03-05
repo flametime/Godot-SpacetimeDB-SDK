@@ -2,13 +2,16 @@
 # FILE WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 class_name MainModuleDb extends RefCounted
 
-const table_names : Array[String] = ["lobby", "test_scheduled_table", "test_table_datatypes", "user", "user_data", "user_next", "test_anonymous_all_types", "test_first_type_row", "test_no_pk_option", "test_no_pk_query", "test_no_pk_vec", "test_option", "test_private_scheduled_count", "test_public_scheduled_count", "test_query", "test_u_32_at_30"]
+const table_names : Array[String] = ["lobby", "test_event_table", "test_no_pk_table", "test_scheduled_table", "test_table_datatypes", "user", "user_data", "user_data_hidden", "user_next", "test_anonymous_all_types", "test_first_type_row", "test_no_pk_option", "test_no_pk_query", "test_no_pk_vec", "test_option", "test_private_scheduled_count", "test_public_scheduled_count", "test_query", "test_u_32_at_30"]
 
 var lobby: MainLobbyTable
+var test_event_table: MainTestEventTableTable
+var test_no_pk_table: MainTestNoPkTableTable
 var test_scheduled_table: MainTestScheduledTableTable
 var test_table_datatypes: MainTestTableDatatypesTable
 var user: MainUserTable
 var user_data: MainUserDataTable
+var user_data_hidden: MainUserDataHiddenTable
 var user_next: MainUserNextTable
 var test_anonymous_all_types: MainTestAnonymousAllTypesTable
 var test_first_type_row: MainTestFirstTypeRowTable
@@ -23,10 +26,13 @@ var test_u_32_at_30: MainTestU32At30Table
 
 func _init(p_local_db: LocalDatabase) -> void:
 	lobby = preload('res://spacetime_bindings/schema/tables/main_lobby_table.gd').new(p_local_db)
+	test_event_table = preload('res://spacetime_bindings/schema/tables/main_test_event_table_table.gd').new(p_local_db)
+	test_no_pk_table = preload('res://spacetime_bindings/schema/tables/main_test_no_pk_table_table.gd').new(p_local_db)
 	test_scheduled_table = preload('res://spacetime_bindings/schema/tables/main_test_scheduled_table_table.gd').new(p_local_db)
 	test_table_datatypes = preload('res://spacetime_bindings/schema/tables/main_test_table_datatypes_table.gd').new(p_local_db)
 	user = preload('res://spacetime_bindings/schema/tables/main_user_table.gd').new(p_local_db)
 	user_data = preload('res://spacetime_bindings/schema/tables/main_user_data_table.gd').new(p_local_db)
+	user_data_hidden = preload('res://spacetime_bindings/schema/tables/main_user_data_hidden_table.gd').new(p_local_db)
 	user_next = preload('res://spacetime_bindings/schema/tables/main_user_next_table.gd').new(p_local_db)
 	test_anonymous_all_types = preload('res://spacetime_bindings/schema/tables/main_test_anonymous_all_types_table.gd').new(p_local_db)
 	test_first_type_row = preload('res://spacetime_bindings/schema/tables/main_test_first_type_row_table.gd').new(p_local_db)

@@ -4,7 +4,7 @@
 class_name MainUserData extends _ModuleTableType
 
 const module_name : String = "Main"
-const table_names: Array[String] = ['user_data']
+const table_names: Array[String] = ['user_data', 'user_data_hidden']
 
 @export var identity: PackedByteArray
 @export var online: bool

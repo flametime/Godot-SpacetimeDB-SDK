@@ -110,13 +110,31 @@ func _get_primary_key_field(table_name_lower: String) -> StringName:
 
 
 # --- Applying Updates ---
+func apply_database_subscription_applied(db_update:SubscribeAppliedMessage):
+	if not db_update: return
+	var changes:Array[Dictionary] = []
+	for table_update: TableUpdateData in db_update.tables:
+		var updates = apply_table_update(table_update)
+		changes.append(updates)
+	emit_db_callbacks(changes)
+
+func apply_database_unsubscription_applied(db_update:UnsubscribeAppliedMessage):
+	if not db_update: return
+	var changes:Array[Dictionary] = []
+	for table_update: TableUpdateData in db_update.tables:
+		var updates = apply_table_update(table_update)
+		changes.append(updates)
+	emit_db_callbacks(changes)
+
 func apply_database_update(db_update: DatabaseUpdateData):
 	if not db_update: return
 	var changes:Array[Dictionary] = []
 	for table_update: TableUpdateData in db_update.tables:
 		var updates = apply_table_update(table_update)
 		changes.append(updates)
+	emit_db_callbacks(changes)
 
+func emit_db_callbacks(changes:Array[Dictionary]):
 	for change in changes:
 		var table_name = change.get("table_name", ["__null__"])[0]
 		if table_name == "__null__":

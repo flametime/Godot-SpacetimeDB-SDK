@@ -313,7 +313,11 @@ func write_native_arraylike(v: Variant, bsatn_type: String, prop: Dictionary) ->
 		return
 
 	var result = _native_arraylike_regex.search(bsatn_type)
-	var bsatn_struct_type := result.get_string("struct")
+	var bsatn_struct_type: String
+	if result != null:
+		bsatn_struct_type = result.get_string("struct")
+	else:
+		bsatn_struct_type = bsatn_type # no brackets — entire string is the struct type
 	if bsatn_struct_type.is_empty():
 		_set_error("Cannot determine struct type for array-like gd type '%s' from 'bsatn_type' metadata ('%s')" % [prop_name, bsatn_type])
 		return
@@ -335,7 +339,20 @@ func write_native_arraylike(v: Variant, bsatn_type: String, prop: Dictionary) ->
 			_set_error("Unsupported array-like gd type '%s' ('%s'). Could not assign components array." % [prop_name, type_string(value_type)])
 			return
 
-	var bsatn_types_for_components := result.get_string("components")
+	var bsatn_types_for_components: String
+	if result != null:
+		bsatn_types_for_components = result.get_string("components")
+	else:
+		match value_type:
+			TYPE_VECTOR2:    bsatn_types_for_components = "f32,f32"
+			TYPE_VECTOR2I:   bsatn_types_for_components = "i32,i32"
+			TYPE_VECTOR3:    bsatn_types_for_components = "f32,f32,f32"
+			TYPE_VECTOR3I:   bsatn_types_for_components = "i32,i32,i32"
+			TYPE_VECTOR4:    bsatn_types_for_components = "f32,f32,f32,f32"
+			TYPE_VECTOR4I:   bsatn_types_for_components = "i32,i32,i32,i32"
+			TYPE_QUATERNION: bsatn_types_for_components = "f32,f32,f32,f32"
+			TYPE_COLOR:      bsatn_types_for_components = "f32,f32,f32,f32"
+			_: bsatn_types_for_components = ""
 	if bsatn_types_for_components.is_empty():
 		_set_error("Cannot determine inner component types for array-like gd type '%s' from 'bsatn_type' metadata ('%s')" % [prop_name, bsatn_type])
 		return

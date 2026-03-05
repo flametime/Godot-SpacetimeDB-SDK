@@ -46,7 +46,7 @@ func update_module_ui():
 	for child in _modules_container.get_children():
 		_modules_container.remove_child(child)
 		child.queue_free()
-
+	set_uri(_plugin_config.uri)
 	for module_config: SpacetimeDBModuleConfig in _plugin_config.module_configs.values():
 		var new_module: Control = $"Prefabs/ModulePrefab".duplicate() as Control
 		var name_input: LineEdit = new_module.get_node("VBoxContainer/HBoxContainer/VBoxContainer/ModuleNameInput") as LineEdit
@@ -91,6 +91,7 @@ func update_module_ui():
 		_add_module_hint_label.hide()
 		_generate_button.disabled = false
 
+
 func clear_logs():
 	_logs_label.text = ""
 
@@ -133,6 +134,7 @@ func destroy() -> void:
 
 func _on_check_uri() -> void:
 	_plugin_config.uri = _uri_input.text as StringName
+	update_module_ui()
 	check_uri.emit()
 
 func _on_generate_code() -> void:

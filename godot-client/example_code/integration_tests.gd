@@ -4,14 +4,12 @@ extends Control
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	var options :SpacetimeDBConnectionOptions = SpacetimeDBConnectionOptions.new()
-
 	options.one_time_token = true # <--- anonymous-like. set to false to persist
-	options.debug_mode = true # <--- enables lots of additional debug prints and warnings
+	options.debug_mode = false # <--- enables lots of additional debug prints and warnings
 	options.compression = SpacetimeDBConnection.CompressionPreference.GZIP
-	options.threading = true
+	options.threading = false
 	# Increase buffer size. In general, you don't need this.
 	# options.set_all_buffer_size(1024 * 1024 * 2)
-
 	# Disable threading (e.g., for web builds)
 	# options.threading = false
 
@@ -29,6 +27,26 @@ func _ready() -> void:
 func _on_spacetimedb_connected(identity: PackedByteArray, _token: String) -> void:
 	print("Game: Connected to SpacetimeDB!")
 	print("Game: My Identity: 0x%s" % [identity.hex_encode()])
+	#var id := SpacetimeDB.Main.get_local_identity()
+	var query_string := [
+		"SELECT * FROM user"
+	]
+	var sub := SpacetimeDB.Main.subscribe(query_string)
+	sub.applied.connect(func() -> void:
+		print("User Subscription Applied")
+		await get_tree().create_timer(3).timeout
+		sub.unsubscribe()
+		)
+	sub.end.connect(func() -> void:
+		print("User Subscription ended")
+		var osub := SpacetimeDB.Main.one_off_query("SELECT * FROM user", func(ctx: OneOffQueryResponseMessage)->void: print("OneOffQuery callback: %s" % str(ctx.result_ok)))
+		if not osub == OK:
+			pass
+		)
+	if sub.error:
+		printerr("Game: Failed to send subscription request.")
+		return
+	#print("Game: Subscription request sent (Query ID: %d)." % sub.query_id)
 
 func _on_spacetimedb_disconnected() -> void:
 	print("Game: Disconnected from SpacetimeDB.")
@@ -41,7 +59,16 @@ func _on_spacetimedb_database_init() -> void:
 
 
 func _on_button_pressed() -> void:
-	SpacetimeDB.Main.reducers.start_integration_tests()
+	SpacetimeDB.Main.reducers.start_integration_tests(func(update:TransactionUpdateMessage)->void:
+		print("Reducer callback test. update resource: %s" %update)
+		)
+	var main_test_type: MainTestType = MainTestType.create("hello world",8,MainTestNestedEnum.create_ok_empty())
+	var main_test_type_Option: Option = Option.some(main_test_type)
+	var u128 := [8]
+	u128.resize(16)
+	var main_test_datatypes: MainTestTableDatatypes = MainTestTableDatatypes.create(64,8,16,32,PackedByteArray(u128),32.0,64.0,8,16,32,64,"hello world",["hello world","hello world2"],[8,8],Option.some("hello world"),Option.some(64),SpacetimeDB.Main.Types.TestEnum.A,[SpacetimeDB.Main.Types.TestEnum.A],Option.some(SpacetimeDB.Main.Types.TestEnum.A),main_test_type,[main_test_type],main_test_type_Option )
+
+	SpacetimeDB.Main.reducers.reducer_test_parameters(main_test_datatypes, 32,64,"hello world",SpacetimeDB.Main.Types.TestEnum.A,MainTestNestedEnum.create_ok_empty(),[32,32])
 
 
 

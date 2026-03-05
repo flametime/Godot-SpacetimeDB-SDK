@@ -6,7 +6,7 @@ use main_types::vectors::{Vector2, Vector3, Vector4};
 
 use spacetimedb::SpacetimeType;
 use spacetimedb::{
-    rand::{seq::SliceRandom, Rng},
+    rand::seq::SliceRandom,
     reducer, table, Identity, ReducerContext, Table, Timestamp,
 };
 
@@ -191,7 +191,7 @@ pub fn get_random_name(ctx: &ReducerContext) -> String {
 
 #[reducer]
 pub fn test_struct(
-    ctx: &ReducerContext,
+    _ctx: &ReducerContext,
     message: Message,
     //another_message: Message,
 ) -> Result<(), String> {
@@ -211,12 +211,12 @@ pub fn test_struct(
     Err(format!("{}", formatted))
 }
 #[reducer]
-pub fn test_option_vec(ctx: &ReducerContext, option: Option<Vec<String>>) -> Result<(), String> {
+pub fn test_option_vec(_ctx: &ReducerContext, option: Option<Vec<String>>) -> Result<(), String> {
     Err(format!("{:?}", option))
 }
 
 #[reducer]
-pub fn test_option_single(ctx: &ReducerContext, option: Option<String>) -> Result<(), String> {
+pub fn test_option_single(_ctx: &ReducerContext, option: Option<String>) -> Result<(), String> {
     Err(format!("{:?}", option))
 }
 #[reducer]
@@ -264,6 +264,6 @@ pub fn move_user(
 }
 
 #[spacetimedb::reducer(init)]
-pub fn init(ctx: &ReducerContext) {
+pub fn init(_ctx: &ReducerContext) {
     //log::info!("Start Invoke");
 }

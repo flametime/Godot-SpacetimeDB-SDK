@@ -8,6 +8,7 @@ const table_names: Array[String] = []
 
 @export var test_name: String
 @export var test_int: int
+@export var test_nested_enum: MainTestNestedEnum
 
 func _init() -> void:
 	_reset_metadata()
@@ -19,11 +20,14 @@ func _reset_metadata() -> void:
 
 	set_meta('bsatn_type_test_name', &'string')
 	set_meta('bsatn_type_test_int', &'u64')
+	set_meta('bsatn_type_test_nested_enum', &'MainTestNestedEnum')
 
 ## 0. test_name: String[br]
 ## 1. test_int: int[br]
-static func create(p_test_name: String, p_test_int: int) -> MainTestType:
+## 2. test_nested_enum: MainTestNestedEnum[br]
+static func create(p_test_name: String, p_test_int: int, p_test_nested_enum: MainTestNestedEnum) -> MainTestType:
 	var result: MainTestType = MainTestType.new()
 	result.test_name = p_test_name
 	result.test_int = p_test_int
+	result.test_nested_enum = p_test_nested_enum
 	return result

@@ -99,11 +99,13 @@ func _on_check_uri():
 	uri += "/v1/ping"
 	print_log("Pinging... " + uri)
 	http_request.request(uri)
+	var ping_start = Time.get_ticks_usec()
 	var result = await http_request.request_completed
 	if result[1] == 0:
 		print_err("Request timeout - " + uri)
 	else:
 		print_log("Response code: " + str(result[1]))
+	print_log("request took: "+ str(Time.get_ticks_usec() - ping_start) + " microseconds")
 
 func _on_generate_schema():
 	if plugin_config.uri.ends_with("/"):
@@ -179,13 +181,20 @@ func _cleanup_unused_classes(dir_path: String = "res://schema", files: Array[Str
 		_cleanup_unused_classes(dir_path + "/" + folder, files)
 
 static func clear_logs():
-	instance.ui.clear_logs()
+	if instance != null and is_instance_valid(instance.ui):
+		instance.ui.clear_logs()
 
 static func print_log(text: Variant) -> void:
-	instance.ui.add_log(text)
+	if instance != null and is_instance_valid(instance.ui):
+		instance.ui.add_log(text)
+	else:
+		print(text)
 
 static func print_err(text: Variant) -> void:
-	instance.ui.add_err(text)
+	if instance != null and is_instance_valid(instance.ui):
+		instance.ui.add_err(text)
+	else:
+		printerr(text)
 
 func _exit_tree():
 	ui.destroy()

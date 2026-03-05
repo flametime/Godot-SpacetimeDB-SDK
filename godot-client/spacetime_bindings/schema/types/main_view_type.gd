@@ -4,7 +4,7 @@
 class_name MainViewType extends _ModuleTableType
 
 const module_name : String = "Main"
-const table_names: Array[String] = ['test_no_pk_option', 'test_no_pk_query', 'test_no_pk_vec']
+const table_names: Array[String] = ['test_no_pk_table', 'test_no_pk_option', 'test_no_pk_query', 'test_no_pk_vec']
 
 @export var row: int
 @export var name: String

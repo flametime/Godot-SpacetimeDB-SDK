@@ -1,17 +1,12 @@
 @tool
 class_name TransactionUpdateMessage extends Resource
 
-@export var status: UpdateStatusData
-@export var timestamp_ns: int # i64 (Timestamp)
-@export var caller_identity: PackedByteArray # 32 bytes
-@export var caller_connection_id: PackedByteArray # 16 bytes
-@export var reducer_call: ReducerCallInfoData
-@export var energy_consumed: int # u64
-@export var total_host_execution_duration_ns: int # i64 (TimeDuration)
+@export var query_sets: Array[DatabaseUpdateData]
 
-func _init():
-	set_meta("bsatn_type_timestamp_ns", "i64")
-	set_meta("bsatn_type_caller_identity", "identity")
-	set_meta("bsatn_type_caller_connection_id", "connection_id")
-	set_meta("bsatn_type_energy_consumed", "u64")
-	set_meta("bsatn_type_total_host_execution_duration_ns", "i64")
+## When set (>= 0), this update is a reducer result for that request_id. Set by the addon when handling ReducerResultMessage.
+@export var reducer_request_id: int = -1
+## When set, indicates reducer outcome (COMMITTED, FAILED, etc.). Set by the addon when handling ReducerResultMessage.
+@export var reducer_status: UpdateStatusData = null
+
+#func _init() -> void:
+	#set_meta("bsatn_type_query_sets", &"DatabaseUpdateData")
