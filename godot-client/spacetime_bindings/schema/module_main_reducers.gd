@@ -40,6 +40,23 @@ func move_user(new_input: Vector2, global_position: Vector3, cb: Callable = func
 		return ERR_METHOD_NOT_FOUND
 	return OK
 
+## 0. datatypes: MainTestTableDatatypes [br]
+## 1. t_u32: int [br]
+## 2. t_u64: int [br]
+## 3. t_string: String [br]
+## 4. test_enum: MainModuleClient.Types.TestEnum [br]
+## 5. test_nested_enum: MainTestNestedEnum [br]
+## 6. t_vec_u32: Array of int [br]
+func reducer_test_parameters(datatypes: MainTestTableDatatypes, t_u32: int, t_u64: int, t_string: String, test_enum: MainModuleClient.Types.TestEnum, test_nested_enum: MainTestNestedEnum, t_vec_u32: Array[int], cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass) -> Error:
+	var __handle__ : SpacetimeDBReducerCall = _client.call_reducer('reducer_test_parameters', [datatypes, t_u32, t_u64, t_string, test_enum, test_nested_enum, t_vec_u32], [&'MainTestTableDatatypes', &'u32', &'u64', &'string', &'u8', &'MainTestNestedEnum', &'u32'])
+	if __handle__.error: return __handle__.error
+	var __result__: TransactionUpdateMessage = await __handle__.wait_for_response()
+	if cb.is_valid():
+		cb.call(__result__)
+	else:
+		return ERR_METHOD_NOT_FOUND
+	return OK
+
 ## 0. bytes: Array of int [br]
 func save_my_bytes(bytes: Array[int], cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass) -> Error:
 	var __handle__ : SpacetimeDBReducerCall = _client.call_reducer('save_my_bytes', [bytes], [&'u8'])
@@ -105,4 +122,3 @@ func test_struct(message: MainMessage, cb: Callable = func(_t: TransactionUpdate
 	else:
 		return ERR_METHOD_NOT_FOUND
 	return OK
-

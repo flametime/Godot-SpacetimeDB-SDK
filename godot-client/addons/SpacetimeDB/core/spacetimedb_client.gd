@@ -613,3 +613,6 @@ func _check_reducer_response(update: TransactionUpdateMessage, request_id_to_mat
 	if update.reducer_request_id >= 0 and update.reducer_request_id == request_id_to_match:
 		return true
 	return false
+
+func call_procedure():
+	pass

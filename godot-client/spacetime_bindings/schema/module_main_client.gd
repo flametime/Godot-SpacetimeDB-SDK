@@ -11,6 +11,7 @@ const TestEnum = Types.TestEnum
 const TestType = Types.TestType
 const TestNestedEnum = Types.TestNestedEnum
 const TestScheduledTable = Types.TestScheduledTable
+const TestEventTable = Types.TestEventTable
 const Message = Types.Message
 const Damage = Types.Damage
 const User = Types.User

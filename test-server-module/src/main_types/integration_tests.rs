@@ -13,7 +13,7 @@ pub enum TestNestedEnum{
     OkEmpty,
     Err(Box<[u8]>),
     InternalError(Box<str>),
-    Test(TestScheduledTable)
+    Test(TestScheduledTable),
 
 }
 
@@ -158,32 +158,12 @@ pub fn start_integration_tests(ctx: &ReducerContext) {
         private_count: 0,
     });
     ctx.db.test_no_pk_table().insert(ViewType{ row: 1, name: "Hello World".to_string() });
-    // ctx.db.test_table_datatypes().insert(TestTableDatatypes {
-    //     t_u64: 0,
-    //     t_u8: u8::MAX,
-    //     t_u16: u16::MAX,
-    //     t_u32: u32::MAX,
-    //     t_u128: u128::MAX,
-    //     t_f32: f32::MAX,
-    //     t_f64: f64::MAX,
-    //     t_i8: i8::MAX,
-    //     t_i16: i16::MAX,
-    //     t_i32: i32::MAX,
-    //     t_i64: i64::MAX,
-    //     //t_i128: i128::MAX,
-    //     t_string: "a String example that is some text to decode.".to_string(),
-    //     t_vec_string: vec![
-    //         "a string inside a vec that needs to be decoded.".to_string(),
-    //         "another text in the vec to be decoded".to_string(),
-    //     ],
-    //     t_vec_u64: (0..20).collect(),
-    //     t_opt_string: Some("Some option String to decode".to_string()),
-    //     t_opt_u64: Some(u64::MAX),
-    // });
+    ctx.db.test_no_pk_table().insert(ViewType{ row: 2, name: "Hello World2".to_string() });
+    ctx.db.test_no_pk_table().insert(ViewType{ row: 3, name: "Hello World3".to_string() });
 }
 
 #[reducer]
-pub fn clear_integration_tests(ctx: &ReducerContext) {
+pub fn clear_integration_tests(ctx: &ReducerContext) -> Result<(),String> {
     log::info!("clear_integration_tests called");
     for row in ctx.db.test_scheduled_table().iter() {
         ctx.db.test_scheduled_table().delete(row);
@@ -194,7 +174,46 @@ pub fn clear_integration_tests(ctx: &ReducerContext) {
     for row in ctx.db.test_no_pk_table().iter(){
         ctx.db.test_no_pk_table().delete(row);
     }
+    Ok(())
 }
+
+#[reducer]
+pub fn reducer_test_parameters(ctx: &ReducerContext, datatypes: TestTableDatatypes, t_u32: u32, t_u64: u64, t_string: String, test_enum: TestEnum, test_nested_enum: TestNestedEnum, t_vec_u32: Vec<u32> ) -> Result<(),String> {
+    if !datatypes.t_vec_string.first().eq(&Some(&"hello world".to_string())){
+        return Err(format!("ReducerTest: datatypes parameter {} is not 'hello world'", datatypes.t_vec_string.first().unwrap()));
+    }
+    if t_u32 != 32{
+        return Err(format!("ReducerTest: t_u32 parameter {} is not 32", t_u32));
+    }
+    if t_u64 != 64{
+        return Err(format!("ReducerTest: t_u64 parameter {} is not 64", t_u64));
+    }
+    if !t_string.eq("hello world"){
+        return Err(format!("ReducerTest: t_string {} is not 'hello world'", t_string));
+    }
+    match test_enum{
+        TestEnum::A => {},
+        TestEnum::B => {},
+    }
+    match test_nested_enum{
+        TestNestedEnum::OkEmpty => {},
+        TestNestedEnum::OK(..) => {},
+        TestNestedEnum::Err(_) => {}
+        TestNestedEnum::InternalError(_) => {}
+        TestNestedEnum::Test(_) => {}
+    }
+    if !t_vec_u32.first().eq(&Some(&32u32)){
+        return Err(format!("ReducerTest: t_vec_u32 parameter {} is not '32'", t_vec_u32.first().unwrap()));
+    }
+    log::info!("ReducerTest: Completed successfully");
+    Ok(())
+}
+
+
+
+
+
+
 
 #[view(accessor = test_anonymous_all_types, public)]
 pub fn view_test_anonymous_all_types(ctx: &AnonymousViewContext) -> Vec<TestTableDatatypes> {
@@ -303,11 +322,12 @@ pub fn view_test_option(ctx:&ViewContext)-> Option<TestScheduledTable>{
 
 #[view(accessor = test_query, public)]
 pub fn view_test_query(ctx:&ViewContext)-> impl Query<TestScheduledTable>{
-    ctx.from.test_scheduled_table().r#where(|row| row.h1.eq(1))
+    ctx.from.test_scheduled_table().r#where(|row| row.h1.gt(1))
 }
 
+
 #[procedure]
-pub fn procedure_test_get_table_datatypes_row(
+pub fn procedure_test_option_return(
     ctx: &mut ProcedureContext,
     t_u64: u64,
 ) -> Option<TestTableDatatypes> {
@@ -316,4 +336,49 @@ pub fn procedure_test_get_table_datatypes_row(
         return Some(row);
     }
     None
+}
+
+#[procedure]
+pub fn procedure_test_vec_return(
+    ctx: &mut ProcedureContext,
+    t_u64: u64,
+) -> Vec<TestTableDatatypes> {
+
+    if let Some(row) = ctx.with_tx(|tctx| tctx.db.test_table_datatypes().t_u64().find(t_u64)){
+        return vec![row];
+    }
+    vec![]
+}
+
+#[procedure]
+pub fn procedure_test_type_return(
+    ctx: &mut ProcedureContext,
+    t_u64: u64,
+) -> TestTableDatatypes {
+
+    if let Some(row) = ctx.with_tx(|tctx| tctx.db.test_table_datatypes().t_u64().find(t_u64)){
+        return row;
+    }
+    TestTableDatatypes::default()
+}
+
+#[procedure]
+pub fn procedure_test_result_return(
+    ctx: &mut ProcedureContext,
+    t_u64: u64,
+) -> Result<TestTableDatatypes, String> {
+
+    if let Some(row) = ctx.with_tx(|tctx| tctx.db.test_table_datatypes().t_u64().find(t_u64)){
+        return Ok(row);
+    }
+    return Err(format!("row {} not found", t_u64));
+}
+
+#[table(accessor = test_event_table, public, event)]
+pub struct TestEventTable{
+    #[primary_key]
+    pub id: u32,
+    #[unique]
+    pub id2:u32
+
 }
