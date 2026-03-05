@@ -198,10 +198,16 @@ func apply_table_update(table_update: TableUpdateData) -> Dictionary[String,Arra
 	else:
 		pk_field = _get_primary_key_field(table_name_lower)
 		if pk_field == &"":
+			var inserts_no_pk: Array = []
+			for row in table_update.inserts:
+				inserts_no_pk.append([row])
+			var deletes_no_pk: Array = []
+			for row in table_update.deletes:
+				deletes_no_pk.append([row])
 			var changes :Dictionary[String, Array] = {"table_name": [table_name_original],
-				"inserts": [table_update.inserts] if table_update.inserts.size() >=1 else [],
+				"inserts": inserts_no_pk,
 				"updates": [],
-				"deletes": [table_update.deletes] if table_update.deletes.size() >=1 else []}
+				"deletes": deletes_no_pk}
 			return changes
 		_cached_pk_fields[table_name_lower] = pk_field
 
