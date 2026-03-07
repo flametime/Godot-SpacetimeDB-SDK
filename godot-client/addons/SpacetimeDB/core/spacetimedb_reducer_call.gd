@@ -18,7 +18,6 @@ static func create(
 	var reducer_call := SpacetimeDBReducerCall.new()
 	reducer_call._client = p_client
 	reducer_call.request_id = p_request_id
-	reducer_call.response.connect(reducer_call._on_response)
 	return reducer_call
 
 static func fail(error: Error) -> SpacetimeDBReducerCall:
