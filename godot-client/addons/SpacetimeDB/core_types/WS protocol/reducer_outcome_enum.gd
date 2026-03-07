@@ -30,10 +30,19 @@ static func parse_enum_name(i: int) -> String:
 			return &'Unknown'
 
 func get_ok() -> TransactionUpdateMessage:
+	if value != 0:
+		printerr("ReducerOutcomeEnum Value is not 'ok' but get_err() got called")
+		return null
 	return data
 
-func get_err() -> PackedByteArray:
-	return data
+func get_err() -> String:
+	if value != 2:
+		printerr("ReducerOutcomeEnum Value is not 'err' but get_err() got called")
+		return ""
+	var raw_err : PackedByteArray = data as PackedByteArray
+	### for some reason the frist 3 are ")  " and thus get removed
+	### TODO: Review after V10 schema codegen changes. it should be the Reducer return specified in the schema
+	return raw_err.slice(4).get_string_from_utf8()
 
 func get_internal_error() -> String:
 	return data

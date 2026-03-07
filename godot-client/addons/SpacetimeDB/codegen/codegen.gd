@@ -526,9 +526,9 @@ func _generate_reducers_gdscript(module_name: String, schema: SpacetimeParsedSch
 
 		var params_str: String
 		if params_str_parts.is_empty():
-			params_str = "cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass"
+			params_str = ""
 		else:
-			params_str = ", ".join(params_str_parts) + ", cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass"
+			params_str = ", ".join(params_str_parts)
 
 		var param_names_list = reducer.get("params", []).map(func(x): return x.get("name", ""))
 		var param_names_str = ""
@@ -566,16 +566,10 @@ func _generate_reducers_gdscript(module_name: String, schema: SpacetimeParsedSch
 
 		content += "\n".join(description_comment) + "\n"
 		var reducer_name: String = reducer.get("name", "")
-		content += "func %s(%s) -> Error:\n" % [reducer_name, params_str] + \
-		"\tvar __handle__ : SpacetimeDBReducerCall = _client.call_reducer('%s', [%s], [%s])\n" % \
-		[reducer_name, param_names_str, param_bsatn_types_str] + \
-		"\tif __handle__.error: return __handle__.error\n" + \
-		"\tvar __result__: TransactionUpdateMessage = await __handle__.wait_for_response()\n" + \
-		"\tif cb.is_valid():\n" + \
-		"\t\tcb.call(__result__)\n" + \
-		"\telse:\n" + \
-		"\t\treturn ERR_METHOD_NOT_FOUND\n" + \
-		"\treturn OK\n\n"
+		content += "func %s(%s) -> SpacetimeDBReducerCall:\n" % [reducer_name, params_str] + \
+		"\treturn _client.call_reducer('%s', [%s], [%s])\n\n" % \
+		[reducer_name, param_names_str, param_bsatn_types_str]
+
 
 	return content
 
