@@ -9,7 +9,7 @@ signal response(call_response: ReducerResultMessage)
 signal on_ok(call_response: ReducerResultMessage)
 signal on_ok_empty(call_response: ReducerResultMessage)
 signal on_error(err: String)
-signal on_internal_error(err: PackedByteArray)
+signal on_internal_error(err: String)
 
 static func create(
 	p_client: SpacetimeDBClient,
