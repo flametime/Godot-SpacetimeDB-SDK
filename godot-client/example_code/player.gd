@@ -32,16 +32,17 @@ func test_struct():
 	option_inner.set_some(test_damage)
 	test_one.test_inner = option_inner
 
-	var res = await SpacetimeDB.Main.reducers.test_struct(test_one, func(_t):
-		print("Result:", _t)
-	)
+	var res := SpacetimeDB.Main.reducers.test_struct(test_one)
+	res.response.connect(func(_t: ReducerResultMessage) -> void:
+		print("Result:", _t))
+	await res.response
 
-func test_option_vec(text):
-	var opt = Option.new()
+func test_option_vec(text) -> void:
+	var opt := Option.new()
 	opt.set_some(text)
 	SpacetimeDB.Main.reducers.test_option_vec(opt)
 
-func test_option_single(text):
+func test_option_single(text) -> void:
 	var opt = Option.new()
 	opt.set_some(text)
 	SpacetimeDB.Main.reducers.test_option_single(opt)
@@ -55,7 +56,7 @@ func _input(event: InputEvent) -> void:
 		test_option_vec(["Hello","World"])
 		test_option_single("Welcome")
 
-func _initialize_player_on_insert(user_data: MainUserData):
+func _initialize_player_on_insert(user_data: MainUserData) -> void:
 	#Need to receive only THIS entity/table updates
 	if get_meta("id") != user_data.identity:
 		return
@@ -66,7 +67,7 @@ func _initialize_player_on_insert(user_data: MainUserData):
 	remote_input = user_data.direction
 	remote_speed = user_data.player_speed
 
-func _update_player_on_row_update(prev_value: MainUserData, user_data: MainUserData):
+func _update_player_on_row_update(_prev_value: MainUserData, user_data: MainUserData) -> void:
 	#Need to receive only THIS entity/table updates
 	if get_meta("id") != user_data.identity:
 		return
