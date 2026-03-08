@@ -2,9 +2,9 @@
   <img src="https://github.com/user-attachments/assets/41dd6587-9f3c-45cd-b6b4-e144dc4338ac" alt="godot-spacetimedb_128" width="128">
 </p>
 
-## SpacetimeDB Godot SDK
+## SpacetimeDB Godot SDK for SpacetimeDB 2.x+
 
-> Tested with: `Godot 4.4.1-stable` to `Godot 4.6.beta3` and `SpacetimeDB 1.8.0` to `SpacetimeDB 1.11.2`
+> Tested with: `Godot 4.6.1` and `SpacetimeDB 2.x+`
 
 This SDK provides the necessary tools to integrate your Godot Engine project with a SpacetimeDB backend, enabling real-time data synchronization and server interaction directly from your Godot client.
 
@@ -17,11 +17,12 @@ This SDK provides the necessary tools to integrate your Godot Engine project wit
 ## Limitations & TODO
 
 -   **Option<T> and Vec<T>** Currently limited to 1 layer of nesting: Option<Vec<T>>, Vec<Option<T>> only. No Option<Option<T>> or Vec<Vec<T>> etc...
--   **Error Handling:** Can be improved, especially for reducer call failures beyond basic connection errors.
+-   **Error Handling:** Can be improved
 -   **Configuration:** More options could be added (timeouts, reconnection).
 -   **Compression:** Brotli - not supported.
 -   **Tables and Views without Primary_key:** only the Insert and Delete callbacks get called. Data will not be saved inside the local DB.
--   **Procedures**: not supported
+-   **Procedures**: not supported (waiting for a PR for SpacetimeDB to release)
+-   **Event Tables**: not supported (waiting for a PR for SpacetimeDB to release)
 
 ## Contributing
 
