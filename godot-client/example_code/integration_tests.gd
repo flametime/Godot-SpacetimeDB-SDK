@@ -59,18 +59,23 @@ func _on_spacetimedb_database_init() -> void:
 
 
 func _on_button_pressed() -> void:
-	SpacetimeDB.Main.reducers.start_integration_tests(func(update:TransactionUpdateMessage)->void:
-		print("Reducer callback test. update resource: %s" %update)
-		)
+	var call1 : SpacetimeDBReducerCall = SpacetimeDB.Main.reducers.start_integration_tests()
+	call1.on_ok.connect(func(update:ReducerResultMessage) -> void: print("Reducer call1 returned Ok with %s" % update))
+	var time := Time.get_ticks_usec()
+	await call1.response
+	prints("call1 response took:",Time.get_ticks_usec() - time, "usec")
 	var main_test_type: MainTestType = MainTestType.create("hello world",8,MainTestNestedEnum.create_ok_empty())
 	var main_test_type_Option: Option = Option.some(main_test_type)
 	var u128 := [8]
 	u128.resize(16)
 	var main_test_datatypes: MainTestTableDatatypes = MainTestTableDatatypes.create(64,8,16,32,PackedByteArray(u128),32.0,64.0,8,16,32,64,"hello world",["hello world","hello world2"],[8,8],Option.some("hello world"),Option.some(64),SpacetimeDB.Main.Types.TestEnum.A,[SpacetimeDB.Main.Types.TestEnum.A],Option.some(SpacetimeDB.Main.Types.TestEnum.A),main_test_type,[main_test_type],main_test_type_Option )
 
-	SpacetimeDB.Main.reducers.reducer_test_parameters(main_test_datatypes, 32,64,"hello world",SpacetimeDB.Main.Types.TestEnum.A,MainTestNestedEnum.create_ok_empty(),[32,32])
-
-
+	var call2 : SpacetimeDBReducerCall = SpacetimeDB.Main.reducers.reducer_test_parameters(main_test_datatypes, 32,64,"hello world",SpacetimeDB.Main.Types.TestEnum.A,MainTestNestedEnum.create_ok_empty(),[32,32])
+	call2.on_ok.connect(func(update: ReducerResultMessage) -> void: print("Reducer call2 returned Ok with %s" % update))
+	call2.on_error.connect(func(err: String) -> void: print("Reducer call2 returned err with %s" % err))
+	var time2 := Time.get_ticks_usec()
+	await call2.response
+	prints("call2 response took:",Time.get_ticks_usec() - time2, "usec")
 
 func _on_button_2_pressed() -> void:
 	SpacetimeDB.Main.reducers.clear_integration_tests() # Replace with function body.

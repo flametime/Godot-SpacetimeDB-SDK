@@ -188,15 +188,33 @@ Use the generated module bindings to trigger server-side logic.
 ```gdscript
 func move_player(direction: Vector2):
     if not SpacetimeDB.MyModule.is_connected_db(): return
+    
+    # Reducer call returns a call object that the response will use to send out it's callback signals
+    var call : SpacetimeDBReducerCall = SpacetimeDB.MyModule.reducers.example_reducer()
+    
+    # checking if the reducer call was send out successfully
+    if call.error:
+        # handle reducer call error
+        pass
+    
+    # general callback signal
+    call.response.connect(func(update:ReducerResultMessage) -> void: pass)
+    
+    # reducer successfully ran and returned with data (general subscription data)
+    call.on_ok.connect(func(update:ReducerResultMessage) -> void: pass)
+    
+    # reducer successfully ran and returned without data
+    call.on_ok_empty.connect(func(update:ReducerResultMessage) -> void: pass)
+    
+    # reducer failed to run and returned with the error string
+    call.on_error.conect(func(err: String) -> void: pass)
+    
+    # reducer failed with internal error. not expected to be ever called.
+    call.on_internal_error.conect(func(err: String) -> void: pass)
+    
+    # waiting for the reducer response
+    await call1.response
 
-    # You can use callback, but it doesn`t required
-    # Example with callback
-    SpacetimeDB.MyModule.reducers.move_user(direction, global_position, func(tx: TransactionUpdateData):
-        print("Result:", tx)
-    )
-
-    # Example without callback
-    SpacetimeDB.MyModule.reducers.move_user(direction, global_position)
 ```
 
 ## Query Local Database

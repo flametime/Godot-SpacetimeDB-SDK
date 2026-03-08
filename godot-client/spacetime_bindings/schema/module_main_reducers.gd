@@ -7,38 +7,17 @@ var _client: SpacetimeDBClient
 func _init(p_client: SpacetimeDBClient) -> void:
 	_client = p_client
 
-func change_color_random(cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass) -> Error:
-	var __handle__ : SpacetimeDBReducerCall = _client.call_reducer('change_color_random', [], [])
-	if __handle__.error: return __handle__.error
-	var __result__: TransactionUpdateMessage = await __handle__.wait_for_response()
-	if cb.is_valid():
-		cb.call(__result__)
-	else:
-		return ERR_METHOD_NOT_FOUND
-	return OK
+func change_color_random() -> SpacetimeDBReducerCall:
+	return _client.call_reducer('change_color_random', [], [])
 
 
-func clear_integration_tests(cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass) -> Error:
-	var __handle__ : SpacetimeDBReducerCall = _client.call_reducer('clear_integration_tests', [], [])
-	if __handle__.error: return __handle__.error
-	var __result__: TransactionUpdateMessage = await __handle__.wait_for_response()
-	if cb.is_valid():
-		cb.call(__result__)
-	else:
-		return ERR_METHOD_NOT_FOUND
-	return OK
+func clear_integration_tests() -> SpacetimeDBReducerCall:
+	return _client.call_reducer('clear_integration_tests', [], [])
 
 ## 0. new_input: Vector2 [br]
 ## 1. global_position: Vector3 [br]
-func move_user(new_input: Vector2, global_position: Vector3, cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass) -> Error:
-	var __handle__ : SpacetimeDBReducerCall = _client.call_reducer('move_user', [new_input, global_position], [&'vector2[f32,f32]', &'vector3[f32,f32,f32]'])
-	if __handle__.error: return __handle__.error
-	var __result__: TransactionUpdateMessage = await __handle__.wait_for_response()
-	if cb.is_valid():
-		cb.call(__result__)
-	else:
-		return ERR_METHOD_NOT_FOUND
-	return OK
+func move_user(new_input: Vector2, global_position: Vector3) -> SpacetimeDBReducerCall:
+	return _client.call_reducer('move_user', [new_input, global_position], [&'vector2[f32,f32]', &'vector3[f32,f32,f32]'])
 
 ## 0. datatypes: MainTestTableDatatypes [br]
 ## 1. t_u32: int [br]
@@ -47,78 +26,30 @@ func move_user(new_input: Vector2, global_position: Vector3, cb: Callable = func
 ## 4. test_enum: MainModuleClient.Types.TestEnum [br]
 ## 5. test_nested_enum: MainTestNestedEnum [br]
 ## 6. t_vec_u32: Array of int [br]
-func reducer_test_parameters(datatypes: MainTestTableDatatypes, t_u32: int, t_u64: int, t_string: String, test_enum: MainModuleClient.Types.TestEnum, test_nested_enum: MainTestNestedEnum, t_vec_u32: Array[int], cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass) -> Error:
-	var __handle__ : SpacetimeDBReducerCall = _client.call_reducer('reducer_test_parameters', [datatypes, t_u32, t_u64, t_string, test_enum, test_nested_enum, t_vec_u32], [&'MainTestTableDatatypes', &'u32', &'u64', &'string', &'u8', &'MainTestNestedEnum', &'u32'])
-	if __handle__.error: return __handle__.error
-	var __result__: TransactionUpdateMessage = await __handle__.wait_for_response()
-	if cb.is_valid():
-		cb.call(__result__)
-	else:
-		return ERR_METHOD_NOT_FOUND
-	return OK
+func reducer_test_parameters(datatypes: MainTestTableDatatypes, t_u32: int, t_u64: int, t_string: String, test_enum: MainModuleClient.Types.TestEnum, test_nested_enum: MainTestNestedEnum, t_vec_u32: Array[int]) -> SpacetimeDBReducerCall:
+	return _client.call_reducer('reducer_test_parameters', [datatypes, t_u32, t_u64, t_string, test_enum, test_nested_enum, t_vec_u32], [&'MainTestTableDatatypes', &'u32', &'u64', &'string', &'u8', &'MainTestNestedEnum', &'u32'])
 
 ## 0. bytes: Array of int [br]
-func save_my_bytes(bytes: Array[int], cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass) -> Error:
-	var __handle__ : SpacetimeDBReducerCall = _client.call_reducer('save_my_bytes', [bytes], [&'u8'])
-	if __handle__.error: return __handle__.error
-	var __result__: TransactionUpdateMessage = await __handle__.wait_for_response()
-	if cb.is_valid():
-		cb.call(__result__)
-	else:
-		return ERR_METHOD_NOT_FOUND
-	return OK
+func save_my_bytes(bytes: Array[int]) -> SpacetimeDBReducerCall:
+	return _client.call_reducer('save_my_bytes', [bytes], [&'u8'])
 
 
-func start_integration_tests(cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass) -> Error:
-	var __handle__ : SpacetimeDBReducerCall = _client.call_reducer('start_integration_tests', [], [])
-	if __handle__.error: return __handle__.error
-	var __result__: TransactionUpdateMessage = await __handle__.wait_for_response()
-	if cb.is_valid():
-		cb.call(__result__)
-	else:
-		return ERR_METHOD_NOT_FOUND
-	return OK
+func start_integration_tests() -> SpacetimeDBReducerCall:
+	return _client.call_reducer('start_integration_tests', [], [])
 
 ## 0. option: Option of String [br]
-func test_option_single(option: Option, cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass) -> Error:
-	var __handle__ : SpacetimeDBReducerCall = _client.call_reducer('test_option_single', [option], [&'string'])
-	if __handle__.error: return __handle__.error
-	var __result__: TransactionUpdateMessage = await __handle__.wait_for_response()
-	if cb.is_valid():
-		cb.call(__result__)
-	else:
-		return ERR_METHOD_NOT_FOUND
-	return OK
+func test_option_single(option: Option) -> SpacetimeDBReducerCall:
+	return _client.call_reducer('test_option_single', [option], [&'string'])
 
 ## 0. option: Option of Array of String [br]
-func test_option_vec(option: Option, cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass) -> Error:
-	var __handle__ : SpacetimeDBReducerCall = _client.call_reducer('test_option_vec', [option], [&'vec_string'])
-	if __handle__.error: return __handle__.error
-	var __result__: TransactionUpdateMessage = await __handle__.wait_for_response()
-	if cb.is_valid():
-		cb.call(__result__)
-	else:
-		return ERR_METHOD_NOT_FOUND
-	return OK
+func test_option_vec(option: Option) -> SpacetimeDBReducerCall:
+	return _client.call_reducer('test_option_vec', [option], [&'vec_string'])
 
 ## 0. row: MainTestScheduledTable [br]
-func test_scheduled_reducer(row: MainTestScheduledTable, cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass) -> Error:
-	var __handle__ : SpacetimeDBReducerCall = _client.call_reducer('test_scheduled_reducer', [row], [&'MainTestScheduledTable'])
-	if __handle__.error: return __handle__.error
-	var __result__: TransactionUpdateMessage = await __handle__.wait_for_response()
-	if cb.is_valid():
-		cb.call(__result__)
-	else:
-		return ERR_METHOD_NOT_FOUND
-	return OK
+func test_scheduled_reducer(row: MainTestScheduledTable) -> SpacetimeDBReducerCall:
+	return _client.call_reducer('test_scheduled_reducer', [row], [&'MainTestScheduledTable'])
 
 ## 0. message: MainMessage [br]
-func test_struct(message: MainMessage, cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass) -> Error:
-	var __handle__ : SpacetimeDBReducerCall = _client.call_reducer('test_struct', [message], [&'MainMessage'])
-	if __handle__.error: return __handle__.error
-	var __result__: TransactionUpdateMessage = await __handle__.wait_for_response()
-	if cb.is_valid():
-		cb.call(__result__)
-	else:
-		return ERR_METHOD_NOT_FOUND
-	return OK
+func test_struct(message: MainMessage) -> SpacetimeDBReducerCall:
+	return _client.call_reducer('test_struct', [message], [&'MainMessage'])
+

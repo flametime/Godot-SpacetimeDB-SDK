@@ -426,7 +426,36 @@ func _generate_module_client_gdscript(module_name: String, schema: SpacetimePars
 	if not types_part.is_empty():
 		content += types_part + "\n"
 
-	content += "var reducers: %sModuleReducers\n" % schema.module.to_pascal_case() + \
+	content += "
+## example usage:
+## [codeblock]
+## # Reducer call returns a call object that the response will use to send out it's callback signals
+## var call : SpacetimeDBReducerCall = SpacetimeDB.%s.reducers.example_reducer()
+##
+## # checking if the reducer call was send out successfully
+## if call.error:
+##     # handle reducer call error
+##     pass
+##
+## # general callback signal
+## call.response.connect(func(update:ReducerResultMessage) -> void: pass)
+##
+## # reducer successfully ran and returned with data (general subscription data)
+## call.on_ok.connect(func(update:ReducerResultMessage) -> void: pass)
+##
+## # reducer successfully ran and returned without data
+## call.on_ok_empty.connect(func(update:ReducerResultMessage) -> void: pass)
+##
+## # reducer failed to run and returned with the error string
+## call.on_error.conect(func(err: String) -> void: pass)
+##
+## # reducer failed with internal error. not expected to be ever called.
+## call.on_internal_error.conect(func(err: String) -> void: pass)
+##
+## waiting for the reducer response
+## await call.response
+## [/codeblock]\n" % schema.module.to_pascal_case() + \
+	"var reducers: %sModuleReducers\n" % schema.module.to_pascal_case() + \
 	"var db: %sModuleDb\n\n" % schema.module.to_pascal_case() + \
 	"func _init() -> void:\n" + \
 	"\tset_meta(\"module_name\", \"%s\")\n" % schema.module + \
@@ -526,9 +555,9 @@ func _generate_reducers_gdscript(module_name: String, schema: SpacetimeParsedSch
 
 		var params_str: String
 		if params_str_parts.is_empty():
-			params_str = "cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass"
+			params_str = ""
 		else:
-			params_str = ", ".join(params_str_parts) + ", cb: Callable = func(_t: TransactionUpdateMessage) -> void: pass"
+			params_str = ", ".join(params_str_parts)
 
 		var param_names_list = reducer.get("params", []).map(func(x): return x.get("name", ""))
 		var param_names_str = ""
@@ -566,16 +595,10 @@ func _generate_reducers_gdscript(module_name: String, schema: SpacetimeParsedSch
 
 		content += "\n".join(description_comment) + "\n"
 		var reducer_name: String = reducer.get("name", "")
-		content += "func %s(%s) -> Error:\n" % [reducer_name, params_str] + \
-		"\tvar __handle__ : SpacetimeDBReducerCall = _client.call_reducer('%s', [%s], [%s])\n" % \
-		[reducer_name, param_names_str, param_bsatn_types_str] + \
-		"\tif __handle__.error: return __handle__.error\n" + \
-		"\tvar __result__: TransactionUpdateMessage = await __handle__.wait_for_response()\n" + \
-		"\tif cb.is_valid():\n" + \
-		"\t\tcb.call(__result__)\n" + \
-		"\telse:\n" + \
-		"\t\treturn ERR_METHOD_NOT_FOUND\n" + \
-		"\treturn OK\n\n"
+		content += "func %s(%s) -> SpacetimeDBReducerCall:\n" % [reducer_name, params_str] + \
+		"\treturn _client.call_reducer('%s', [%s], [%s])\n\n" % \
+		[reducer_name, param_names_str, param_bsatn_types_str]
+
 
 	return content
 
