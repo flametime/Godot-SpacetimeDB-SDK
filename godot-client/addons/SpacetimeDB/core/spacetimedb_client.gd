@@ -523,8 +523,6 @@ func one_off_query(query: String, callback: Callable = func(ctx: OneOffQueryResp
 
 	return OK
 
-
-
 func call_reducer(reducer_name: String, args: Array = [], types: Array = []) -> SpacetimeDBReducerCall:
 	if not is_connected_db():
 		printerr("SpacetimeDBClient: Cannot call reducer, not connected.")

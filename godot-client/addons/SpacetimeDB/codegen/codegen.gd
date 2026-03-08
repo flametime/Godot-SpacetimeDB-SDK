@@ -426,7 +426,36 @@ func _generate_module_client_gdscript(module_name: String, schema: SpacetimePars
 	if not types_part.is_empty():
 		content += types_part + "\n"
 
-	content += "var reducers: %sModuleReducers\n" % schema.module.to_pascal_case() + \
+	content += "
+## example usage:
+## [codeblock]
+## # Reducer call returns a call object that the response will use to send out it's callback signals
+## var call : SpacetimeDBReducerCall = SpacetimeDB.%s.reducers.example_reducer()
+##
+## # checking if the reducer call was send out successfully
+## if call.error:
+##     # handle reducer call error
+##     pass
+##
+## # general callback signal
+## call.response.connect(func(update:ReducerResultMessage) -> void: pass)
+##
+## # reducer successfully ran and returned with data (general subscription data)
+## call.on_ok.connect(func(update:ReducerResultMessage) -> void: pass)
+##
+## # reducer successfully ran and returned without data
+## call.on_ok_empty.connect(func(update:ReducerResultMessage) -> void: pass)
+##
+## # reducer failed to run and returned with the error string
+## call.on_error.conect(func(err: String) -> void: pass)
+##
+## # reducer failed with internal error. not expected to be ever called.
+## call.on_internal_error.conect(func(err: String) -> void: pass)
+##
+## waiting for the reducer response
+## await call.response
+## [/codeblock]\n" % schema.module.to_pascal_case() + \
+	"var reducers: %sModuleReducers\n" % schema.module.to_pascal_case() + \
 	"var db: %sModuleDb\n\n" % schema.module.to_pascal_case() + \
 	"func _init() -> void:\n" + \
 	"\tset_meta(\"module_name\", \"%s\")\n" % schema.module + \

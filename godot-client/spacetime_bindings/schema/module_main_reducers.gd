@@ -52,3 +52,4 @@ func test_scheduled_reducer(row: MainTestScheduledTable) -> SpacetimeDBReducerCa
 ## 0. message: MainMessage [br]
 func test_struct(message: MainMessage) -> SpacetimeDBReducerCall:
 	return _client.call_reducer('test_struct', [message], [&'MainMessage'])
+
