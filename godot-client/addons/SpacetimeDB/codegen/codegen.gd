@@ -219,7 +219,8 @@ func _generate_table_gdscript(schema: SpacetimeParsedSchema, table_def: Dictiona
 
 	content += "\nfunc _init(p_local_db: LocalDatabase) -> void:\n" + \
 	"\tsuper(p_local_db)\n" + \
-	"\tset_meta(\"table_name\", \"%s\")\n" % table_name
+	"\tset_meta(\"table_name\", \"%s\")\n" % table_name + \
+	"\tset_meta(\"is_event\", %s)\n" % table_def.get("is_event")
 
 	for field_name in unique_index_fields:
 		var unique_index_class_name := unique_index_fields[field_name]

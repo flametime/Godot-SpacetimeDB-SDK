@@ -270,17 +270,13 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 		table_data.is_public = is_public
 		target_type_def.is_public.append(is_public)
 
-		if table_info.get("schedule", {}).has("some"):
-			var schedule = table_info.get("schedule", {}).some
-			table_data.schedule = schedule
-			target_type_def.schedule = schedule
-			scheduled_reducers.append(schedule.reducer_name)
+		table_data.is_event = table_info.get("is_event", false)
+
 		parsed_tables_list.append(table_data)
 
 	var parsed_reducers_list: Array[Dictionary] = []
 	for reducer_info in schema_reducers:
-		var lifecycle = reducer_info.get("lifecycle", {}).get("some", null)
-		if lifecycle: continue
+		if reducer_info.visibility.has("Private"): continue
 		var r_name = reducer_info.get("source_name", null)
 		if r_name == null:
 			SpacetimePlugin.print_err("Reducer found with no name: %s" % [reducer_info])
@@ -311,7 +307,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 		if r_name in scheduled_reducers:
 			reducer_data["is_scheduled"] = true
 		parsed_reducers_list.append(reducer_data)
-		print(reducer_data)
+
 	for view :Dictionary in schema_views:
 		var name :String = view["source_name"]
 		var return_type_dict = view["return_type"]
@@ -374,13 +370,10 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 			new_table_dict["name"] = name
 			new_table_dict["is_public"] = true
 		parsed_tables_list.append(new_table_dict)
-#
-#
-#
+
 	SpacetimePlugin.print_log("Schema parser finished")
 	parsed_schema.types = parsed_types_list
 	parsed_schema.tables = parsed_tables_list
-	#SpacetimePlugin.print_log(parsed_tables_list)
 	parsed_schema.reducers = parsed_reducers_list
 	parsed_schema.type_map = type_map
 	parsed_schema.meta_type_map = meta_type_map

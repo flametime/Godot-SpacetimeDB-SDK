@@ -98,7 +98,7 @@ pub struct TestScheduledTable {
     #[auto_inc]
     pub scheduled_id: u64,
     pub h1: u16,
-    pub scheduled_at: spacetimedb::ScheduleAt,
+    pub scheduled_at: ScheduleAt,
     pub h2: u16,
     pub public_count: u64,
     pub private_count: u64,
@@ -215,15 +215,6 @@ pub fn reducer_test_parameters(ctx: &ReducerContext, datatypes: TestTableDatatyp
     log::info!("ReducerTest: Completed successfully");
     Ok(())
 }
-
-#[reducer]
-pub fn custom_reducer_err(ctx: &ReducerContext) -> Result<(),u32> {
-    Err(2)
-}
-
-
-
-
 
 #[view(accessor = test_anonymous_all_types, public)]
 pub fn view_test_anonymous_all_types(ctx: &AnonymousViewContext) -> Vec<TestTableDatatypes> {
