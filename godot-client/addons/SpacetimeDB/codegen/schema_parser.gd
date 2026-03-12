@@ -1,3 +1,4 @@
+@tool
 class_name SpacetimeSchemaParser
 
 const GDNATIVE_PRIMITIVE_TYPES: Dictionary[String, String] = {
@@ -68,23 +69,49 @@ const DEFAULT_META_TYPE_MAP: Dictionary[String, String] = {
 	"__time_duration_micros__": "i64",
 }
 
-static func parse_schema(schema: Dictionary, module_name: String) -> SpacetimeParsedSchema:
+static func parse_schema(p_schema: Dictionary, module_name: String) -> SpacetimeParsedSchema:
 	var type_map: Dictionary[String, String] = DEFAULT_TYPE_MAP.duplicate() as Dictionary[String, String]
 	type_map.merge(GDNATIVE_PRIMITIVE_TYPES); type_map.merge(GDNATIVE_ARRAYLIKE_TYPES); type_map.merge(GDNATIVE_DICTLIKE_TYPES)
 	var meta_type_map = DEFAULT_META_TYPE_MAP.duplicate()
 
-	var schema_tables: Array = schema.get("tables", [])
-	var schema_types_raw: Array = schema.get("types", [])
-	schema_types_raw.sort_custom(func(a, b): return a.get("ty", -1) < b.get("ty", -1))
-	var schema_reducers: Array = schema.get("reducers", [])
-	var typespace: Array = schema.get("typespace", {}).get("types", [])
-	var misc_exports: Array = schema.get("misc_exports", [])
+
+	var sections: Array = p_schema.get("sections",{})
+	var schema_tables: Array
+	var schema_types_raw: Array
+	var schema_reducers: Array
+	var schema_procedures: Array
+	var schema_views: Array
+	var schema_shedules: Array
+	var schema_life_cycle_reducers: Array
+	var schema_explicit_names: Array
+	var schema_typespace: Array
+
+	for section: Dictionary in sections:
+		if section.has("Typespace"):
+			schema_typespace = section.get("Typespace").get("types",[])
+		elif section.has("Types"):
+			schema_types_raw = section.get("Types")
+		elif section.has("Reducers"):
+			schema_reducers = section.get("Reducers")
+		elif section.has("Procedures"):
+			schema_procedures = section.get("Procedures")
+		elif section.has("Views"):
+			schema_views = section.get("Views")
+		elif section.has("Schedules"):
+			schema_shedules = section.get("Schedules")
+		elif section.has("LifeCycleReducers"):
+			schema_life_cycle_reducers = section.get("LifeCycleReducers")
+		elif section.has("ExplicitNames"):
+			schema_explicit_names = section.get("ExplicitNames").get("entries")
+
 	var parsed_schema := SpacetimeParsedSchema.new()
 	parsed_schema.module = module_name.to_pascal_case()
 
+	schema_types_raw.sort_custom(func(a, b): return a.get("ty", -1) < b.get("ty", -1))
+
 	var parsed_types_list: Array[Dictionary] = []
 	for type_info in schema_types_raw:
-		var type_name: String = type_info.get("name", {}).get("name", null)
+		var type_name: String = type_info.get("source_name", {}).get("source_name", null)
 		if not type_name:
 			SpacetimePlugin.print_err("Invalid schema: Type name not found for type: %s" % type_info)
 			return parsed_schema
@@ -96,11 +123,11 @@ static func parse_schema(schema: Dictionary, module_name: String) -> SpacetimePa
 		if ty_idx == -1:
 			SpacetimePlugin.print_err("Invalid schema: Type 'ty' not found for type: %s" % type_info)
 			return parsed_schema
-		if ty_idx >= typespace.size():
-			SpacetimePlugin.print_err("Invalid schema: Type index %d out of bounds for typespace (size %d) for type %s" % [ty_idx, typespace.size(), type_name])
+		if ty_idx >= schema_typespace.size():
+			SpacetimePlugin.print_err("Invalid schema: Type index %d out of bounds for typespace (size %d) for type %s" % [ty_idx, schema_typespace.size(), type_name])
 			return parsed_schema
 
-		var current_type_definition = typespace[ty_idx]
+		var current_type_definition = schema_typespace[ty_idx]
 		var struct_def: Dictionary = current_type_definition.get("Product", {})
 		var sum_type_def: Dictionary = current_type_definition.get("Sum", {})
 		if struct_def:
@@ -109,12 +136,12 @@ static func parse_schema(schema: Dictionary, module_name: String) -> SpacetimePa
 				var data = {
 					"name": el.get("name", {}).get("some", null),
 				}
+
 				var type = _parse_field_type(el.get("algebraic_type", {}), data, schema_types_raw)
 				if not type.is_empty():
 					data["type"] = type
 				struct_elements.append(data)
 			type_data["struct"] = struct_elements
-
 			if not type_data.has("gd_native"):
 				type_map[type_name] = module_name.to_pascal_case() + type_name.to_pascal_case()
 				meta_type_map[type_name] = module_name.to_pascal_case() + type_name.to_pascal_case()
@@ -151,7 +178,7 @@ static func parse_schema(schema: Dictionary, module_name: String) -> SpacetimePa
 	for parsed_type in parsed_types_list:
 		if not parsed_type.has("struct"):
 			continue
-
+		SpacetimePlugin.print_log(parsed_type)
 		for field_type in parsed_type.get("struct", []):
 			var type_name = field_type.get("type", null)
 			if not type_name or GDNATIVE_PRIMITIVE_TYPES.has(type_name) or DEFAULT_TYPE_MAP.has(type_name):
@@ -168,10 +195,11 @@ static func parse_schema(schema: Dictionary, module_name: String) -> SpacetimePa
 			if type_found:
 				field_type["type_idx"] = type_idx
 
+	print("Types parsed")
 	var parsed_tables_list: Array[Dictionary] = []
-	var scheduled_reducers: Array[String] = []
+	#var scheduled_reducers: Array[String] = []
 	for table_info in schema_tables:
-		var table_name_str: String = table_info.get("name", null)
+		var table_name_str: String = table_info.get("source_name", null)
 		var ref_idx_raw = table_info.get("product_type_ref", null)
 		if ref_idx_raw == null or table_name_str == null: continue
 		var ref_idx = int(ref_idx_raw)
@@ -180,7 +208,7 @@ static func parse_schema(schema: Dictionary, module_name: String) -> SpacetimePa
 		var target_type_idx = 0
 		var original_type_name_for_table = "UNKNOWN_TYPE_FOR_TABLE"
 		if ref_idx < schema_types_raw.size():
-			original_type_name_for_table = schema_types_raw[ref_idx].get("name", {}).get("name")
+			original_type_name_for_table = schema_types_raw[ref_idx].get("source_name", {}).get("source_name")
 			for pt in parsed_types_list:
 				if pt.name == original_type_name_for_table:
 					target_type_def = pt
@@ -196,7 +224,7 @@ static func parse_schema(schema: Dictionary, module_name: String) -> SpacetimePa
 			"type_idx": target_type_idx
 		}
 
-		if not target_type_def.has("table_names"):
+		if not target_type_def.has("source_name"):
 			target_type_def.table_names = []
 		target_type_def.table_names.append(table_name_str)
 		target_type_def.table_name = table_name_str
@@ -216,7 +244,7 @@ static func parse_schema(schema: Dictionary, module_name: String) -> SpacetimePa
 		var parsed_unique_indexes: Array[Dictionary] = []
 		var constraints_def = table_info.get("constraints", [])
 		for constraint_def in constraints_def:
-			var constraint_name_str: String = constraint_def.get("name", {}).get("some", null)
+			var constraint_name_str: String = constraint_def.get("source_name", {}).get("some", null)
 			var column_indices: Array = constraint_def.get("data", {}).get("Unique", {}).get("columns", [])
 			if column_indices.size() != 1 or constraint_name_str == null: continue
 
@@ -239,123 +267,125 @@ static func parse_schema(schema: Dictionary, module_name: String) -> SpacetimePa
 		table_data.is_public = is_public
 		target_type_def.is_public.append(is_public)
 
-		if table_info.get("schedule", {}).has("some"):
-			var schedule = table_info.get("schedule", {}).some
-			table_data.schedule = schedule
-			target_type_def.schedule = schedule
-			scheduled_reducers.append(schedule.reducer_name)
+		#if table_info.get("schedule", {}).has("some"):
+			#var schedule = table_info.get("schedule", {}).some
+			#table_data.schedule = schedule
+			#target_type_def.schedule = schedule
+			#scheduled_reducers.append(schedule.reducer_name)
+		SpacetimePlugin.print_log(table_data)
 		parsed_tables_list.append(table_data)
 
-	var parsed_reducers_list: Array[Dictionary] = []
-	for reducer_info in schema_reducers:
-		var lifecycle = reducer_info.get("lifecycle", {}).get("some", null)
-		if lifecycle: continue
-		var r_name = reducer_info.get("name", null)
-		if r_name == null:
-			SpacetimePlugin.print_err("Reducer found with no name: %s" % [reducer_info])
-			continue
-		var reducer_data: Dictionary = {"name": r_name}
-
-		var reducer_raw_params = reducer_info.get("params", {}).get("elements", [])
-		var reducer_params = []
-		for raw_param in reducer_raw_params:
-			var data = {"name": raw_param.get("name", {}).get("some", null)}
-			var type = _parse_field_type(raw_param.get("algebraic_type", {}), data, schema_types_raw)
-			data["type"] = type
-
-			var type_idx = 0
-			var type_found = false
-			if type and not (GDNATIVE_PRIMITIVE_TYPES.has(type) or DEFAULT_TYPE_MAP.has(type)):
-				for pt in parsed_types_list:
-					if pt.name == type:
-						type_found = true
-						break
-					type_idx += 1
-
-			if type_found:
-				data["type_idx"] = type_idx
-			reducer_params.append(data)
-		reducer_data["params"] = reducer_params
-
-		if r_name in scheduled_reducers:
-			reducer_data["is_scheduled"] = true
-		parsed_reducers_list.append(reducer_data)
-
-	for view_dict :Dictionary in misc_exports:
-		var view : Dictionary = view_dict.get("View", {})
-		if view.is_empty():
-			continue
-		var name :String = view["name"]
-		var return_type_dict = view["return_type"]
-		var type_index:int
-		var return_type:Dictionary
-		SpacetimePlugin.print_log("parsing return type for view: %s"% name)
-		if return_type_dict.get("Array", {}).is_empty():
-			if not return_type_dict.get("Sum",{}).is_empty():
-				if return_type_dict.get("Sum").get("variants").size() == 2:
-					var option = return_type_dict.get("Sum").get("variants")
-					if not option[0].get("name",{}).is_empty():
-						if option[0].get("name").get("some") == "some":
-							type_index = int(option[0].get("algebraic_type").get("Ref"))
-							return_type = parsed_types_list[type_index]
-			else:
-				SpacetimePlugin.print_err("view return type not yet supported in the parser: %s" % [return_type_dict])
-				continue
-		else:
-			type_index = int(return_type_dict["Array"]["Ref"])
-			return_type = parsed_types_list[type_index]
-		if return_type.is_empty():
-			SpacetimePlugin.print_err("view return type not found: %s" % [return_type_dict])
-			continue
-		if return_type.get("table_names", []).is_empty():
-			return_type = {
-				"name": return_type["name"],
-				"struct": return_type["struct"],
-				&"table_names": [
-					"%s" % name
-				],
-				&"table_name": "%s"% name,
-				&"primary_key": 0,
-				&"primary_key_name": "",
-				&"is_public": [
-					true
-				]
-			}
-		else:
-			var type_table_list = return_type["table_names"]
-			type_table_list.append(name)
-			return_type["table_names"] = type_table_list
-			var is_public_list = return_type["is_public"]
-			is_public_list.append(true)
-			return_type["is_public"] = is_public_list
-		parsed_types_list[type_index] = return_type
-
-		var tables_of_same_type : Array = parsed_tables_list.filter(func(table:Dictionary): return table.get("type_idx", -1) == type_index)
-		var new_table_dict : Dictionary
-		if tables_of_same_type.is_empty():
-			new_table_dict = {
-			"name": name,
-			"type_idx": type_index,
-			"primary_key": 0,
-			"primary_key_name": "",
-			"unique_indexes": [],
-			"is_public": true
-			}
-		else:
-			new_table_dict = tables_of_same_type[0].duplicate()
-			new_table_dict["name"] = name
-			new_table_dict["is_public"] = true
-		parsed_tables_list.append(new_table_dict)
-
-
-
+	#var parsed_reducers_list: Array[Dictionary] = []
+	#for reducer_info in schema_reducers:
+		#var lifecycle = reducer_info.get("lifecycle", {}).get("some", null)
+		#if lifecycle: continue
+		#var r_name = reducer_info.get("name", null)
+		#if r_name == null:
+			#SpacetimePlugin.print_err("Reducer found with no name: %s" % [reducer_info])
+			#continue
+		#var reducer_data: Dictionary = {"name": r_name}
+#
+		#var reducer_raw_params = reducer_info.get("params", {}).get("elements", [])
+		#var reducer_params = []
+		#for raw_param in reducer_raw_params:
+			#var data = {"name": raw_param.get("name", {}).get("some", null)}
+			#var type = _parse_field_type(raw_param.get("algebraic_type", {}), data, schema_types_raw)
+			#data["type"] = type
+#
+			#var type_idx = 0
+			#var type_found = false
+			#if type and not (GDNATIVE_PRIMITIVE_TYPES.has(type) or DEFAULT_TYPE_MAP.has(type)):
+				#for pt in parsed_types_list:
+					#if pt.name == type:
+						#type_found = true
+						#break
+					#type_idx += 1
+#
+			#if type_found:
+				#data["type_idx"] = type_idx
+			#reducer_params.append(data)
+		#reducer_data["params"] = reducer_params
+#
+		#if r_name in scheduled_reducers:
+			#reducer_data["is_scheduled"] = true
+		#parsed_reducers_list.append(reducer_data)
+#
+	#for view_dict :Dictionary in misc_exports:
+		#var view : Dictionary = view_dict.get("View", {})
+		#if view.is_empty():
+			#continue
+		#var name :String = view["name"]
+		#var return_type_dict = view["return_type"]
+		#var type_index:int
+		#var return_type:Dictionary
+		#SpacetimePlugin.print_log("parsing return type for view: %s"% name)
+		#if return_type_dict.get("Array", {}).is_empty():
+			#if not return_type_dict.get("Sum",{}).is_empty():
+				#if return_type_dict.get("Sum").get("variants").size() == 2:
+					#var option = return_type_dict.get("Sum").get("variants")
+					#if not option[0].get("name",{}).is_empty():
+						#if option[0].get("name").get("some") == "some":
+							#type_index = int(option[0].get("algebraic_type").get("Ref"))
+							#return_type = parsed_types_list[type_index]
+			#else:
+				#SpacetimePlugin.print_err("view return type not yet supported in the parser: %s" % [return_type_dict])
+				#continue
+		#else:
+			#type_index = int(return_type_dict["Array"]["Ref"])
+			#return_type = parsed_types_list[type_index]
+		#if return_type.is_empty():
+			#SpacetimePlugin.print_err("view return type not found: %s" % [return_type_dict])
+			#continue
+		#if return_type.get("table_names", []).is_empty():
+			#return_type = {
+				#"name": return_type["name"],
+				#"struct": return_type["struct"],
+				#&"table_names": [
+					#"%s" % name
+				#],
+				#&"table_name": "%s"% name,
+				#&"primary_key": 0,
+				#&"primary_key_name": "",
+				#&"is_public": [
+					#true
+				#]
+			#}
+		#else:
+			#var type_table_list = return_type["table_names"]
+			#type_table_list.append(name)
+			#return_type["table_names"] = type_table_list
+			#var is_public_list = return_type["is_public"]
+			#is_public_list.append(true)
+			#return_type["is_public"] = is_public_list
+		#parsed_types_list[type_index] = return_type
+#
+		#var tables_of_same_type : Array = parsed_tables_list.filter(func(table:Dictionary): return table.get("type_idx", -1) == type_index)
+		#var new_table_dict : Dictionary
+		#if tables_of_same_type.is_empty():
+			#new_table_dict = {
+			#"name": name,
+			#"type_idx": type_index,
+			#"primary_key": 0,
+			#"primary_key_name": "",
+			#"unique_indexes": [],
+			#"is_public": true
+			#}
+		#else:
+			#new_table_dict = tables_of_same_type[0].duplicate()
+			#new_table_dict["name"] = name
+			#new_table_dict["is_public"] = true
+		#parsed_tables_list.append(new_table_dict)
+#
+#
+#
 	SpacetimePlugin.print_log("Schema parser finished")
 	parsed_schema.types = parsed_types_list
-	parsed_schema.reducers = parsed_reducers_list
 	parsed_schema.tables = parsed_tables_list
+	SpacetimePlugin.print_log(parsed_tables_list)
+	#parsed_schema.reducers = parsed_reducers_list
 	parsed_schema.type_map = type_map
 	parsed_schema.meta_type_map = meta_type_map
-	parsed_schema.typespace = typespace
+	parsed_schema.typespace = schema_typespace
 	return parsed_schema
 
 static func _is_gd_native(type_name: String) -> bool:
@@ -475,7 +505,7 @@ static func _parse_field_type(field_type: Dictionary, data: Dictionary, schema_t
 		field_type = field_type.Sum.variants[0].get('algebraic_type', {})
 		return _parse_field_type(field_type, data, schema_types)
 	elif field_type.has("Ref"):
-		return schema_types[field_type.Ref].get("name", {}).get("name", null)
+		return schema_types[field_type.Ref].get("source_name", {}).get("source_name", null)
 	else:
 		return field_type.keys()[0]
 

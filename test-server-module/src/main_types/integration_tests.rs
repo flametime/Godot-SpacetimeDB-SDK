@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use spacetimedb::*;
 
 #[derive(Debug, SpacetimeType, Clone, Default)]
@@ -5,6 +6,12 @@ pub enum TestEnum {
     #[default]
     A,
     B,
+}
+
+impl Display for TestEnum {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_fmt(format_args!("{:?}", self))
+    }
 }
 
 #[derive(Debug, SpacetimeType, Clone)]
@@ -209,7 +216,10 @@ pub fn reducer_test_parameters(ctx: &ReducerContext, datatypes: TestTableDatatyp
     Ok(())
 }
 
-
+#[reducer]
+pub fn custom_reducer_err(ctx: &ReducerContext) -> Result<(),u32> {
+    Err(2)
+}
 
 
 

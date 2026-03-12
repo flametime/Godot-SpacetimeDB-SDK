@@ -1,5 +1,5 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
-spacetime_bindings/codegen_debug
+spacetime_bindings/
 desktop.ini

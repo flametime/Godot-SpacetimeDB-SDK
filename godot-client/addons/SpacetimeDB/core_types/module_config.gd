@@ -8,3 +8,4 @@ class_name SpacetimeDBModuleConfig
 @export var hide_private_tables: bool = true
 
 @export var unparsed_module_schema : String
+@export var parsed_schema : SpacetimeParsedSchema
