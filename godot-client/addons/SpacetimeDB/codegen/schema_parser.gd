@@ -76,21 +76,23 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 
 
 	var sections: Array = p_schema.get("sections",{})
-	var schema_tables: Array
+	var schema_typespace: Array
 	var schema_types_raw: Array
+	var schema_tables: Array
 	var schema_reducers: Array
 	var schema_procedures: Array
 	var schema_views: Array
 	var schema_shedules: Array
 	var schema_life_cycle_reducers: Array
 	var schema_explicit_names: Array
-	var schema_typespace: Array
 
 	for section: Dictionary in sections:
 		if section.has("Typespace"):
 			schema_typespace = section.get("Typespace").get("types",[])
 		elif section.has("Types"):
 			schema_types_raw = section.get("Types")
+		elif section.has("Tables"):
+			schema_tables = section.get("Tables")
 		elif section.has("Reducers"):
 			schema_reducers = section.get("Reducers")
 		elif section.has("Procedures"):
@@ -178,7 +180,6 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	for parsed_type in parsed_types_list:
 		if not parsed_type.has("struct"):
 			continue
-		SpacetimePlugin.print_log(parsed_type)
 		for field_type in parsed_type.get("struct", []):
 			var type_name = field_type.get("type", null)
 			if not type_name or GDNATIVE_PRIMITIVE_TYPES.has(type_name) or DEFAULT_TYPE_MAP.has(type_name):
@@ -195,13 +196,15 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 			if type_found:
 				field_type["type_idx"] = type_idx
 
-	print("Types parsed")
 	var parsed_tables_list: Array[Dictionary] = []
-	#var scheduled_reducers: Array[String] = []
+	var scheduled_reducers: Array[String] = []
+
 	for table_info in schema_tables:
 		var table_name_str: String = table_info.get("source_name", null)
 		var ref_idx_raw = table_info.get("product_type_ref", null)
-		if ref_idx_raw == null or table_name_str == null: continue
+		if ref_idx_raw == null or table_name_str == null:
+			SpacetimePlugin.print_err("Skipped table with: ref_idx_raw, table_name_str")
+			continue
 		var ref_idx = int(ref_idx_raw)
 
 		var target_type_def = null
@@ -272,7 +275,6 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 			#table_data.schedule = schedule
 			#target_type_def.schedule = schedule
 			#scheduled_reducers.append(schedule.reducer_name)
-		SpacetimePlugin.print_log(table_data)
 		parsed_tables_list.append(table_data)
 
 	#var parsed_reducers_list: Array[Dictionary] = []
@@ -381,7 +383,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	SpacetimePlugin.print_log("Schema parser finished")
 	parsed_schema.types = parsed_types_list
 	parsed_schema.tables = parsed_tables_list
-	SpacetimePlugin.print_log(parsed_tables_list)
+	#SpacetimePlugin.print_log(parsed_tables_list)
 	#parsed_schema.reducers = parsed_reducers_list
 	parsed_schema.type_map = type_map
 	parsed_schema.meta_type_map = meta_type_map
@@ -539,6 +541,6 @@ static func _parse_sum_type(variant_type: Dictionary, data: Dictionary, schema_t
 		variant_type = variant_type.Sum.variants[0].get('algebraic_type', {})
 		return _parse_sum_type(variant_type, data, schema_types)
 	elif variant_type.has("Ref"):
-		return schema_types[variant_type.Ref].get("name", {}).get("name", null)
+		return schema_types[variant_type.Ref].get("source_name", {}).get("source_name", null)
 	else:
 		return variant_type.keys()[0]
