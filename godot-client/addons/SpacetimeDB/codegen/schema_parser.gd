@@ -270,48 +270,48 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 		table_data.is_public = is_public
 		target_type_def.is_public.append(is_public)
 
-		#if table_info.get("schedule", {}).has("some"):
-			#var schedule = table_info.get("schedule", {}).some
-			#table_data.schedule = schedule
-			#target_type_def.schedule = schedule
-			#scheduled_reducers.append(schedule.reducer_name)
+		if table_info.get("schedule", {}).has("some"):
+			var schedule = table_info.get("schedule", {}).some
+			table_data.schedule = schedule
+			target_type_def.schedule = schedule
+			scheduled_reducers.append(schedule.reducer_name)
 		parsed_tables_list.append(table_data)
 
-	#var parsed_reducers_list: Array[Dictionary] = []
-	#for reducer_info in schema_reducers:
-		#var lifecycle = reducer_info.get("lifecycle", {}).get("some", null)
-		#if lifecycle: continue
-		#var r_name = reducer_info.get("name", null)
-		#if r_name == null:
-			#SpacetimePlugin.print_err("Reducer found with no name: %s" % [reducer_info])
-			#continue
-		#var reducer_data: Dictionary = {"name": r_name}
-#
-		#var reducer_raw_params = reducer_info.get("params", {}).get("elements", [])
-		#var reducer_params = []
-		#for raw_param in reducer_raw_params:
-			#var data = {"name": raw_param.get("name", {}).get("some", null)}
-			#var type = _parse_field_type(raw_param.get("algebraic_type", {}), data, schema_types_raw)
-			#data["type"] = type
-#
-			#var type_idx = 0
-			#var type_found = false
-			#if type and not (GDNATIVE_PRIMITIVE_TYPES.has(type) or DEFAULT_TYPE_MAP.has(type)):
-				#for pt in parsed_types_list:
-					#if pt.name == type:
-						#type_found = true
-						#break
-					#type_idx += 1
-#
-			#if type_found:
-				#data["type_idx"] = type_idx
-			#reducer_params.append(data)
-		#reducer_data["params"] = reducer_params
-#
-		#if r_name in scheduled_reducers:
-			#reducer_data["is_scheduled"] = true
-		#parsed_reducers_list.append(reducer_data)
-#
+	var parsed_reducers_list: Array[Dictionary] = []
+	for reducer_info in schema_reducers:
+		var lifecycle = reducer_info.get("lifecycle", {}).get("some", null)
+		if lifecycle: continue
+		var r_name = reducer_info.get("source_name", null)
+		if r_name == null:
+			SpacetimePlugin.print_err("Reducer found with no name: %s" % [reducer_info])
+			continue
+		var reducer_data: Dictionary = {"name": r_name}
+
+		var reducer_raw_params = reducer_info.get("params", {}).get("elements", [])
+		var reducer_params = []
+		for raw_param in reducer_raw_params:
+			var data = {"name": raw_param.get("name", {}).get("some", null)}
+			var type = _parse_field_type(raw_param.get("algebraic_type", {}), data, schema_types_raw)
+			data["type"] = type
+
+			var type_idx = 0
+			var type_found = false
+			if type and not (GDNATIVE_PRIMITIVE_TYPES.has(type) or DEFAULT_TYPE_MAP.has(type)):
+				for pt in parsed_types_list:
+					if pt.name == type:
+						type_found = true
+						break
+					type_idx += 1
+
+			if type_found:
+				data["type_idx"] = type_idx
+			reducer_params.append(data)
+		reducer_data["params"] = reducer_params
+
+		if r_name in scheduled_reducers:
+			reducer_data["is_scheduled"] = true
+		parsed_reducers_list.append(reducer_data)
+		print(reducer_data)
 	#for view_dict :Dictionary in misc_exports:
 		#var view : Dictionary = view_dict.get("View", {})
 		#if view.is_empty():
@@ -384,7 +384,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	parsed_schema.types = parsed_types_list
 	parsed_schema.tables = parsed_tables_list
 	#SpacetimePlugin.print_log(parsed_tables_list)
-	#parsed_schema.reducers = parsed_reducers_list
+	parsed_schema.reducers = parsed_reducers_list
 	parsed_schema.type_map = type_map
 	parsed_schema.meta_type_map = meta_type_map
 	parsed_schema.typespace = schema_typespace
