@@ -312,71 +312,68 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 			reducer_data["is_scheduled"] = true
 		parsed_reducers_list.append(reducer_data)
 		print(reducer_data)
-	#for view_dict :Dictionary in misc_exports:
-		#var view : Dictionary = view_dict.get("View", {})
-		#if view.is_empty():
-			#continue
-		#var name :String = view["name"]
-		#var return_type_dict = view["return_type"]
-		#var type_index:int
-		#var return_type:Dictionary
-		#SpacetimePlugin.print_log("parsing return type for view: %s"% name)
-		#if return_type_dict.get("Array", {}).is_empty():
-			#if not return_type_dict.get("Sum",{}).is_empty():
-				#if return_type_dict.get("Sum").get("variants").size() == 2:
-					#var option = return_type_dict.get("Sum").get("variants")
-					#if not option[0].get("name",{}).is_empty():
-						#if option[0].get("name").get("some") == "some":
-							#type_index = int(option[0].get("algebraic_type").get("Ref"))
-							#return_type = parsed_types_list[type_index]
-			#else:
-				#SpacetimePlugin.print_err("view return type not yet supported in the parser: %s" % [return_type_dict])
-				#continue
-		#else:
-			#type_index = int(return_type_dict["Array"]["Ref"])
-			#return_type = parsed_types_list[type_index]
-		#if return_type.is_empty():
-			#SpacetimePlugin.print_err("view return type not found: %s" % [return_type_dict])
-			#continue
-		#if return_type.get("table_names", []).is_empty():
-			#return_type = {
-				#"name": return_type["name"],
-				#"struct": return_type["struct"],
-				#&"table_names": [
-					#"%s" % name
-				#],
-				#&"table_name": "%s"% name,
-				#&"primary_key": 0,
-				#&"primary_key_name": "",
-				#&"is_public": [
-					#true
-				#]
-			#}
-		#else:
-			#var type_table_list = return_type["table_names"]
-			#type_table_list.append(name)
-			#return_type["table_names"] = type_table_list
-			#var is_public_list = return_type["is_public"]
-			#is_public_list.append(true)
-			#return_type["is_public"] = is_public_list
-		#parsed_types_list[type_index] = return_type
-#
-		#var tables_of_same_type : Array = parsed_tables_list.filter(func(table:Dictionary): return table.get("type_idx", -1) == type_index)
-		#var new_table_dict : Dictionary
-		#if tables_of_same_type.is_empty():
-			#new_table_dict = {
-			#"name": name,
-			#"type_idx": type_index,
-			#"primary_key": 0,
-			#"primary_key_name": "",
-			#"unique_indexes": [],
-			#"is_public": true
-			#}
-		#else:
-			#new_table_dict = tables_of_same_type[0].duplicate()
-			#new_table_dict["name"] = name
-			#new_table_dict["is_public"] = true
-		#parsed_tables_list.append(new_table_dict)
+	for view :Dictionary in schema_views:
+		var name :String = view["source_name"]
+		var return_type_dict = view["return_type"]
+		var type_index:int
+		var return_type:Dictionary
+		SpacetimePlugin.print_log("parsing return type for view: %s"% name)
+		if return_type_dict.get("Array", {}).is_empty():
+			if not return_type_dict.get("Sum",{}).is_empty():
+				if return_type_dict.get("Sum").get("variants").size() == 2:
+					var option = return_type_dict.get("Sum").get("variants")
+					if not option[0].get("name",{}).is_empty():
+						if option[0].get("name").get("some") == "some":
+							type_index = int(option[0].get("algebraic_type").get("Ref"))
+							return_type = parsed_types_list[type_index]
+			else:
+				SpacetimePlugin.print_err("view return type not yet supported in the parser: %s" % [return_type_dict])
+				continue
+		else:
+			type_index = int(return_type_dict["Array"]["Ref"])
+			return_type = parsed_types_list[type_index]
+		if return_type.is_empty():
+			SpacetimePlugin.print_err("view return type not found: %s" % [return_type_dict])
+			continue
+		if return_type.get("table_names", []).is_empty():
+			return_type = {
+				"name": return_type["name"],
+				"struct": return_type["struct"],
+				&"table_names": [
+					"%s" % name
+				],
+				&"table_name": "%s"% name,
+				&"primary_key": 0,
+				&"primary_key_name": "",
+				&"is_public": [
+					true
+				]
+			}
+		else:
+			var type_table_list = return_type["table_names"]
+			type_table_list.append(name)
+			return_type["table_names"] = type_table_list
+			var is_public_list = return_type["is_public"]
+			is_public_list.append(true)
+			return_type["is_public"] = is_public_list
+		parsed_types_list[type_index] = return_type
+
+		var tables_of_same_type : Array = parsed_tables_list.filter(func(table:Dictionary): return table.get("type_idx", -1) == type_index)
+		var new_table_dict : Dictionary
+		if tables_of_same_type.is_empty():
+			new_table_dict = {
+			"name": name,
+			"type_idx": type_index,
+			"primary_key": 0,
+			"primary_key_name": "",
+			"unique_indexes": [],
+			"is_public": true
+			}
+		else:
+			new_table_dict = tables_of_same_type[0].duplicate()
+			new_table_dict["name"] = name
+			new_table_dict["is_public"] = true
+		parsed_tables_list.append(new_table_dict)
 #
 #
 #
