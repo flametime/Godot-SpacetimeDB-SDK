@@ -509,6 +509,11 @@ func unsubscribe(query_id: int, send_deletes: UnsubscribeMessage.UnsubscribeFlag
 	printerr("SpacetimeDBClient: Internal error - WebSocket peer not available in connection.")
 	return ERR_CONNECTION_ERROR
 
+## parameters:
+## query: Sql stirng
+## callback: primary way to get the result data
+## save: bool. converts the result into a full transaction update if set to true.
+## saving is adding "stale" data into the db until another subscription or one off query overwrites it.
 func one_off_query(query: String, callback: Callable = func(ctx: OneOffQueryResponseMessage)->void: return, save:bool = false) -> Error:
 	if not is_connected_db():
 		printerr("SpacetimeDBClient: Cannot call a one off query, not connected.")
