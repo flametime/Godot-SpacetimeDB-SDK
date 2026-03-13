@@ -4,6 +4,7 @@ var _tables: Dictionary[String, Dictionary] = {}
 var _primary_key_cache: Dictionary = {}
 var _is_event_table_cache: Dictionary = {}
 var _schema: SpacetimeDBSchema
+## it should be "MainModuleClient" but the info is not available before codegen.
 var _module:SpacetimeDBClient
 
 var _cached_normalized_table_names: Dictionary = {}

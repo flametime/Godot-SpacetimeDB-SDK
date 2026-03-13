@@ -43,7 +43,7 @@ var _next_query_id := 0
 var _next_request_id := 0
 var _pending_reducer_call: Dictionary[int, SpacetimeDBReducerCall] = { }
 var _pending_subscriptions: Dictionary[int, SpacetimeDBSubscription]
-var _pending_one_off_query_callbacks: Dictionary[int,Callable]
+var _pending_one_off_query_callbacks: Dictionary[int,SpacetimeDBPendingOneOffQuery]
 
 # --- Signals ---
 signal connected(identity: PackedByteArray, token: String)
@@ -317,13 +317,20 @@ func _handle_parsed_message(message_resource: Resource):
 
 	elif message_resource is OneOffQueryResponseMessage:
 		var message : OneOffQueryResponseMessage = message_resource
+		var pending_query: SpacetimeDBPendingOneOffQuery = _pending_one_off_query_callbacks.get(message.request_id,SpacetimeDBPendingOneOffQuery.new())
 		var callback: Callable
-		callback = _pending_one_off_query_callbacks.get(message.request_id, Callable())
+		callback = pending_query.callback
 		_pending_one_off_query_callbacks.erase(message.request_id)
 		if callback.is_valid():
 			callback.call(message)
 		else:
 			printerr("Callback for one off query request %s is invalid" % message.request_id)
+		if pending_query.save && message.result_ok.size():
+			var tx_update : TransactionUpdateMessage = TransactionUpdateMessage.new()
+			var db_update := DatabaseUpdateData.new()
+			db_update.tables = message.result_ok
+			tx_update.query_sets.append(db_update)
+			_handle_transaction_update(tx_update)
 		print_log("SpacetimeDBClient: Received message resource type: OneOffQueryResponseMessage")
 		return
 
@@ -502,7 +509,7 @@ func unsubscribe(query_id: int, send_deletes: UnsubscribeMessage.UnsubscribeFlag
 	printerr("SpacetimeDBClient: Internal error - WebSocket peer not available in connection.")
 	return ERR_CONNECTION_ERROR
 
-func one_off_query(query: String, callback: Callable = func(ctx: OneOffQueryResponseMessage)->void: return) -> Error:
+func one_off_query(query: String, callback: Callable = func(ctx: OneOffQueryResponseMessage)->void: return, save:bool = false) -> Error:
 	if not is_connected_db():
 		printerr("SpacetimeDBClient: Cannot call a one off query, not connected.")
 		return ERR_CONNECTION_ERROR
@@ -518,7 +525,8 @@ func one_off_query(query: String, callback: Callable = func(ctx: OneOffQueryResp
 		if err != OK:
 			printerr("SpacetimeDBClient: Error sending One-off query BSATN message: %s" % error_string(err))
 		else:
-			_pending_one_off_query_callbacks.set(request_id, callback)
+			var pending: SpacetimeDBPendingOneOffQuery = SpacetimeDBPendingOneOffQuery.new(request_id,callback, save)
+			_pending_one_off_query_callbacks.set(request_id, pending)
 			print_log("SpacetimeDBClient: One-off query request sent successfully (BSATN), Query: %s" % query)
 
 	return OK

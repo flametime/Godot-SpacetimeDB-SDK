@@ -39,7 +39,7 @@ func _on_spacetimedb_connected(identity: PackedByteArray, _token: String) -> voi
 		)
 	sub.end.connect(func() -> void:
 		print("User Subscription ended")
-		var osub := SpacetimeDB.Main.one_off_query("SELECT * FROM user", func(ctx: OneOffQueryResponseMessage)->void: print("OneOffQuery callback: %s" % str(ctx.result_ok)))
+		var osub := SpacetimeDB.Main.one_off_query("SELECT * FROM user_data", func(ctx: OneOffQueryResponseMessage)->void: print("OneOffQuery callback: %s" % str(ctx.result_ok)),true)
 		if not osub == OK:
 			pass
 		)
