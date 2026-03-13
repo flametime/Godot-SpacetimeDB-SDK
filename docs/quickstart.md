@@ -207,13 +207,13 @@ func move_player(direction: Vector2):
     call.on_ok_empty.connect(func(update:ReducerResultMessage) -> void: pass)
     
     # reducer failed to run and returned with the error string
-    call.on_error.conect(func(err: String) -> void: pass)
+    call.on_error.connect(func(err: String) -> void: pass)
     
     # reducer failed with internal error. not expected to be ever called.
-    call.on_internal_error.conect(func(err: String) -> void: pass)
+    call.on_internal_error.connect(func(err: String) -> void: pass)
     
     # waiting for the reducer response
-    await call1.response
+    await call.response
 
 ```
 
