@@ -197,7 +197,6 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 				field_type["type_idx"] = type_idx
 
 	var parsed_tables_list: Array[Dictionary] = []
-	var scheduled_reducers: Array[String] = []
 
 	for table_info in schema_tables:
 		var table_name_str: String = table_info.get("source_name", null)
@@ -304,8 +303,6 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 			reducer_params.append(data)
 		reducer_data["params"] = reducer_params
 
-		if r_name in scheduled_reducers:
-			reducer_data["is_scheduled"] = true
 		parsed_reducers_list.append(reducer_data)
 
 	for view :Dictionary in schema_views:

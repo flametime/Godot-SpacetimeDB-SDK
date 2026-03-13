@@ -383,3 +383,8 @@ pub struct TestEventTable{
     pub id2:u32
 
 }
+
+#[reducer]
+pub fn trigger_event(ctx:&ReducerContext){
+    ctx.db.test_event_table().insert(TestEventTable{ id: 1, id2: 1 });
+}

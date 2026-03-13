@@ -76,6 +76,7 @@ func _on_button_pressed() -> void:
 	var time2 := Time.get_ticks_usec()
 	await call2.response
 	prints("call2 response took:",Time.get_ticks_usec() - time2, "usec")
+	SpacetimeDB.Main.reducers.trigger_event()
 
 func _on_button_2_pressed() -> void:
 	SpacetimeDB.Main.reducers.clear_integration_tests() # Replace with function body.

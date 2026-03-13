@@ -537,8 +537,6 @@ func _generate_reducers_gdscript(module_name: String, schema: SpacetimeParsedSch
 	"\t_client = p_client\n"
 
 	for reducer in schema.reducers:
-		if reducer.get("is_scheduled", false) and _plugin_config.module_configs[module_name].hide_scheduled_reducers: continue
-
 		var params_str_parts: Array[String] = []
 		var description_comment: Array = []
 		var reducer_params = reducer.get("params", [])

@@ -92,7 +92,7 @@ func initialize_and_connect():
 	_serializer = BSATNSerializer.new(debug_mode)
 
 	# 3. Initialize Local Database
-	_local_db = LocalDatabase.new(schema)
+	_local_db = LocalDatabase.new(schema, self)
 	_init_db(_local_db)
 
 	# Connect to LocalDatabase signals to re-emit them

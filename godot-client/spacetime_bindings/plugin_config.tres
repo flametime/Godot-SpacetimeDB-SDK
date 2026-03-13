@@ -11,7 +11,6 @@ script = ExtResource("2_l1dmy")
 script = ExtResource("1_uknru")
 name = "main"
 alias = "main"
-hide_scheduled_reducers = false
 hide_private_tables = false
 parsed_schema = SubResource("Resource_l02ds")
 
