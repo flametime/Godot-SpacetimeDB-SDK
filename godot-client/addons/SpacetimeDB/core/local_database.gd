@@ -2,10 +2,12 @@ class_name LocalDatabase extends Node
 
 var _tables: Dictionary[String, Dictionary] = {}
 var _primary_key_cache: Dictionary = {}
+var _is_event_table_cache: Dictionary = {}
 var _schema: SpacetimeDBSchema
+## it should be "MainModuleClient" but the info is not available before codegen.
+var _module:SpacetimeDBClient
 
 var _cached_normalized_table_names: Dictionary = {}
-var _cached_pk_fields: Dictionary = {}
 var _insert_listeners_by_table: Dictionary = {}
 var _update_listeners_by_table: Dictionary = {}
 var _delete_listeners_by_table: Dictionary = {}
@@ -17,11 +19,12 @@ signal row_updated(table_name: String, old_row: _ModuleTableType, new_row: _Modu
 signal row_deleted(table_name: String, row: _ModuleTableType)
 signal row_transactions_completed(table_name: String)
 
-func _init(p_schema: SpacetimeDBSchema):
+func _init(p_schema: SpacetimeDBSchema, module:SpacetimeDBClient):
 	# Initialize _tables dictionary with known table names
 	_schema = p_schema
 	for table_name_lower in _schema.tables.keys():
 		_tables[table_name_lower] = {}
+	_module = module
 
 func subscribe_to_inserts(table_name: StringName, callable: Callable):
 	if not _insert_listeners_by_table.has(table_name):
@@ -108,6 +111,11 @@ func _get_primary_key_field(table_name_lower: String) -> StringName:
 	_primary_key_cache[table_name_lower] = &"" # Cache failure
 	return &""
 
+func get_is_event(table_name_original: StringName) -> bool:
+	var table: _ModuleTable = _module.db[table_name_original]
+	var is_event:bool = table.get_meta("is_event")
+	_is_event_table_cache[table_name_original] = is_event
+	return is_event
 
 # --- Applying Updates ---
 func apply_database_subscription_applied(db_update:SubscribeAppliedMessage):
@@ -191,25 +199,29 @@ func apply_table_update(table_update: TableUpdateData) -> Dictionary[String,Arra
 				"inserts": [],
 				"updates": [],
 				"deletes": []}
-
+	var is_event: bool
+	if _is_event_table_cache.has(table_name_original):
+		is_event = _is_event_table_cache[table_name_original]
+	else:
+		is_event = get_is_event(table_name_original)
 	var pk_field: StringName
-	if _cached_pk_fields.has(table_name_lower):
-		pk_field = _cached_pk_fields[table_name_lower]
+	if _primary_key_cache.has(table_name_lower):
+		pk_field = _primary_key_cache[table_name_lower]
 	else:
 		pk_field = _get_primary_key_field(table_name_lower)
-		if pk_field == &"":
-			var inserts_no_pk: Array = []
-			for row in table_update.inserts:
-				inserts_no_pk.append([row])
-			var deletes_no_pk: Array = []
-			for row in table_update.deletes:
-				deletes_no_pk.append([row])
-			var changes :Dictionary[String, Array] = {"table_name": [table_name_original],
-				"inserts": inserts_no_pk,
-				"updates": [],
-				"deletes": deletes_no_pk}
-			return changes
-		_cached_pk_fields[table_name_lower] = pk_field
+		_primary_key_cache[table_name_lower] = pk_field
+	if pk_field == &"" or is_event:
+		var inserts_no_pk: Array = []
+		for row in table_update.inserts:
+			inserts_no_pk.append([row])
+		var deletes_no_pk: Array = []
+		for row in table_update.deletes:
+			deletes_no_pk.append([row])
+		var changes :Dictionary[String, Array] = {"table_name": [table_name_original],
+			"inserts": inserts_no_pk,
+			"updates": [],
+			"deletes": deletes_no_pk}
+		return changes
 
 	var table_dict: Dictionary = _tables[table_name_lower]
 

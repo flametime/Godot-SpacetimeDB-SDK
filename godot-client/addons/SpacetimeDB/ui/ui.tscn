@@ -123,11 +123,6 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_e5a4l")
 icon = ExtResource("1_mgbt2")
 icon_alignment = 1
 
-[node name="ReducerCheckbox" type="CheckBox" parent="Prefabs/ModulePrefab/VBoxContainer" unique_id=144177559]
-layout_mode = 2
-button_pressed = true
-text = "Hide scheduled reducer"
-
 [node name="TableCheckbox" type="CheckBox" parent="Prefabs/ModulePrefab/VBoxContainer" unique_id=1106248549]
 layout_mode = 2
 button_pressed = true
@@ -253,12 +248,6 @@ theme_override_styles/normal = SubResource("StyleBoxEmpty_raufm")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_k511v")
 icon = ExtResource("2_3cpcg")
 icon_alignment = 1
-
-[node name="ReducerCheckbox" type="CheckBox" parent="Main/Content/Sidebar/ScrollContainer/VBoxContainer/PanelContainer2/VBoxContainer" unique_id=1426498162]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-text = "Hide scheduled reducer"
 
 [node name="TablesCheckbox" type="CheckBox" parent="Main/Content/Sidebar/ScrollContainer/VBoxContainer/PanelContainer2/VBoxContainer" unique_id=1656566781]
 unique_name_in_owner = true

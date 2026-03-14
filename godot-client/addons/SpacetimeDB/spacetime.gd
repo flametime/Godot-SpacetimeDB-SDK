@@ -116,7 +116,7 @@ func _on_generate_schema():
 	var failed = false
 	for module_alias: String in plugin_config.module_configs:
 		var module_config: SpacetimeDBModuleConfig = plugin_config.module_configs[module_alias]
-		var schema_uri := "%s/v1/database/%s/schema?version=9" % [plugin_config.uri, module_config.name]
+		var schema_uri := "%s/v1/database/%s/schema?version=10" % [plugin_config.uri, module_config.name]
 		http_request.request(schema_uri)
 		var result = await http_request.request_completed
 		if result[1] == 200:

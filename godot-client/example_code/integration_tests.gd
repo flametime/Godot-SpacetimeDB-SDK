@@ -39,7 +39,7 @@ func _on_spacetimedb_connected(identity: PackedByteArray, _token: String) -> voi
 		)
 	sub.end.connect(func() -> void:
 		print("User Subscription ended")
-		var osub := SpacetimeDB.Main.one_off_query("SELECT * FROM user", func(ctx: OneOffQueryResponseMessage)->void: print("OneOffQuery callback: %s" % str(ctx.result_ok)))
+		var osub := SpacetimeDB.Main.one_off_query("SELECT * FROM user_data", func(ctx: OneOffQueryResponseMessage)->void: print("OneOffQuery callback: %s" % str(ctx.result_ok)),true)
 		if not osub == OK:
 			pass
 		)
@@ -76,6 +76,7 @@ func _on_button_pressed() -> void:
 	var time2 := Time.get_ticks_usec()
 	await call2.response
 	prints("call2 response took:",Time.get_ticks_usec() - time2, "usec")
+	SpacetimeDB.Main.reducers.trigger_event()
 
 func _on_button_2_pressed() -> void:
 	SpacetimeDB.Main.reducers.clear_integration_tests() # Replace with function body.

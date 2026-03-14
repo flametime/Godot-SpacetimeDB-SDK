@@ -32,28 +32,33 @@ func generate_bindings() -> Array[String]:
 	return generated_files
 
 func _generate_module_bindings(module_name: String):
+	var debug_dir_path := "%s/%s" % [SpacetimePlugin.BINDINGS_PATH, "codegen_debug"]
+	if not DirAccess.dir_exists_absolute(debug_dir_path):
+		DirAccess.make_dir_recursive_absolute(debug_dir_path)
+	var file = FileAccess.open("%s/readme.txt" % [debug_dir_path], FileAccess.WRITE)
+	file.store_string("You can delete this directory and files. It's only used for codegen debugging.")
+
 	var json = JSON.parse_string(_plugin_config.module_configs[module_name].unparsed_module_schema)
+
+	file = FileAccess.open("%s/unparsed_schema_%s.json" % [debug_dir_path, module_name], FileAccess.WRITE)
+	file.store_string(JSON.stringify(json, "\t", false))
+
 	var schema := SpacetimeSchemaParser.parse_schema(json, module_name)
 	_plugin_config.module_configs[module_name].unparsed_module_schema = ""
+	_plugin_config.module_configs[module_name].parsed_schema = schema
 	if schema.is_empty():
 		SpacetimePlugin.print_err("Schema parsing failed for module: %s. Aborting codegen for this module." % module_name)
 		return []
 
+	file = FileAccess.open("%s/schema_%s.json" % [debug_dir_path, module_name], FileAccess.WRITE)
+	file.store_string(JSON.stringify(schema.to_dictionary(), "\t", false))
 	for folder in REQUIRED_FOLDERS_IN_CODEGEN_FOLDER:
 		var folder_path := "%s/%s" % [_schema_path, folder]
 		if not DirAccess.dir_exists_absolute(folder_path):
 			DirAccess.make_dir_recursive_absolute(folder_path)
 
-	var debug_dir_path := "%s/%s" % [SpacetimePlugin.BINDINGS_PATH, "codegen_debug"]
-	if not DirAccess.dir_exists_absolute(debug_dir_path):
-		DirAccess.make_dir_recursive_absolute(debug_dir_path)
 
-	var file = FileAccess.open("%s/readme.txt" % [debug_dir_path], FileAccess.WRITE)
-	file.store_string("You can delete this directory and files. It's only used for codegen debugging.")
-	file = FileAccess.open("%s/schema_%s.json" % [debug_dir_path, module_name], FileAccess.WRITE)
-	file.store_string(JSON.stringify(schema.to_dictionary(), "\t", false))
-	file = FileAccess.open("%s/unparsed_schema_%s.json" % [debug_dir_path, module_name], FileAccess.WRITE)
-	file.store_string(JSON.stringify(json, "\t", false))
+	SpacetimePlugin.print_log("schema files saved")
 	var generated_files := _generate_gdscript_from_schema(module_name, schema)
 	return generated_files
 
@@ -214,7 +219,8 @@ func _generate_table_gdscript(schema: SpacetimeParsedSchema, table_def: Dictiona
 
 	content += "\nfunc _init(p_local_db: LocalDatabase) -> void:\n" + \
 	"\tsuper(p_local_db)\n" + \
-	"\tset_meta(\"table_name\", \"%s\")\n" % table_name
+	"\tset_meta(\"table_name\", \"%s\")\n" % table_name + \
+	"\tset_meta(\"is_event\", %s)\n" % table_def.get("is_event")
 
 	for field_name in unique_index_fields:
 		var unique_index_class_name := unique_index_fields[field_name]
@@ -452,7 +458,7 @@ func _generate_module_client_gdscript(module_name: String, schema: SpacetimePars
 ## # reducer failed with internal error. not expected to be ever called.
 ## call.on_internal_error.conect(func(err: String) -> void: pass)
 ##
-## waiting for the reducer response
+## # waiting for the reducer response
 ## await call.response
 ## [/codeblock]\n" % schema.module.to_pascal_case() + \
 	"var reducers: %sModuleReducers\n" % schema.module.to_pascal_case() + \
@@ -484,6 +490,8 @@ func _generate_db_gdscript(module_name: String, schema: SpacetimeParsedSchema) -
 		content += "var %s: %s\n" % [table_name.to_snake_case(), table_type]
 
 	content += "\nfunc _init(p_local_db: LocalDatabase) -> void:\n"
+	if tables.is_empty():
+		content += "\tpass"
 	for table_name in tables:
 		content += "\t%s = preload('%s/tables/%s_%s_table.gd').new(p_local_db)\n" % \
 			[table_name.to_snake_case(), _schema_path, schema.module.to_snake_case(), table_name.to_snake_case()]
@@ -529,8 +537,6 @@ func _generate_reducers_gdscript(module_name: String, schema: SpacetimeParsedSch
 	"\t_client = p_client\n"
 
 	for reducer in schema.reducers:
-		if reducer.get("is_scheduled", false) and _plugin_config.module_configs[module_name].hide_scheduled_reducers: continue
-
 		var params_str_parts: Array[String] = []
 		var description_comment: Array = []
 		var reducer_params = reducer.get("params", [])

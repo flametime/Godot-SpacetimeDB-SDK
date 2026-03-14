@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use spacetimedb::*;
 
 #[derive(Debug, SpacetimeType, Clone, Default)]
@@ -5,6 +6,12 @@ pub enum TestEnum {
     #[default]
     A,
     B,
+}
+
+impl Display for TestEnum {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_fmt(format_args!("{:?}", self))
+    }
 }
 
 #[derive(Debug, SpacetimeType, Clone)]
@@ -91,7 +98,7 @@ pub struct TestScheduledTable {
     #[auto_inc]
     pub scheduled_id: u64,
     pub h1: u16,
-    pub scheduled_at: spacetimedb::ScheduleAt,
+    pub scheduled_at: ScheduleAt,
     pub h2: u16,
     pub public_count: u64,
     pub private_count: u64,
@@ -208,12 +215,6 @@ pub fn reducer_test_parameters(ctx: &ReducerContext, datatypes: TestTableDatatyp
     log::info!("ReducerTest: Completed successfully");
     Ok(())
 }
-
-
-
-
-
-
 
 #[view(accessor = test_anonymous_all_types, public)]
 pub fn view_test_anonymous_all_types(ctx: &AnonymousViewContext) -> Vec<TestTableDatatypes> {
@@ -381,4 +382,9 @@ pub struct TestEventTable{
     #[unique]
     pub id2:u32
 
+}
+
+#[reducer]
+pub fn trigger_event(ctx:&ReducerContext){
+    ctx.db.test_event_table().insert(TestEventTable{ id: 1, id2: 1 });
 }
