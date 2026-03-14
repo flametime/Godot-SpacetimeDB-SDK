@@ -302,8 +302,44 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 				data["type_idx"] = type_idx
 			reducer_params.append(data)
 		reducer_data["params"] = reducer_params
-
+		prints("reducer:", reducer_data,"\n","\n")
 		parsed_reducers_list.append(reducer_data)
+
+	var parsed_procedure_list:Array[Dictionary] = []
+	for procedure_info in schema_procedures:
+		if procedure_info.visibility.has("Private"): continue
+		var r_name = procedure_info.get("source_name", null)
+		if r_name == null:
+			SpacetimePlugin.print_err("Reducer found with no name: %s" % [procedure_info])
+			continue
+		var procedure_data: Dictionary = {"name": r_name}
+
+		var procedure_raw_params = procedure_info.get("params", {}).get("elements", [])
+		var procedure_params = []
+		for raw_param in procedure_raw_params:
+			var data = {"name": raw_param.get("name", {}).get("some", null)}
+			var type = _parse_field_type(raw_param.get("algebraic_type", {}), data, schema_types_raw)
+			data["type"] = type
+
+			var type_idx = 0
+			var type_found = false
+			if type and not (GDNATIVE_PRIMITIVE_TYPES.has(type) or DEFAULT_TYPE_MAP.has(type)):
+				for pt in parsed_types_list:
+					if pt.name == type:
+						type_found = true
+						break
+					type_idx += 1
+			if type_found:
+				data["type_idx"] = type_idx
+			procedure_params.append(data)
+		procedure_data["params"] = procedure_params
+		var procedure_raw_return = procedure_info.get("return_type")
+		var data := {}
+		var type = _parse_field_type(procedure_raw_return, data,schema_types_raw)
+		prints(type,"\n", data,"\n", procedure_raw_return,"\n",procedure_data,"\n\n")
+
+		parsed_procedure_list.append(procedure_data)
+
 
 	for view :Dictionary in schema_views:
 		var name :String = view["source_name"]
@@ -372,6 +408,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	parsed_schema.types = parsed_types_list
 	parsed_schema.tables = parsed_tables_list
 	parsed_schema.reducers = parsed_reducers_list
+	parsed_schema.procedures = parsed_procedure_list
 	parsed_schema.type_map = type_map
 	parsed_schema.meta_type_map = meta_type_map
 	parsed_schema.typespace = schema_typespace

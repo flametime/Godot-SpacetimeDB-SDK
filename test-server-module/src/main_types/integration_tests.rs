@@ -1,5 +1,6 @@
 use std::fmt::Display;
 use spacetimedb::*;
+use spacetimedb::rand::RngCore;
 
 #[derive(Debug, SpacetimeType, Clone, Default)]
 pub enum TestEnum {
@@ -375,6 +376,34 @@ pub fn procedure_test_result_return(
     return Err(format!("row {} not found", t_u64));
 }
 
+#[procedure]
+pub fn procedure_test_result_return2(
+    ctx: &mut ProcedureContext,
+    t_u64: u64,
+) -> Result<u64, u32> {
+
+    if let Some(row) = ctx.with_tx(|tctx| tctx.db.test_table_datatypes().t_u64().find(t_u64)){
+        return Ok(row.t_u64);
+    }
+    return Err(1);
+}
+
+#[procedure]
+pub fn procedure_test_native_return(
+    ctx: &mut ProcedureContext,
+    t_u64: u64,
+) -> u32 {
+    return 1;
+}
+
+#[procedure]
+pub fn procedure_test_enum_return(
+    ctx: &mut ProcedureContext,
+    t_u64: u64,
+) -> TestEnum {
+    return TestEnum::A;
+}
+
 #[table(accessor = test_event_table, public, event)]
 pub struct TestEventTable{
     #[primary_key]
@@ -386,5 +415,5 @@ pub struct TestEventTable{
 
 #[reducer]
 pub fn trigger_event(ctx:&ReducerContext){
-    ctx.db.test_event_table().insert(TestEventTable{ id: 1, id2: 1 });
+    ctx.db.test_event_table().insert(TestEventTable{ id: ctx.rng().next_u32(), id2: ctx.rng().next_u32() });
 }

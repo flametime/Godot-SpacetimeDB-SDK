@@ -18,7 +18,7 @@ static func get_resource_path(msg_type: int) -> String:
 		SUBSCRIPTION_ERROR:        return "res://addons/SpacetimeDB/core_types/server_message/subscription_error.gd" # Uses manual reader
 		TRANSACTION_UPDATE:        return "res://addons/SpacetimeDB/core_types/server_message/transaction_update.gd"
 		ONE_OFF_QUERY_RESPONSE:    return "res://addons/SpacetimeDB/core_types/server_message/one_off_query_response.gd" # IMPLEMENT READER
-		REDUCER_RESULT:             return "res://addons/SpacetimeDB/core_types/server_message/reducer_result.gd"
-		#PROCEDURE_RESULT
+		REDUCER_RESULT:            return "res://addons/SpacetimeDB/core_types/server_message/reducer_result.gd"
+		PROCEDURE_RESULT:          return "res://addons/SpacetimeDB/core_types/server_message/procedure_result.gd"
 		_:
 			return ""

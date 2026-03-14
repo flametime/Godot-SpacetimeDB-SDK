@@ -25,14 +25,14 @@ static func fail(error: Error) -> SpacetimeDBReducerCall:
 	reducer_call.error = error
 	return reducer_call
 
-func on_response(_response: ReducerResultMessage) -> void:
-	match _response.reducer_result.value:
+func on_response(p_response: ReducerResultMessage) -> void:
+	match p_response.reducer_result.value:
 		ReducerOutcomeEnum.Options.ok:
-			on_ok.emit(_response)
+			on_ok.emit(p_response)
 		ReducerOutcomeEnum.Options.okEmpty:
-			on_ok_empty.emit(_response)
+			on_ok_empty.emit(p_response)
 		ReducerOutcomeEnum.Options.err:
-			on_error.emit(_response.reducer_result.get_err())
+			on_error.emit(p_response.reducer_result.get_err())
 		ReducerOutcomeEnum.Options.internalError:
-			on_internal_error.emit(_response.reducer_result.get_internal_error())
-	response.emit(_response)
+			on_internal_error.emit(p_response.reducer_result.get_internal_error())
+	response.emit(p_response)
