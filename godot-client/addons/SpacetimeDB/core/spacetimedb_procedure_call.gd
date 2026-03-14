@@ -14,7 +14,7 @@ static func create(
 	var procedure_call := SpacetimeDBProcedureCall.new()
 	procedure_call._client = p_client
 	procedure_call.request_id = p_request_id
-	procedure_call.reducer_name = p_procedure_name
+	procedure_call.procedure_name = p_procedure_name
 
 	return procedure_call
 

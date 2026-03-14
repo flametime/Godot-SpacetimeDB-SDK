@@ -1003,6 +1003,31 @@ func _read_subscription_error_message(spb: StreamPeerBuffer) -> SubscriptionErro
 	resource.error_message = read_string_with_u32_len(spb)
 	return null if has_error() else resource
 
+func _read_procedure_result_message(spb: StreamPeerBuffer) -> ProcedureResultMessage:
+	# v2 ProcedureResult wire format (fields in declaration order):
+	#   status: ProcedureStatus (tag u8 + payload)
+	#   timestamp: i64 nanoseconds (8 bytes)
+	#   total_host_execution_duration: i64 microseconds (8 bytes)
+	#   request_id: u32 (last)
+	var resource := ProcedureResultMessage.new()
+	var tag := read_u8(spb); if has_error(): return null
+	match tag:
+		0:  # Returned(Bytes) — length-prefixed return value bytes
+			var byte_count := read_u32_le(spb); if has_error(): return null
+			if byte_count > 0:
+				spb.seek(spb.get_position() + byte_count)
+			resource.success = true
+		1:  # InternalError(String)
+			resource.error_msg = read_string_with_u32_len(spb); if has_error(): return null
+			resource.success = false
+		_:
+			_set_error("Unknown ProcedureStatus tag: %d" % tag)
+			return null
+	spb.seek(spb.get_position() + 16)  # skip timestamp (i64) + duration (i64)
+	if has_error(): return null
+	resource.request_id = read_u32_le(spb); if has_error(): return null
+	return resource
+
 func _read_reducer_result_message(spb: StreamPeerBuffer)-> ReducerResultMessage:
 	var resource := ReducerResultMessage.new()
 
@@ -1256,6 +1281,10 @@ func _parse_message_from_stream(spb: StreamPeerBuffer) -> Resource:
 
 	elif msg_type == SpacetimeDBServerMessage.REDUCER_RESULT:
 		result_resource = _read_reducer_result_message(spb)
+		if has_error(): return null
+
+	elif msg_type == SpacetimeDBServerMessage.PROCEDURE_RESULT:
+		result_resource = _read_procedure_result_message(spb)
 		if has_error(): return null
 
 	# --- Generic handling for types parsed via _populate_resource_from_bytes ---
