@@ -60,6 +60,7 @@ signal row_transactions_completed(table_name: String)
 
 signal reducer_call_response(response: Resource) # TODO: Define response resource
 signal reducer_call_timeout(request_id: int) # TODO: Implement timeout logic
+signal procedure_call_timeout(request_id: int)
 signal transaction_update_received(update: TransactionUpdateMessage)
 signal procedure_completed(request_id: int, success: bool, error_msg: String)
 
@@ -600,3 +601,29 @@ func call_procedure(procedure_name: String, args: Array = [], types: Array = [])
 
 	printerr("SpacetimeDBClient: Internal error - WebSocket peer not available in connection.")
 	return SpacetimeDBProcedureCall.fail(ERR_CONNECTION_ERROR)
+
+func wait_for_procedure_response(request_id_to_match: int, timeout_seconds: float = 10.0) -> ProcedureResultMessage:
+	if request_id_to_match < 0:
+		return null
+	var timer: SceneTreeTimer = get_tree().create_timer(timeout_seconds)
+	var did_timeout: bool = false
+	timer.timeout.connect(func() -> void: did_timeout = true, CONNECT_ONE_SHOT)
+	var result_container = [null]
+	var connection: Callable = (
+		func(req_id: int, success: bool, error_msg: String):
+			if req_id == request_id_to_match:
+				var msg := ProcedureResultMessage.new()
+				msg.request_id = req_id
+				msg.success = success
+				msg.error_msg = error_msg
+				result_container[0] = msg
+	)
+	procedure_completed.connect(connection)
+	while result_container[0] == null and not did_timeout:
+		await get_tree().process_frame
+	procedure_completed.disconnect(connection)
+	if result_container[0] == null:
+		printerr("SpacetimeDBClient: Timeout waiting for procedure response for Req ID: %d" % request_id_to_match)
+		procedure_call_timeout.emit(request_id_to_match)
+		return null
+	return result_container[0]

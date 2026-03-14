@@ -23,7 +23,7 @@ static func fail(error: Error) -> SpacetimeDBProcedureCall:
 	procedure_call.error = error
 	return procedure_call
 
-func wait_for_response(timeout_sec: float = 10) -> TransactionUpdateMessage:
+func wait_for_response(timeout_sec: float = 10) -> ProcedureResultMessage:
 	if error:
 		return null
 
