@@ -2,9 +2,9 @@
   <img src="https://github.com/user-attachments/assets/41dd6587-9f3c-45cd-b6b4-e144dc4338ac" alt="godot-spacetimedb_128" width="128">
 </p>
 
-## SpacetimeDB Godot SDK for SpacetimeDB 2.x+
+## SpacetimeDB Godot SDK for SpacetimeDB 2.0.4+
 
-> Tested with: `Godot 4.6.1` and `SpacetimeDB 2.x+`
+> Tested with: `Godot 4.6.1` and `SpacetimeDB 2.0.4+`
 
 This SDK provides the necessary tools to integrate your Godot Engine project with a SpacetimeDB backend, enabling real-time data synchronization and server interaction directly from your Godot client.
 
