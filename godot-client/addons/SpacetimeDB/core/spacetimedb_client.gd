@@ -89,7 +89,7 @@ func initialize_and_connect():
 	var schema := SpacetimeDBSchema.new(module_name, schema_path, debug_mode)
 
 	# 2. Initialize Parser
-	_deserializer = BSATNDeserializer.new(schema, debug_mode)
+	_deserializer = BSATNDeserializer.new(schema, self, debug_mode)
 	_serializer = BSATNSerializer.new(debug_mode)
 
 	# 3. Initialize Local Database
@@ -358,6 +358,12 @@ func _handle_parsed_message(message_resource: Resource):
 		else:
 			printerr("SpacetimeDBClient: Reducer timed out before the response message arrived")
 		return
+	elif message_resource is ProcedureResultMessage:
+		var request_id = message_resource.request_id
+		var procedure_call : SpacetimeDBProcedureCall = _pending_procedure_call.get(request_id)
+		if not procedure_call:
+			printerr("SpacetimeDBClient: Pending procedure call for request_id %s not found"% request_id)
+		procedure_call.on_response(message_resource)
 	else:
 		print_log("SpacetimeDBClient: Received unhandled message resource type: " + message_resource.get_class())
 

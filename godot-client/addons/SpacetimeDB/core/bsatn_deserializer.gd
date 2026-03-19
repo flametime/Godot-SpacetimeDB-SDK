@@ -33,15 +33,16 @@ var _last_error: String = ""
 var _deserialization_plan_cache: Dictionary = {}
 var _pending_data := PackedByteArray()
 var _schema: SpacetimeDBSchema
+var _client: SpacetimeDBClient
 var _native_arraylike_regex := RegEx.new()
 
 var debug_mode := false # Controls verbose debug printing
 
 # --- Initialization ---
-func _init(p_schema: SpacetimeDBSchema, p_debug_mode: bool = false) -> void:
+func _init(p_schema: SpacetimeDBSchema, p_client: SpacetimeDBClient, p_debug_mode: bool = false) -> void:
 	debug_mode = p_debug_mode
 	_schema = p_schema
-
+	_client = p_client
 	_native_arraylike_regex.compile("^(?<struct>.+)\\[(?<components>.*)\\]$")
 
 
@@ -1015,6 +1016,41 @@ func _read_reducer_result_message(spb: StreamPeerBuffer)-> ReducerResultMessage:
 		return null
 	return resource
 
+func _read_procedure_result_message(spb: StreamPeerBuffer)-> ProcedureResultMessage:
+	# v2 ProcedureResult wire format (fields in declaration order):
+	#   status: ProcedureStatus (tag u8 + payload)
+	#   timestamp: i64 nanoseconds (8 bytes)
+	#   total_host_execution_duration: i64 microseconds (8 bytes)
+	#   request_id: u32 (last)
+	var resource := ProcedureResultMessage.new()
+	var tag := read_u8(spb); if has_error(): return null
+	var return_bytes : PackedByteArray = []
+	match tag:
+		0:  # Returned(Bytes) — length-prefixed return value bytes
+			var byte_count := read_u32_le(spb); if has_error(): return null
+			if byte_count > 0:
+				return_bytes = spb.get_partial_data(byte_count)[1]
+
+		1:  # InternalError(String)
+			resource.result_err = read_string_with_u32_len(spb); if has_error(): return null
+		_:
+			_set_error("Unknown ProcedureStatus tag: %d" % tag)
+			return null
+	resource.timestamp = read_timestamp(spb)
+	resource.total_host_execution_duration = read_timestamp(spb)
+	if has_error(): return null
+	resource.request_id = read_u32_le(spb); if has_error(): return null
+	if resource.result_err:
+		return resource
+	## parsing of the return data
+	var call: SpacetimeDBProcedureCall = _client._pending_procedure_call.get(resource.request_id)
+	var return_type = call.return_type_bsatn.to_lower()
+	var spb2 := StreamPeerBuffer.new()
+	spb2.data_array = return_bytes
+	## not sure about this. might have edge cases
+	resource.result_ok = _read_value_from_bsatn_type(spb2, return_type, &"")
+	return resource
+
 func _read_transaction_update_message(spb: StreamPeerBuffer) -> TransactionUpdateMessage:
 	var tx_update_resource: TransactionUpdateMessage = TransactionUpdateMessage.new()
 	var query_sets_array := _read_query_sets(spb, tx_update_resource, {})
@@ -1249,7 +1285,6 @@ func _parse_message_from_stream(spb: StreamPeerBuffer) -> Resource:
 		result_resource = _read_unsubscripton_applied_message(spb)
 		if has_error(): return null
 
-	# --- TODO: Implement reader for OneOffQueryResponseData ---
 	elif msg_type == SpacetimeDBServerMessage.ONE_OFF_QUERY_RESPONSE:
 		result_resource = _read_one_off_query_message(spb)
 		return result_resource # Or return an empty resource shell if preferred
@@ -1258,6 +1293,9 @@ func _parse_message_from_stream(spb: StreamPeerBuffer) -> Resource:
 		result_resource = _read_reducer_result_message(spb)
 		if has_error(): return null
 
+	elif msg_type == SpacetimeDBServerMessage.PROCEDURE_RESULT:
+		result_resource = _read_procedure_result_message(spb)
+		if has_error(): return null
 	# --- Generic handling for types parsed via _populate_resource_from_bytes ---
 	else:
 		print_log("read generic message")

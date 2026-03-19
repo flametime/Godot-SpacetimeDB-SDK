@@ -471,11 +471,13 @@ func _generate_module_client_gdscript(module_name: String, schema: SpacetimePars
 ## await call.response
 ## [/codeblock]\n" % schema.module.to_pascal_case() + \
 	"var reducers: %sModuleReducers\n" % schema.module.to_pascal_case() + \
+	"var procedures: %sModuleProcedures\n" % schema.module.to_pascal_case() + \
 	"var db: %sModuleDb\n\n" % schema.module.to_pascal_case() + \
 	"func _init() -> void:\n" + \
 	"\tset_meta(\"module_name\", \"%s\")\n" % schema.module + \
 	"\tname = \"%sModule\"\n" % schema.module.to_pascal_case() + \
 	"\treducers = preload('%s/module_%s_reducers.gd').new(self)\n" % [_schema_path, schema.module.to_snake_case()] + \
+	"\tprocedures = preload('%s/module_%s_procedures.gd').new(self)\n" % [_schema_path, schema.module.to_snake_case()] + \
 	"\nfunc _init_db(p_local_db: LocalDatabase) -> void:\n" + \
 	"\tdb = preload('%s/module_%s_db.gd').new(p_local_db)\n" % [_schema_path, schema.module.to_snake_case()]
 

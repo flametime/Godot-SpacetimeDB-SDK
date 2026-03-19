@@ -2,10 +2,14 @@ class_name SpacetimeDBProcedureCall extends Resource
 
 var request_id: int = -1
 var error: Error = OK
-var result: ProcedureResult
+var result: ProcedureResultMessage
 
 var _client: SpacetimeDBClient
 var return_type_bsatn: StringName
+
+signal response(call_response: ProcedureResultMessage)
+signal on_ok(data)
+signal on_error(data)
 
 static func create(
 	p_client: SpacetimeDBClient,
@@ -23,5 +27,6 @@ static func fail(error: Error) -> SpacetimeDBProcedureCall:
 	procedure_call.error = error
 	return procedure_call
 
-func on_response(p_response: ProcedureResult):
-	pass
+func on_response(p_response: ProcedureResultMessage):
+	result = p_response
+	response.emit(p_response)
