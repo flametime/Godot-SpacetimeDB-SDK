@@ -1048,7 +1048,12 @@ func _read_procedure_result_message(spb: StreamPeerBuffer)-> ProcedureResultMess
 	var spb2 := StreamPeerBuffer.new()
 	spb2.data_array = return_bytes
 	## not sure about this. might have edge cases
+	if has_error(): return null
 	resource.result_ok = _read_value_from_bsatn_type(spb2, return_type, &"")
+	print(_last_error)
+	if has_error():
+		resource.result_err = _last_error
+		clear_error()
 	return resource
 
 func _read_transaction_update_message(spb: StreamPeerBuffer) -> TransactionUpdateMessage:

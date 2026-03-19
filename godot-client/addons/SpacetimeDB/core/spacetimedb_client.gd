@@ -361,6 +361,7 @@ func _handle_parsed_message(message_resource: Resource):
 	elif message_resource is ProcedureResultMessage:
 		var request_id = message_resource.request_id
 		var procedure_call : SpacetimeDBProcedureCall = _pending_procedure_call.get(request_id)
+		_pending_procedure_call.erase(request_id)
 		if not procedure_call:
 			printerr("SpacetimeDBClient: Pending procedure call for request_id %s not found"% request_id)
 		procedure_call.on_response(message_resource)

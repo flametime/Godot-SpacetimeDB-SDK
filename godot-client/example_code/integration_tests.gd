@@ -77,8 +77,19 @@ func _on_button_pressed() -> void:
 	await call2.response
 	prints("call2 response took:",Time.get_ticks_usec() - time2, "usec")
 	SpacetimeDB.Main.reducers.trigger_event()
-	var procedure_call := SpacetimeDB.Main.procedures.procedure_test_type_return(1)
-	procedure_call.response.connect(func(response: ProcedureResultMessage)-> void: prints("procedure response",response))
+	var procedure_call := SpacetimeDB.Main.procedures.procedure_test_type_return(10)
+	procedure_call.response.connect(procedure_response)
+	#var procedure_call2 := SpacetimeDB.Main.procedures.procedure_test_result_return(10)
+	#procedure_call2.response.connect(procedure_response)
+	#var procedure_call3 := SpacetimeDB.Main.procedures.procedure_test_native_return(10)
+	#procedure_call3.response.connect(procedure_response)
+	#var procedure_call4 := SpacetimeDB.Main.procedures.procedure_test_option_return(10)
+	#procedure_call4.response.connect(procedure_response)
+	print("procedures tested")
 
 func _on_button_2_pressed() -> void:
 	SpacetimeDB.Main.reducers.clear_integration_tests() # Replace with function body.
+
+func procedure_response(response: ProcedureResultMessage)-> void:
+	prints("procedure", response.request_id, "response ok",response.result_ok)
+	prints("procedure", response.request_id, "response err", response.result_err,"/n/n")
