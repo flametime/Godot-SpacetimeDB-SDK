@@ -1032,7 +1032,9 @@ func _read_procedure_result_message(spb: StreamPeerBuffer)-> ProcedureResultMess
 				return_bytes = spb.get_partial_data(byte_count)[1]
 
 		1:  # InternalError(String)
+
 			resource.result_err = read_string_with_u32_len(spb); if has_error(): return null
+			prints("internal error procedure:",resource.result_err)
 		_:
 			_set_error("Unknown ProcedureStatus tag: %d" % tag)
 			return null

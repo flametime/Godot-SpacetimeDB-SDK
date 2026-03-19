@@ -98,21 +98,15 @@ func _on_button_3_pressed() -> void:
 	procedure_call3.response.connect(procedure_response.bind(procedure_call3))
 	var procedure_call4 := SpacetimeDB.Main.procedures.procedure_test_result_type_string_return(10)
 	procedure_call4.response.connect(procedure_response.bind(procedure_call4))
-	var procedure_call5 := SpacetimeDB.Main.procedures.procedure_test_result_u64_u32_return(10)
+	var procedure_call5 := SpacetimeDB.Main.procedures.procedure_test_result_u_64_u_32_return(10)
 	procedure_call5.response.connect(procedure_response.bind(procedure_call5))
-	var procedure_call6 := SpacetimeDB.Main.procedures.procedure_test_u32_return(10)
+	var procedure_call6 := SpacetimeDB.Main.procedures.procedure_test_u_32_return(10)
 	procedure_call6.response.connect(procedure_response.bind(procedure_call6))
-	var procedure_call7 := SpacetimeDB.Main.procedures.procedure_test_option_u32_return(10)
+	var procedure_call7 := SpacetimeDB.Main.procedures.procedure_test_option_u_32_return(10)
 	procedure_call7.response.connect(procedure_response.bind(procedure_call7))
 	var procedure_call8 := SpacetimeDB.Main.procedures.procedure_test_enum_return(10)
 	procedure_call8.response.connect(procedure_response.bind(procedure_call8))
-	var procedure_call9 := SpacetimeDB.Main.procedures.procedure_test_vec_u32_return(10)
+	var procedure_call9 := SpacetimeDB.Main.procedures.procedure_test_vec_u_32_return(10)
 	procedure_call9.response.connect(procedure_response.bind(procedure_call9))
-
-
-
-
-
-
 
 	print("procedures tested") # Replace with function body.

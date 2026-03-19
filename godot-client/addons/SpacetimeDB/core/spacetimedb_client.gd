@@ -596,7 +596,6 @@ func call_procedure(procedure_name: String, args: Array = [], types: Array = [],
 
 	var request_id := _next_request_id
 	_next_request_id += 1
-
 	var call_data := CallProcedureMessage.new(procedure_name, args_bytes, request_id, 0)
 	var message_bytes := _serializer.serialize_client_message(
 		SpacetimeDBClientMessage.CALL_PROCEDURE,

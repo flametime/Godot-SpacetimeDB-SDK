@@ -199,7 +199,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	var parsed_tables_list: Array[Dictionary] = []
 
 	for table_info in schema_tables:
-		var table_name_str: String = table_info.get("source_name", null)
+		var table_name_str: String = table_info.get("source_name", null).to_snake_case()
 		var ref_idx_raw = table_info.get("product_type_ref", null)
 		if ref_idx_raw == null or table_name_str == null:
 			SpacetimePlugin.print_err("Skipped table with: ref_idx_raw, table_name_str")
@@ -276,7 +276,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	var parsed_reducers_list: Array[Dictionary] = []
 	for reducer_info in schema_reducers:
 		if reducer_info.visibility.has("Private"): continue
-		var r_name = reducer_info.get("source_name", null)
+		var r_name = reducer_info.get("source_name", null).to_snake_case()
 		if r_name == null:
 			SpacetimePlugin.print_err("Reducer found with no name: %s" % [reducer_info])
 			continue
@@ -308,7 +308,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	var parsed_procedure_list:Array[Dictionary] = []
 	for procedure_info in schema_procedures:
 		if procedure_info.visibility.has("Private"): continue
-		var r_name = procedure_info.get("source_name", null)
+		var r_name = procedure_info.get("source_name", null).to_snake_case()
 		if r_name == null:
 			SpacetimePlugin.print_err("Reducer found with no name: %s" % [procedure_info])
 			continue
