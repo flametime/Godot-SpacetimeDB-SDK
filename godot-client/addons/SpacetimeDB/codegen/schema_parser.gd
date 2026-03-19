@@ -226,7 +226,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 			"type_idx": target_type_idx
 		}
 
-		if not target_type_def.has("source_name"):
+		if not target_type_def.has("table_names"):
 			target_type_def.table_names = []
 		target_type_def.table_names.append(table_name_str)
 		target_type_def.table_name = table_name_str
