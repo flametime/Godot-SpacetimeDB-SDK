@@ -186,7 +186,7 @@ pub fn clear_integration_tests(ctx: &ReducerContext) -> Result<(),String> {
 }
 
 #[reducer]
-pub fn reducer_test_parameters(ctx: &ReducerContext, datatypes: TestTableDatatypes, t_u32: u32, t_u64: u64, t_string: String, test_enum: TestEnum, test_nested_enum: TestNestedEnum, t_vec_u32: Vec<u32> ) -> Result<(),String> {
+pub fn reducer_test_parameters(_ctx: &ReducerContext, datatypes: TestTableDatatypes, t_u32: u32, t_u64: u64, t_string: String, test_enum: TestEnum, test_nested_enum: TestNestedEnum, t_vec_u32: Vec<u32> ) -> Result<(),String> {
     if !datatypes.t_vec_string.first().eq(&Some(&"hello world".to_string())){
         return Err(format!("ReducerTest: datatypes parameter {} is not 'hello world'", datatypes.t_vec_string.first().unwrap()));
     }
@@ -329,30 +329,6 @@ pub fn view_test_query(ctx:&ViewContext)-> impl Query<TestScheduledTable>{
 
 
 #[procedure]
-pub fn procedure_test_option_return(
-    ctx: &mut ProcedureContext,
-    t_u64: u64,
-) -> Option<TestTableDatatypes> {
-
-    if let Some(row) = ctx.with_tx(|tctx| tctx.db.test_table_datatypes().t_u64().find(t_u64)){
-        return Some(row);
-    }
-    None
-}
-
-#[procedure]
-pub fn procedure_test_vec_return(
-    ctx: &mut ProcedureContext,
-    t_u64: u64,
-) -> Vec<TestTableDatatypes> {
-
-    if let Some(row) = ctx.with_tx(|tctx| tctx.db.test_table_datatypes().t_u64().find(t_u64)){
-        return vec![row];
-    }
-    vec![]
-}
-
-#[procedure]
 pub fn procedure_test_type_return(
     ctx: &mut ProcedureContext,
     t_u64: u64,
@@ -365,7 +341,32 @@ pub fn procedure_test_type_return(
 }
 
 #[procedure]
-pub fn procedure_test_result_return(
+pub fn procedure_test_option_type_return(
+    ctx: &mut ProcedureContext,
+    t_u64: u64,
+) -> Option<TestTableDatatypes> {
+
+    if let Some(row) = ctx.with_tx(|tctx| tctx.db.test_table_datatypes().t_u64().find(t_u64)){
+        return Some(row);
+    }
+    None
+}
+
+#[procedure]
+pub fn procedure_test_vec_type_return(
+    ctx: &mut ProcedureContext,
+    t_u64: u64,
+) -> Vec<TestTableDatatypes> {
+
+    if let Some(row) = ctx.with_tx(|tctx| tctx.db.test_table_datatypes().t_u64().find(t_u64)){
+        return vec![row];
+    }
+    vec![]
+}
+
+
+#[procedure]
+pub fn procedure_test_result_type_string_return(
     ctx: &mut ProcedureContext,
     t_u64: u64,
 ) -> Result<TestTableDatatypes, String> {
@@ -377,7 +378,7 @@ pub fn procedure_test_result_return(
 }
 
 #[procedure]
-pub fn procedure_test_result_return2(
+pub fn procedure_test_result_u64_u32_return(
     ctx: &mut ProcedureContext,
     t_u64: u64,
 ) -> Result<u64, u32> {
@@ -389,19 +390,35 @@ pub fn procedure_test_result_return2(
 }
 
 #[procedure]
-pub fn procedure_test_native_return(
-    ctx: &mut ProcedureContext,
-    t_u64: u64,
+pub fn procedure_test_u32_return(
+    _ctx: &mut ProcedureContext,
+    t_u32: u32,
 ) -> u32 {
-    return 1;
+    return t_u32;
+}
+
+#[procedure]
+pub fn procedure_test_vec_u32_return(
+    _ctx: &mut ProcedureContext,
+    t_u32: u32,
+) -> Vec<u32> {
+    return vec![t_u32, t_u32 +1, t_u32 +2, t_u32 +3];
+}
+
+#[procedure]
+pub fn procedure_test_option_u32_return(
+    _ctx: &mut ProcedureContext,
+    t_u32: u32,
+) -> Option<u32> {
+    return Some(t_u32);
 }
 
 #[procedure]
 pub fn procedure_test_enum_return(
-    ctx: &mut ProcedureContext,
-    t_u64: u64,
+    _ctx: &mut ProcedureContext,
+    _t_u64: u64,
 ) -> TestEnum {
-    return TestEnum::A;
+    return TestEnum::B;
 }
 
 #[table(accessor = test_event_table, public, event)]
