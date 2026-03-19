@@ -421,6 +421,19 @@ pub fn procedure_test_enum_return(
     return TestEnum::B;
 }
 
+#[procedure]
+pub fn procedure_test_no_return(
+    ctx: &mut ProcedureContext
+){
+    ctx.with_tx(|tctx| {
+        tctx.db.test_event_table().insert(TestEventTable{
+            id: tctx.rng().next_u32(),
+            id2: tctx.rng().next_u32(),
+        })
+    });
+}
+
+
 #[table(accessor = test_event_table, public, event)]
 pub struct TestEventTable{
     #[primary_key]

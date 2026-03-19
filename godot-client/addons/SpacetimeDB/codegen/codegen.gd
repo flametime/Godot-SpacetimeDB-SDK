@@ -691,10 +691,13 @@ func _generate_procedures_gdscript(module_name: String, schema: SpacetimeParsedS
 
 		var return_type_raw = procedure.get("return_type")
 		var original_inner_type_name_bsatn: String = return_type_raw.get("type", "Variant")
+
 		var return_type = schema.types[return_type_raw.type_idx] if return_type_raw.has("type_idx") else null
 		var bsatn_return_type: String
-
-		if return_type_raw.has("is_option"):
+		if original_inner_type_name_bsatn.is_empty():
+			print(original_inner_type_name_bsatn)
+			bsatn_return_type = ""
+		elif return_type_raw.has("is_option"):
 			var inner_meta_for_option: String
 			if return_type_raw.has("is_array_inside_option"):
 				inner_meta_for_option = "vec_%s" % schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
@@ -711,7 +714,6 @@ func _generate_procedures_gdscript(module_name: String, schema: SpacetimeParsedS
 		else:
 			bsatn_return_type = schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
 
-		if bsatn_return_type.is_empty(): return "''"
 		var return_type_str : StringName = "&'%s'" % bsatn_return_type
 
 		content += "\n".join(description_comment) + "\n"

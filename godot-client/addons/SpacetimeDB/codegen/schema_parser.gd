@@ -335,6 +335,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 		procedure_data["params"] = procedure_params
 
 		var procedure_raw_return = procedure_info.get("return_type")
+
 		var data := {}
 		## doesn't parse Result<_,_> correctly. it parses as Option<_,None>
 		var type = _parse_field_type(procedure_raw_return, data,schema_types_raw)
@@ -521,7 +522,10 @@ static func _parse_field_type(field_type: Dictionary, data: Dictionary, schema_t
 		field_type = field_type.Array
 		return _parse_field_type(field_type, data, schema_types)
 	elif field_type.has("Product"):
-		return field_type.Product.get("elements", [])[0].get('name', {}).get('some', null)
+		var elements :Array= field_type.Product.get("elements", [])
+		if elements.is_empty():
+			return ""
+		return elements[0].get('name', {}).get('some', null)
 	elif field_type.has("Sum"):
 		if _is_sum_option(field_type.Sum):
 			var nested_type = data.get("nested_type", [])
