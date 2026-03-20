@@ -302,7 +302,6 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 				data["type_idx"] = type_idx
 			reducer_params.append(data)
 		reducer_data["params"] = reducer_params
-		prints("reducer:", reducer_data,"\n","\n")
 		parsed_reducers_list.append(reducer_data)
 
 	var parsed_procedure_list:Array[Dictionary] = []
@@ -341,7 +340,6 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 		var type = _parse_field_type(procedure_raw_return, data,schema_types_raw)
 		data["type"] = type
 		procedure_data["return_type"] = data
-		prints(type,"\n", data,"\n", procedure_raw_return,"\n",procedure_data,"\n\n")
 		parsed_procedure_list.append(procedure_data)
 
 

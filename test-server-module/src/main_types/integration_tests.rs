@@ -354,14 +354,11 @@ pub fn procedure_test_option_type_return(
 
 #[procedure]
 pub fn procedure_test_vec_type_return(
-    ctx: &mut ProcedureContext,
-    t_u64: u64,
+    _ctx: &mut ProcedureContext
 ) -> Vec<TestTableDatatypes> {
 
-    if let Some(row) = ctx.with_tx(|tctx| tctx.db.test_table_datatypes().t_u64().find(t_u64)){
-        return vec![row];
-    }
-    vec![]
+    vec![TestTableDatatypes::default(),TestTableDatatypes::default()]
+
 }
 
 

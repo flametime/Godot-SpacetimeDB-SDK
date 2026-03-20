@@ -87,12 +87,14 @@ func procedure_response(response: ProcedureResultMessage, p_call: SpacetimeDBPro
 		prints("procedure", response.request_id, "with return type", p_call.return_type_bsatn, "response ok",response.result_ok)
 	if response.result_err:
 		prints("procedure", response.request_id, "with return type", p_call.return_type_bsatn, "response err", response.result_err)
+	if not response.result_ok and not response.result_err:
+		prints("procedure", response.request_id, "with return type", p_call.return_type_bsatn, "response empty")
 	print("\n\n")
 
 func _on_button_3_pressed() -> void:
 	var procedure_call := SpacetimeDB.Main.procedures.procedure_test_type_return(2)
 	procedure_call.response.connect(procedure_response.bind(procedure_call))
-	var procedure_call2 := SpacetimeDB.Main.procedures.procedure_test_vec_type_return(2)
+	var procedure_call2 := SpacetimeDB.Main.procedures.procedure_test_vec_type_return()
 	procedure_call2.response.connect(procedure_response.bind(procedure_call2))
 	var procedure_call3 := SpacetimeDB.Main.procedures.procedure_test_option_type_return(2)
 	procedure_call3.response.connect(procedure_response.bind(procedure_call3))
@@ -108,5 +110,7 @@ func _on_button_3_pressed() -> void:
 	procedure_call8.response.connect(procedure_response.bind(procedure_call8))
 	var procedure_call9 := SpacetimeDB.Main.procedures.procedure_test_vec_u_32_return(2)
 	procedure_call9.response.connect(procedure_response.bind(procedure_call9))
+	var procedure_call10 := SpacetimeDB.Main.procedures.procedure_test_no_return()
+	procedure_call10.response.connect(procedure_response.bind(procedure_call10))
 
 	print("procedures tested") # Replace with function body.

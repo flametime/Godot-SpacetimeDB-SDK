@@ -600,6 +600,8 @@ func _generate_reducers_gdscript(module_name: String, schema: SpacetimeParsedSch
 					var inner_bsatn_type = schema.meta_type_map.get(el.type, "f32")
 					inner_meta_bsatn_types.append(inner_bsatn_type)
 				bsatn_param_type = "%s[%s]" % [outer_bsatn_type, ",".join(inner_meta_bsatn_types)]
+			elif x.has("is_array"):
+				bsatn_param_type = "vec_%s" % schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
 			else:
 				bsatn_param_type = schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
 
@@ -679,6 +681,8 @@ func _generate_procedures_gdscript(module_name: String, schema: SpacetimeParsedS
 					var inner_bsatn_type = schema.meta_type_map.get(el.type, "f32")
 					inner_meta_bsatn_types.append(inner_bsatn_type)
 				bsatn_param_type = "%s[%s]" % [outer_bsatn_type, ",".join(inner_meta_bsatn_types)]
+			elif x.has("is_array"):
+				bsatn_param_type = "vec_%s" % schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
 			else:
 				bsatn_param_type = schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
 
@@ -694,6 +698,7 @@ func _generate_procedures_gdscript(module_name: String, schema: SpacetimeParsedS
 
 		var return_type = schema.types[return_type_raw.type_idx] if return_type_raw.has("type_idx") else null
 		var bsatn_return_type: String
+		print(return_type_raw)
 		if original_inner_type_name_bsatn.is_empty():
 			print(original_inner_type_name_bsatn)
 			bsatn_return_type = ""
@@ -702,7 +707,7 @@ func _generate_procedures_gdscript(module_name: String, schema: SpacetimeParsedS
 			if return_type_raw.has("is_array_inside_option"):
 				inner_meta_for_option = "vec_%s" % schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
 			else:
-				inner_meta_for_option = schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
+				inner_meta_for_option = "opt_%s" %schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
 			bsatn_return_type = "%s" % inner_meta_for_option
 		elif return_type and return_type.has("gd_arraylike"):
 			var outer_bsatn_type = schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
@@ -711,6 +716,8 @@ func _generate_procedures_gdscript(module_name: String, schema: SpacetimeParsedS
 				var inner_bsatn_type = schema.meta_type_map.get(el.type, "f32")
 				inner_meta_bsatn_types.append(inner_bsatn_type)
 			bsatn_return_type = "%s[%s]" % [outer_bsatn_type, ",".join(inner_meta_bsatn_types)]
+		elif return_type_raw.has("is_array"):
+			bsatn_return_type = "vec_%s" % schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
 		else:
 			bsatn_return_type = schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
 

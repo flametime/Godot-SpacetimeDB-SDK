@@ -1042,7 +1042,7 @@ func _read_procedure_result_message(spb: StreamPeerBuffer)-> ProcedureResultMess
 	resource.total_host_execution_duration = read_timestamp(spb)
 	if has_error(): return null
 	resource.request_id = read_u32_le(spb); if has_error(): return null
-	if resource.result_err:
+	if resource.result_err or return_bytes.size() == 0:
 		return resource
 	## parsing of the return data
 	var call: SpacetimeDBProcedureCall = _client._pending_procedure_call.get(resource.request_id)
