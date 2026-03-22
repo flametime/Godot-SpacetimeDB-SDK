@@ -693,36 +693,44 @@ func _generate_procedures_gdscript(module_name: String, schema: SpacetimeParsedS
 		if not param_bsatn_types_list.is_empty():
 			param_bsatn_types_str = ", ".join(param_bsatn_types_list)
 
-		var return_type_raw = procedure.get("return_type")
-		var original_inner_type_name_bsatn: String = return_type_raw.get("type", "Variant")
+		var return_type_data: Dictionary = procedure.get("return_type")
+		#print(procedure)
+		var return_type_names: Array = return_type_data.get("type", [])
 
-		var return_type = schema.types[return_type_raw.type_idx] if return_type_raw.has("type_idx") else null
-		var bsatn_return_type: String
-		print(return_type_raw)
-		if original_inner_type_name_bsatn.is_empty():
-			print(original_inner_type_name_bsatn)
-			bsatn_return_type = ""
-		elif return_type_raw.has("is_option"):
-			var inner_meta_for_option: String
-			if return_type_raw.has("is_array_inside_option"):
-				inner_meta_for_option = "vec_%s" % schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
+
+		var bsatn_return_types:Array = []
+		var return_type = schema.types[return_type_data.type_idx] if return_type_data.has("type_idx") else null
+		for return_type_name in return_type_names:
+			var bsatn_return_type:String
+			if return_type_data.has("is_option"):
+				var inner_meta_for_option: String
+				if return_type_data.has("is_array_inside_option"):
+					inner_meta_for_option = "vec_%s" % schema.meta_type_map.get(return_type_name, return_type_name)
+				else:
+					inner_meta_for_option = "opt_%s" %schema.meta_type_map.get(return_type_name, return_type_name)
+				bsatn_return_type = "%s" % inner_meta_for_option
+			elif return_type_data.has("is_result"):
+				var inner_meta_for_result: String
+				if return_type_data.has("is_array_inside_option"):
+					inner_meta_for_result = "vec_%s" % schema.meta_type_map.get(return_type_name, return_type_name)
+				else:
+					inner_meta_for_result = "%s" %schema.meta_type_map.get(return_type_name, return_type_name)
+				bsatn_return_type = "%s" % inner_meta_for_result
+			elif return_type and return_type.has("gd_arraylike"):
+				var outer_bsatn_type = schema.meta_type_map.get(return_type_name, return_type_name)
+				var inner_meta_bsatn_types: Array[String] = []
+				for el in return_type.struct:
+					var inner_bsatn_type = schema.meta_type_map.get(el.type, "f32")
+					inner_meta_bsatn_types.append(inner_bsatn_type)
+				bsatn_return_type = "%s[%s]" % [outer_bsatn_type, ",".join(inner_meta_bsatn_types)]
+			elif return_type_data.has("is_array"):
+				bsatn_return_type = "vec_%s" % schema.meta_type_map.get(return_type_name, return_type_name)
 			else:
-				inner_meta_for_option = "opt_%s" %schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
-			bsatn_return_type = "%s" % inner_meta_for_option
-		elif return_type and return_type.has("gd_arraylike"):
-			var outer_bsatn_type = schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
-			var inner_meta_bsatn_types: Array[String] = []
-			for el in return_type.struct:
-				var inner_bsatn_type = schema.meta_type_map.get(el.type, "f32")
-				inner_meta_bsatn_types.append(inner_bsatn_type)
-			bsatn_return_type = "%s[%s]" % [outer_bsatn_type, ",".join(inner_meta_bsatn_types)]
-		elif return_type_raw.has("is_array"):
-			bsatn_return_type = "vec_%s" % schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
-		else:
-			bsatn_return_type = schema.meta_type_map.get(original_inner_type_name_bsatn, original_inner_type_name_bsatn)
-
-		var return_type_str : StringName = "&'%s'" % bsatn_return_type
-
+				bsatn_return_type = schema.meta_type_map.get(return_type_name, return_type_name)
+			bsatn_return_types.append(bsatn_return_type)
+		if bsatn_return_types.size() >= 2:
+			bsatn_return_types.push_front("ret")
+		var return_type_str : StringName = "&'%s'" % "_".join(bsatn_return_types)
 		content += "\n".join(description_comment) + "\n"
 		var reducer_name: String = procedure.get("name", "")
 		content += "func %s(%s) -> SpacetimeDBProcedureCall:\n" % [reducer_name, params_str] + \

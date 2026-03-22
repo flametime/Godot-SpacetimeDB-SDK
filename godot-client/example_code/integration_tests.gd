@@ -8,6 +8,7 @@ func _ready() -> void:
 	options.debug_mode = false # <--- enables lots of additional debug prints and warnings
 	options.compression = SpacetimeDBConnection.CompressionPreference.GZIP
 	options.threading = false
+	options.monitor_mode = true
 	# Increase buffer size. In general, you don't need this.
 	# options.set_all_buffer_size(1024 * 1024 * 2)
 	# Disable threading (e.g., for web builds)

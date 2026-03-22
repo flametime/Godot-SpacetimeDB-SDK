@@ -239,6 +239,19 @@ func _read_option(spb: StreamPeerBuffer, parent_resource_containing_option: Reso
 		_set_error("Invalid tag %d for Option property '%s' (expected 0 for Some, 1 for None)." % [is_present_tag, option_prop_name], tag_pos)
 		return null
 
+func _read_result(spb:StreamPeerBuffer,bsatn_type_str:StringName) -> Variant:
+	var type_strs:Array = bsatn_type_str.split("_")
+	var tag := read_u8(spb)
+	match tag:
+		0: ## Result Ok type_strs[0]
+			return _read_value_from_bsatn_type(spb, type_strs[0],&"")
+		1: ## Result Err type_strs[1]
+			return _read_value_from_bsatn_type(spb, type_strs[1],&"")
+		_: ## unreachable
+			_set_error("_read_result tag %s is not 0 or 1" % tag)
+			return null
+	return null
+
 ## Reads an array property.
 func _read_array(spb: StreamPeerBuffer, resource: Resource, prop: Dictionary) -> Array:
 	var prop_name: StringName = prop.name
@@ -592,9 +605,14 @@ func _read_value_from_bsatn_type(spb: StreamPeerBuffer, bsatn_type_str: String, 
 	# 3. Handle Option<T> (e.g., "opt_u8", "opt_mycustomresource")
 	# Assumes bsatn_type_str is already lowercase
 	if bsatn_type_str.begins_with("opt_"):
-		var element_bsatn_type_str = bsatn_type_str.right(-4) # This will also be lowercase
+		var element_bsatn_type_str = bsatn_type_str.trim_prefix("opt_") # This will also be lowercase
 		var option = _read_option(spb, null, {"name": context_prop_name_for_error}, element_bsatn_type_str)
 		return option
+	# Handle Return<T> (e.g., "ret_u32_u32", "ret_type_string")
+	if bsatn_type_str.begins_with("ret_"):
+		bsatn_type_str = bsatn_type_str.trim_prefix("ret_").to_lower()
+		var result = _read_result(spb,bsatn_type_str)
+		return result
 
 	# 3.5. Protocol type: TransactionUpdateMessage (e.g. ReducerResult ok payload)
 	# Not in module schema; use dedicated reader.

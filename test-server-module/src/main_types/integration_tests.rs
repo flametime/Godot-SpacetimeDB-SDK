@@ -160,7 +160,7 @@ pub fn start_integration_tests(ctx: &ReducerContext) {
     ctx.db.test_scheduled_table().insert(TestScheduledTable {
         scheduled_id: 0,
         h1: 1,
-        scheduled_at: TimeDuration::from_micros(1000000).into(),
+        scheduled_at: TimeDuration::from_micros(100000).into(),
         h2: 1,
         public_count: 0,
         private_count: 0,

@@ -337,8 +337,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 
 		var data := {}
 		## doesn't parse Result<_,_> correctly. it parses as Option<_,None>
-		var type = _parse_field_type(procedure_raw_return, data,schema_types_raw)
-		data["type"] = type
+		_parse_return_type(procedure_raw_return, data,schema_types_raw)
 		procedure_data["return_type"] = data
 		parsed_procedure_list.append(procedure_data)
 
@@ -503,9 +502,16 @@ static func _is_sum_option(sum_def) -> bool:
 				none_is_unit = true
 			elif none_variant_type.is_empty():
 				none_is_unit = true
-
-
 	return found_some and found_none and none_is_unit
+
+static func _is_sum_result(sum_def) -> bool:
+	var variants = sum_def.get("variants", [])
+	if variants.size() != 2:
+		return false
+	var name1 = variants[0].get("name", {}).get("some", "")
+	var name2 = variants[1].get("name", {}).get("some", "")
+	return name1 == "ok" and name2 == "err"
+
 
 # Recursively parse a field type
 static func _parse_field_type(field_type: Dictionary, data: Dictionary, schema_types: Array) -> String:
@@ -539,6 +545,64 @@ static func _parse_field_type(field_type: Dictionary, data: Dictionary, schema_t
 		return schema_types[field_type.Ref].get("source_name", {}).get("source_name", null)
 	else:
 		return field_type.keys()[0]
+
+# Recursively parse a field type
+static func _parse_return_type(field_type: Dictionary, data: Dictionary, schema_types: Array) -> void:
+	if field_type.has("Array"):
+		var nested_type = data.get("nested_type", [])
+		nested_type.append(&"Array")
+		data["nested_type"] = nested_type
+		if data.has("is_option"):
+			data["is_array_inside_option"] = true
+		else:
+			data["is_array"] = true
+		field_type = field_type.Array
+		_parse_return_type(field_type, data, schema_types)
+		return
+	elif field_type.has("Product"):
+		var elements :Array= field_type.Product.get("elements", [])
+		if elements.is_empty():
+			return
+		var data_type:Array = data.get("type", [])
+		data_type.append(elements[0].get('name', {}).get('some', null))
+		data.set("type", data_type)
+		return
+	elif field_type.has("Sum"):
+		if _is_sum_option(field_type.Sum):
+			var nested_type = data.get("nested_type", [])
+			nested_type.append(&"Option")
+			data["nested_type"] = nested_type
+			if data.has("is_array"):
+				data["is_option_inside_array"] = true
+			else:
+				data["is_option"] = true
+			var field_type1 = field_type.Sum.variants[0].get('algebraic_type', {})
+			_parse_return_type(field_type1, data, schema_types)
+			return
+		elif _is_sum_result(field_type.Sum):
+
+			var nested_type = data.get("nested_type", [])
+			nested_type.append(&"Result")
+			data["nested_type"] = nested_type
+			if data.has("is_array"):
+				data["is_result_inside_array"] = true
+			else:
+				data["is_result"] = true
+			var field_type1 = field_type.Sum.variants[0].get('algebraic_type', {})
+			_parse_return_type(field_type1, data, schema_types)
+			var field_type2 = field_type.Sum.variants[1].get('algebraic_type', {})
+			_parse_return_type(field_type2, data, schema_types)
+		return
+	elif field_type.has("Ref"):
+		var data_type:Array = data.get("type", [])
+		data_type.append(schema_types[field_type.Ref].get("source_name", {}).get("source_name", null))
+		data.set("type", data_type)
+		return
+	else:
+		var data_type:Array = data.get("type", [])
+		data_type.append(field_type.keys()[0])
+		data.set("type", data_type)
+		return
 
 # Recursively parse a sum type
 static func _parse_sum_type(variant_type: Dictionary, data: Dictionary, schema_types: Array) -> String:
