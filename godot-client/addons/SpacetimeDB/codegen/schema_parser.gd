@@ -199,7 +199,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	var parsed_tables_list: Array[Dictionary] = []
 
 	for table_info in schema_tables:
-		var table_name_str: String = table_info.get("source_name", null)
+		var table_name_str: String = table_info.get("source_name", null).to_snake_case()
 		var ref_idx_raw = table_info.get("product_type_ref", null)
 		if ref_idx_raw == null or table_name_str == null:
 			SpacetimePlugin.print_err("Skipped table with: ref_idx_raw, table_name_str")
@@ -226,7 +226,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 			"type_idx": target_type_idx
 		}
 
-		if not target_type_def.has("source_name"):
+		if not target_type_def.has("table_names"):
 			target_type_def.table_names = []
 		target_type_def.table_names.append(table_name_str)
 		target_type_def.table_name = table_name_str
@@ -276,7 +276,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	var parsed_reducers_list: Array[Dictionary] = []
 	for reducer_info in schema_reducers:
 		if reducer_info.visibility.has("Private"): continue
-		var r_name = reducer_info.get("source_name", null)
+		var r_name = reducer_info.get("source_name", null).to_snake_case()
 		if r_name == null:
 			SpacetimePlugin.print_err("Reducer found with no name: %s" % [reducer_info])
 			continue
@@ -302,8 +302,45 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 				data["type_idx"] = type_idx
 			reducer_params.append(data)
 		reducer_data["params"] = reducer_params
-
 		parsed_reducers_list.append(reducer_data)
+
+	var parsed_procedure_list:Array[Dictionary] = []
+	for procedure_info in schema_procedures:
+		if procedure_info.visibility.has("Private"): continue
+		var r_name = procedure_info.get("source_name", null).to_snake_case()
+		if r_name == null:
+			SpacetimePlugin.print_err("Reducer found with no name: %s" % [procedure_info])
+			continue
+		var procedure_data: Dictionary = {"name": r_name}
+
+		var procedure_raw_params = procedure_info.get("params", {}).get("elements", [])
+		var procedure_params = []
+		for raw_param in procedure_raw_params:
+			var data = {"name": raw_param.get("name", {}).get("some", null)}
+			var type = _parse_field_type(raw_param.get("algebraic_type", {}), data, schema_types_raw)
+			data["type"] = type
+
+			var type_idx = 0
+			var type_found = false
+			if type and not (GDNATIVE_PRIMITIVE_TYPES.has(type) or DEFAULT_TYPE_MAP.has(type)):
+				for pt in parsed_types_list:
+					if pt.name == type:
+						type_found = true
+						break
+					type_idx += 1
+			if type_found:
+				data["type_idx"] = type_idx
+			procedure_params.append(data)
+		procedure_data["params"] = procedure_params
+
+		var procedure_raw_return = procedure_info.get("return_type")
+
+		var data := {}
+		## doesn't parse Result<_,_> correctly. it parses as Option<_,None>
+		_parse_return_type(procedure_raw_return, data,schema_types_raw)
+		procedure_data["return_type"] = data
+		parsed_procedure_list.append(procedure_data)
+
 
 	for view :Dictionary in schema_views:
 		var name :String = view["source_name"]
@@ -372,6 +409,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	parsed_schema.types = parsed_types_list
 	parsed_schema.tables = parsed_tables_list
 	parsed_schema.reducers = parsed_reducers_list
+	parsed_schema.procedures = parsed_procedure_list
 	parsed_schema.type_map = type_map
 	parsed_schema.meta_type_map = meta_type_map
 	parsed_schema.typespace = schema_typespace
@@ -464,9 +502,16 @@ static func _is_sum_option(sum_def) -> bool:
 				none_is_unit = true
 			elif none_variant_type.is_empty():
 				none_is_unit = true
-
-
 	return found_some and found_none and none_is_unit
+
+static func _is_sum_result(sum_def) -> bool:
+	var variants = sum_def.get("variants", [])
+	if variants.size() != 2:
+		return false
+	var name1 = variants[0].get("name", {}).get("some", "")
+	var name2 = variants[1].get("name", {}).get("some", "")
+	return name1 == "ok" and name2 == "err"
+
 
 # Recursively parse a field type
 static func _parse_field_type(field_type: Dictionary, data: Dictionary, schema_types: Array) -> String:
@@ -481,7 +526,10 @@ static func _parse_field_type(field_type: Dictionary, data: Dictionary, schema_t
 		field_type = field_type.Array
 		return _parse_field_type(field_type, data, schema_types)
 	elif field_type.has("Product"):
-		return field_type.Product.get("elements", [])[0].get('name', {}).get('some', null)
+		var elements :Array= field_type.Product.get("elements", [])
+		if elements.is_empty():
+			return ""
+		return elements[0].get('name', {}).get('some', null)
 	elif field_type.has("Sum"):
 		if _is_sum_option(field_type.Sum):
 			var nested_type = data.get("nested_type", [])
@@ -497,6 +545,64 @@ static func _parse_field_type(field_type: Dictionary, data: Dictionary, schema_t
 		return schema_types[field_type.Ref].get("source_name", {}).get("source_name", null)
 	else:
 		return field_type.keys()[0]
+
+# Recursively parse a field type
+static func _parse_return_type(field_type: Dictionary, data: Dictionary, schema_types: Array) -> void:
+	if field_type.has("Array"):
+		var nested_type = data.get("nested_type", [])
+		nested_type.append(&"Array")
+		data["nested_type"] = nested_type
+		if data.has("is_option"):
+			data["is_array_inside_option"] = true
+		else:
+			data["is_array"] = true
+		field_type = field_type.Array
+		_parse_return_type(field_type, data, schema_types)
+		return
+	elif field_type.has("Product"):
+		var elements :Array= field_type.Product.get("elements", [])
+		if elements.is_empty():
+			return
+		var data_type:Array = data.get("type", [])
+		data_type.append(elements[0].get('name', {}).get('some', null))
+		data.set("type", data_type)
+		return
+	elif field_type.has("Sum"):
+		if _is_sum_option(field_type.Sum):
+			var nested_type = data.get("nested_type", [])
+			nested_type.append(&"Option")
+			data["nested_type"] = nested_type
+			if data.has("is_array"):
+				data["is_option_inside_array"] = true
+			else:
+				data["is_option"] = true
+			var field_type1 = field_type.Sum.variants[0].get('algebraic_type', {})
+			_parse_return_type(field_type1, data, schema_types)
+			return
+		elif _is_sum_result(field_type.Sum):
+
+			var nested_type = data.get("nested_type", [])
+			nested_type.append(&"Result")
+			data["nested_type"] = nested_type
+			if data.has("is_array"):
+				data["is_result_inside_array"] = true
+			else:
+				data["is_result"] = true
+			var field_type1 = field_type.Sum.variants[0].get('algebraic_type', {})
+			_parse_return_type(field_type1, data, schema_types)
+			var field_type2 = field_type.Sum.variants[1].get('algebraic_type', {})
+			_parse_return_type(field_type2, data, schema_types)
+		return
+	elif field_type.has("Ref"):
+		var data_type:Array = data.get("type", [])
+		data_type.append(schema_types[field_type.Ref].get("source_name", {}).get("source_name", null))
+		data.set("type", data_type)
+		return
+	else:
+		var data_type:Array = data.get("type", [])
+		data_type.append(field_type.keys()[0])
+		data.set("type", data_type)
+		return
 
 # Recursively parse a sum type
 static func _parse_sum_type(variant_type: Dictionary, data: Dictionary, schema_types: Array) -> String:

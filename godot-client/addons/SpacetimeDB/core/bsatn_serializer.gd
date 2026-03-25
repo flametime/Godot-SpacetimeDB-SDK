@@ -113,7 +113,7 @@ func write_bytes(v: PackedByteArray) -> void:
 	var result = _spb.put_data(v)
 	if result != OK: _set_error("StreamPeerBuffer.put_data failed with code %d" % result)
 
-func write_string_with_u32_len(v: String) -> void:
+func write_string_with_u32_len(v: StringName) -> void:
 	#print("write_string_with_u32_len(%s)" % v)
 	if v == null: v = ""
 	var str_bytes := v.to_utf8_buffer()

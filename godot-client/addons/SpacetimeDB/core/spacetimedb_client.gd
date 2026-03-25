@@ -41,7 +41,8 @@ var _is_initialized := false
 var _received_initial_subscription := false
 var _next_query_id := 0
 var _next_request_id := 0
-var _pending_reducer_call: Dictionary[int, SpacetimeDBReducerCall] = { }
+var _pending_reducer_call: Dictionary[int, SpacetimeDBReducerCall] = {}
+var _pending_procedure_call: Dictionary[int, SpacetimeDBProcedureCall] = {}
 var _pending_subscriptions: Dictionary[int, SpacetimeDBSubscription]
 var _pending_one_off_query_callbacks: Dictionary[int,SpacetimeDBPendingOneOffQuery]
 
@@ -88,7 +89,7 @@ func initialize_and_connect():
 	var schema := SpacetimeDBSchema.new(module_name, schema_path, debug_mode)
 
 	# 2. Initialize Parser
-	_deserializer = BSATNDeserializer.new(schema, debug_mode)
+	_deserializer = BSATNDeserializer.new(schema, self, debug_mode)
 	_serializer = BSATNSerializer.new(debug_mode)
 
 	# 3. Initialize Local Database
@@ -357,6 +358,13 @@ func _handle_parsed_message(message_resource: Resource):
 		else:
 			printerr("SpacetimeDBClient: Reducer timed out before the response message arrived")
 		return
+	elif message_resource is ProcedureResultMessage:
+		var request_id = message_resource.request_id
+		var procedure_call : SpacetimeDBProcedureCall = _pending_procedure_call.get(request_id)
+		_pending_procedure_call.erase(request_id)
+		if not procedure_call:
+			printerr("SpacetimeDBClient: Pending procedure call for request_id %s not found"% request_id)
+		procedure_call.on_response(message_resource)
 	else:
 		print_log("SpacetimeDBClient: Received unhandled message resource type: " + message_resource.get_class())
 
@@ -575,5 +583,40 @@ func call_reducer(reducer_name: String, args: Array = [], types: Array = []) -> 
 	print("SpacetimeDBClient: Internal error - WebSocket peer not available in connection.")
 	return SpacetimeDBReducerCall.fail(ERR_CONNECTION_ERROR)
 
-func call_procedure():
-	pass
+func call_procedure(procedure_name: String, args: Array = [], types: Array = [], return_type: StringName = &"") -> SpacetimeDBProcedureCall:
+	if not is_connected_db():
+		printerr("SpacetimeDBClient: Cannot call procedure, not connected.")
+		return SpacetimeDBProcedureCall.fail(ERR_CONNECTION_ERROR)
+
+	var args_bytes := _serializer._serialize_arguments(args, types)
+
+	if _serializer.has_error():
+		printerr("Failed to serialize args for %s: %s" % [procedure_name, _serializer.get_last_error()])
+		return SpacetimeDBProcedureCall.fail(ERR_PARSE_ERROR)
+
+	var request_id := _next_request_id
+	_next_request_id += 1
+	var call_data := CallProcedureMessage.new(procedure_name, args_bytes, request_id, 0)
+	var message_bytes := _serializer.serialize_client_message(
+		SpacetimeDBClientMessage.CALL_PROCEDURE,
+		call_data
+	)
+
+	if _serializer.has_error():
+		printerr("SpacetimeDBClient: Failed to serialize CallProcedure message: %s" % _serializer.get_last_error())
+		return SpacetimeDBProcedureCall.fail(ERR_PARSE_ERROR)
+
+	if debug_mode: print("DEBUG: call_procedure: Calling procedure '%s' with request id '%d' and message bytes: %s (argument bytes: %s)" % [procedure_name, request_id, message_bytes, args_bytes])
+
+	# Access the internal _websocket peer directly (might need adjustment if _connection API changes)
+	if _connection and _connection._websocket: # Basic check
+		var err := _connection.send_bytes(message_bytes)
+		if err != OK:
+			print("SpacetimeDBClient: Error sending CallProcedure JSON message: ", err)
+			return SpacetimeDBProcedureCall.fail(err)
+		var procedure_call = SpacetimeDBProcedureCall.create(self, request_id, return_type)
+		_pending_procedure_call.set(request_id, procedure_call)
+		return procedure_call
+
+	print("SpacetimeDBClient: Internal error - WebSocket peer not available in connection.")
+	return SpacetimeDBProcedureCall.fail(ERR_CONNECTION_ERROR)
