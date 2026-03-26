@@ -87,7 +87,6 @@ func initialize_and_connect():
 	# 1. Load Schema
 	var module_name: String = get_meta("module_name", "")
 	var schema := SpacetimeDBSchema.new(module_name, schema_path, debug_mode)
-
 	# 2. Initialize Parser
 	_deserializer = BSATNDeserializer.new(schema, self, debug_mode)
 	_serializer = BSATNSerializer.new(debug_mode)

@@ -71,6 +71,12 @@ func update_module_ui():
 			plugin_config_changed.emit()
 			)
 		alias_input.text_changed.connect(func(text:String):
+			var regex = RegEx.new()
+			regex.compile("[^[:alnum:]]+")
+			var result = regex.search(text)
+			if result:
+				add_err("INVALID alias name. Alphanumeric only but found: %s" % result.get_string())
+				return
 			_plugin_config.module_configs.erase(module_config.alias)
 			module_config.alias = text
 			_plugin_config.module_configs.set(module_config.alias, module_config)
@@ -130,12 +136,17 @@ func _on_check_uri() -> void:
 	check_uri.emit()
 
 func _on_generate_code() -> void:
+	update_module_ui()
 	generate_schema.emit()
 
 func _on_new_module() -> void:
-	var name := _new_module_name_input.text
-	var alias := _new_module_alias_input.text
+	var name := _new_module_name_input.text.to_lower()
+	if name.is_empty():
+		return
+	var alias := _new_module_alias_input.text.to_lower()
 	var table_config = _new_module_table_checkbox.button_pressed
+	if not _is_alphanumerical(name) or not _is_alphanumerical(alias):
+		return
 	if alias.is_empty():
 		alias = name
 	var module_config: SpacetimeDBModuleConfig = _plugin_config.module_configs.get(alias, SpacetimeDBModuleConfig.new())
@@ -154,3 +165,12 @@ func _on_clear_logs() -> void:
 
 func _on_copy_selected_logs() -> void:
 	copy_selected_logs()
+
+func _is_alphanumerical(string: String)-> bool:
+	var regex = RegEx.new()
+	regex.compile("[^[:alnum:]]+")
+	var result = regex.search(string)
+	if not result.get_string().is_empty():
+		add_err("INVALID string. Alphanumeric only but found: %s" % result.get_string())
+		return false
+	return true

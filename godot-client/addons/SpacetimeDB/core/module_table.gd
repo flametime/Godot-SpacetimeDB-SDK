@@ -2,8 +2,8 @@ class_name _ModuleTable extends RefCounted
 
 var _db: LocalDatabase
 
-func _init(db: LocalDatabase) -> void:
-	_db = db
+func _init() -> void:
+	pass
 
 func count() -> int:
 	return _db.count_all_rows(get_meta("table_name", ""))

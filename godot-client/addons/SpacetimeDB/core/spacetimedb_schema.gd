@@ -1,84 +1,96 @@
 class_name SpacetimeDBSchema extends Resource
 
-var types: Dictionary[String, GDScript] = {}
-var tables: Dictionary[String, GDScript] = {}
+var module_name: StringName = ""
+var module_types: Dictionary[StringName, GDScript] = {}
+var module_tables: Dictionary[StringName, GDScript] = {}
+var module_table_name_to_type_name: Dictionary[StringName, StringName]
+var core_types: Dictionary[StringName, GDScript] = {}
 
 var debug_mode: bool = false # Controls verbose debug printing
 
 func _init(p_module_name: String, p_schema_path: String = "res://spacetime_bindings/schema", p_debug_mode: bool = false) -> void:
 	debug_mode = p_debug_mode
-
-	# Load table row schemas and spacetime types
-	_load_types("%s/types" % p_schema_path, p_module_name.to_snake_case())
+	module_name = p_module_name.to_lower()
+	module_types = {}
+	# Load module type files
+	_load_files("%s/types" % p_schema_path, module_types)
+	# Load module table files
+	module_tables = {}
+	_load_files("%s/tables" % p_schema_path, module_tables)
 	# Load core types if they are defined as Resources with scripts
-	_load_types("res://addons/SpacetimeDB/core_types/**")
+	core_types = {}
+	_load_files("res://addons/SpacetimeDB/core_types", core_types, true)
+	load_table_types()
 
-func _load_types(raw_path: String, prefix: String = "") -> void:
-	var path := raw_path
-	if path.ends_with("/**"):
-		path = path.left(-3)
-
+func _load_files(path: String, dict:Dictionary[StringName, GDScript], is_core: bool = false) -> void:
 	var dir := DirAccess.open(path)
 	if not DirAccess.dir_exists_absolute(path):
 		printerr("SpacetimeDBSchema: Schema directory does not exist: ", path)
 		return
-
+	if debug_mode:
+		prints("path", path, "start loading")
 	dir.list_dir_begin()
 	while true:
-		var file_name_raw := dir.get_next()
-		if file_name_raw == "":
+		var file_name := dir.get_next()
+		if file_name == "":
+			if debug_mode:
+				prints("path:", path, "finished loading")
 			break
 
+		# handle nested folders
 		if dir.current_is_dir():
-			var dir_name := file_name_raw
-			if dir_name != "." and dir_name != ".." and raw_path.ends_with("/**"):
+			var dir_name := file_name
+			if dir_name != "." and dir_name != "..":
 				var dir_path := path.path_join(dir_name)
-				_load_types(dir_path.path_join("/**"), prefix)
+				_load_files(dir_path, dict, is_core)
 			continue
 
-		var file_name := file_name_raw
-
-		# Handle potential remapping on export
-		if file_name.ends_with(".remap"):
-			file_name = file_name.replace(".remap", "")
-			if not file_name.ends_with(".gd"):
-				file_name += ".gd"
-
+		#skip non script files
 		if not file_name.ends_with(".gd"):
-			continue
-
-		if prefix != "" and not file_name.begins_with(prefix):
+			if debug_mode and not file_name.ends_with(".uid"):
+				prints("file_name", file_name, "doesn't end in .gd. skipped")
 			continue
 
 		var script_path := path.path_join(file_name)
+		if not is_core and not file_name.begins_with(module_name):
+			if debug_mode:
+				prints("path", script_path, "is not part of core or module %s. skipped" % module_name)
+			continue
+
+
 		if not ResourceLoader.exists(script_path):
-			printerr("SpacetimeDBSchema: Script file not found or inaccessible: ", script_path, " (Original name: ", file_name_raw, ")")
+			printerr("SpacetimeDBSchema: Script file not found or inaccessible: ", script_path, " (Original name: ", file_name, ")")
 			continue
 
 		var script := ResourceLoader.load(script_path, "GDScript") as GDScript
 
 		if script and script.can_instantiate():
-			var instance = script.new()
-			if instance is Resource: # Ensure it's a resource to get metadata
-				var fallback_table_names: Array[String] = [file_name.get_basename().get_file()]
-
-				var constants := script.get_script_constant_map()
-
-				if constants.has('table_names'):
-					_add_table_names(constants['table_names'] as Array[String], true, script, script_path)
-				_add_table_names(fallback_table_names, false, script, script_path)
-
+			if script.get_global_name().is_empty():
+				printerr("SpacetimeDBSchema: Script file doesn't have a class_name: ", script_path)
+				continue
+			dict.set(script.get_global_name(), script)
+			if debug_mode:
+				prints("script", script_path, "loaded")
+		else:
+			printerr("SpacetimeDBSchema: Script file found but can't instantiate (there is an error inside this file): ", script_path)
 	dir.list_dir_end()
 
-func get_type(type_name: String) -> GDScript:
-	return types.get(type_name)
+func load_table_types():
+	for type_script:GDScript in module_types.values():
+		var type = type_script.new()
+		if type is RustEnum:
+			continue
+		for table_name in type.table_names:
+			module_table_name_to_type_name.set(table_name, type_script.get_global_name())
 
-func _add_table_names(table_names: Array[String], is_table: bool, script: GDScript, script_path: String) -> void:
-	for table_name in table_names:
-		var lower_table_name := table_name.to_lower().replace("_", "")
-		if types.has(lower_table_name) and debug_mode:
-			push_warning("SpacetimeDBSchema: Overwriting schema for table '%s' (from %s)" % [table_name, script_path])
+func get_type_script(type_name: StringName) -> GDScript:
+	return module_types.get(type_name)
 
-		if is_table:
-			tables[lower_table_name] = script
-		types[lower_table_name] = script
+func get_table_script(table_name: StringName) -> GDScript:
+	return module_tables.get(table_name)
+
+func get_core_type_script(core_type_name :StringName) -> GDScript:
+	return core_types.get(core_type_name)
+
+func get_type_of_table_name(table_name:StringName) -> StringName:
+	return module_table_name_to_type_name.get(table_name)

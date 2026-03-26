@@ -1,6 +1,8 @@
 use std::fmt::Display;
 use spacetimedb::*;
 use spacetimedb::rand::RngCore;
+use crate::main_types::color::Color;
+use crate::main_types::vectors::{Vector2, Vector3};
 
 #[derive(Debug, SpacetimeType, Clone, Default)]
 pub enum TestEnum {
@@ -62,6 +64,9 @@ pub struct TestTableDatatypes {
     pub t_test_type: TestType,
     pub t_test_type_vec: Vec<TestType>,
     pub t_test_type_option: Option<TestType>,
+    pub t_test_color: Color,
+    pub t_test_vector2: Vector2,
+    pub t_test_vector3: Vector3,
 }
 
 impl Default for TestTableDatatypes {
@@ -89,6 +94,18 @@ impl Default for TestTableDatatypes {
             t_test_type: TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty },
             t_test_type_vec: vec![TestType{ test_name: "test_name".to_string(), test_int: 1 , test_nested_enum: TestNestedEnum::OkEmpty}],
             t_test_type_option: Some(TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty }),
+            t_test_color: Color {
+                r: 50.0,
+                g: 50.0,
+                b: 50.0,
+                a: 50.0,
+            },
+            t_test_vector2: Vector2 { x: 50.0, y: 50.0 },
+            t_test_vector3: Vector3 {
+                x: 50.0,
+                y: 50.0,
+                z: 50.0,
+            },
         }
     }
 }
@@ -150,6 +167,18 @@ pub fn test_scheduled_reducer(ctx: &ReducerContext, mut row: TestScheduledTable)
                 t_test_type: TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty },
                 t_test_type_vec: vec![TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty }, TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty }],
                 t_test_type_option: Some(TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty }),
+                t_test_color: Color {
+                    r: 50.0,
+                    g: 50.0,
+                    b: 50.0,
+                    a: 50.0,
+                },
+                t_test_vector2: Vector2 { x: 50.0, y: 50.0 },
+                t_test_vector3: Vector3 {
+                    x: 50.0,
+                    y: 50.0,
+                    z: 50.0,
+                },
             });
     }
 }
@@ -186,7 +215,7 @@ pub fn clear_integration_tests(ctx: &ReducerContext) -> Result<(),String> {
 }
 
 #[reducer]
-pub fn reducer_test_parameters(_ctx: &ReducerContext, datatypes: TestTableDatatypes, t_u32: u32, t_u64: u64, t_string: String, test_enum: TestEnum, test_nested_enum: TestNestedEnum, t_vec_u32: Vec<u32> ) -> Result<(),String> {
+pub fn reducer_test_parameters(ctx: &ReducerContext, datatypes: TestTableDatatypes, t_u32: u32, t_u64: u64, t_string: String, test_enum: TestEnum, test_nested_enum: TestNestedEnum, t_vec_u32: Vec<u32> ) -> Result<(),String> {
     if !datatypes.t_vec_string.first().eq(&Some(&"hello world".to_string())){
         return Err(format!("ReducerTest: datatypes parameter {} is not 'hello world'", datatypes.t_vec_string.first().unwrap()));
     }
@@ -215,6 +244,7 @@ pub fn reducer_test_parameters(_ctx: &ReducerContext, datatypes: TestTableDataty
     }
     log::info!("ReducerTest: Completed successfully");
     Ok(())
+
 }
 
 #[view(accessor = test_anonymous_all_types, public)]
