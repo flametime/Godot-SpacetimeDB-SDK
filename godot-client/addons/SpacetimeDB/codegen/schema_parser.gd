@@ -32,52 +32,16 @@ const GDNATIVE_DICTLIKE_TYPES: Dictionary[String, String] = {
 	"Plane": "Plane",
 }
 
-const DEFAULT_TYPE_MAP: Dictionary[String, String] = {
-	"__identity__": "PackedByteArray",
-	"__connection_id__": "PackedByteArray",
-	"__timestamp_micros_since_unix_epoch__": "int",
-	"__time_duration_micros__": "int",
-	"U128": "PackedByteArray",
+const BUILTIN_TYPE_NAMES: Dictionary[String, bool] = {
+	"__identity__": true,
+	"__connection_id__": true,
+	"__timestamp_micros_since_unix_epoch__": true,
+	"__time_duration_micros__": true,
+	"U128": true,
 }
-
-const DEFAULT_META_TYPE_MAP: Dictionary[String, String] = {
-	"I8": "i8",
-	"I16": "i16",
-	"I32": "i32",
-	"I64": "i64",
-	"U8": "u8",
-	"U16": "u16",
-	"U32": "u32",
-	"U64": "u64",
-	"U128": "u128",
-	"F32": "f32",
-	"F64": "f64",
-	"String": "string",
-	"Bool": "bool",
-	"Nil": "nil",
-	"Vector4": "vector4",
-	"Vector4I": "vector4i",
-	"Vector3": "vector3",
-	"Vector3I": "vector3i",
-	"Vector2": "vector2",
-	"Vector2I": "vector2i",
-	"Quaternion": "quaternion",
-	"Color": "color",
-	"__identity__": "identity",
-	"__connection_id__": "connection_id",
-	"__timestamp_micros_since_unix_epoch__": "i64",
-	"__time_duration_micros__": "i64",
-}
-
 
 static func parse_schema(p_schema: Dictionary, module_name: String) -> SpacetimeParsedSchema:
 	var module_pascal := module_name.to_pascal_case()
-	var type_map: Dictionary[String, String] = DEFAULT_TYPE_MAP.duplicate() as Dictionary[String,String]
-	type_map.merge(GDNATIVE_PRIMITIVE_TYPES)
-	type_map.merge(GDNATIVE_ARRAYLIKE_TYPES)
-	type_map.merge(GDNATIVE_DICTLIKE_TYPES)
-
-	var meta_type_map: Dictionary[String, String] = DEFAULT_META_TYPE_MAP.duplicate()
 
 	var sections: Dictionary = _collect_sections(p_schema.get("sections", []))
 	var schema_typespace: Array = _section_typespace(sections)
@@ -99,14 +63,17 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 
 	var parsed_types_list: Array[Dictionary] = []
 	for type_info in schema_types_raw:
-		var type_name := _source_name(type_info)
+		var type_name := module_pascal+ _source_name(type_info)
 		if type_name.is_empty():
 			SpacetimePlugin.print_err(
 				"Invalid schema: Type name not found for type: %s" % type_info
 			)
 			return parsed_schema
 
-		var type_data: Dictionary = {"name": type_name}
+		var type_data: Dictionary = {
+			"name": _resolve_godot_type_hint(type_name, module_pascal),
+			"godot_type_hint": _resolve_godot_type_hint(type_name, module_pascal),
+		}
 		if _is_gd_native(type_name):
 			_set_gd_native(type_name, type_data)
 
@@ -130,16 +97,14 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 		if not struct_def.is_empty():
 			type_data["struct"] = _parse_named_elements(
 				struct_def.get("elements", []),
-				schema_types_raw
+				schema_types_raw,
+				module_pascal
 			)
 
-			if not type_data.has("gd_native"):
-				type_map[type_name] = "%s%s" % [module_pascal, type_name.to_pascal_case()]
-				meta_type_map[type_name] = "%s%s" % [
-					module_pascal,
-					type_name.to_pascal_case()
-				]
-			elif not _validate_gd_native(type_name, type_data):
+			if not type_data.has("gd_native") and not _validate_struct_fields(
+				type_data.get("struct", []),
+				type_name
+			):
 				return parsed_schema
 
 			parsed_types_list.append(type_data)
@@ -148,28 +113,13 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 			type_data["enum"] = _parse_sum_variants(
 				sum_type_def.get("variants", []),
 				schema_types_raw,
+				module_pascal,
 				type_data["is_sum_type"]
 			)
 			parsed_types_list.append(type_data)
-
-			if not type_data.get("is_sum_type"):
-				meta_type_map[type_name] = "u8"
-				type_map[type_name] = "%sModuleClient.Types.%s" % [
-					module_pascal,
-					type_name.to_pascal_case()
-				]
-			else:
-				type_map[type_name] = "%s%s" % [module_pascal, type_name.to_pascal_case()]
-				meta_type_map[type_name] = "%s%s" % [
-					module_pascal,
-					type_name.to_pascal_case()
-				]
-		elif type_map.has(type_name) and not _is_gd_native(type_name):
-			type_data["struct"] = []
-			parsed_types_list.append(type_data)
 		else:
 			SpacetimePlugin.print_log(
-				"Type '%s' has no Product/Sum definition in typespace and is not GDNative. Skipping."
+				"Type '%s' has no Product/Sum definition in typespace. Skipping."
 				% type_name
 			)
 
@@ -180,16 +130,22 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	for parsed_type in parsed_types_list:
 		if not parsed_type.has("struct"):
 			continue
+
 		for field_type in parsed_type.get("struct", []):
 			var field_type_name: String = field_type.get("type", "")
-			if field_type_name.is_empty() or _is_known_builtin(field_type_name):
+			if field_type_name.is_empty():
 				continue
-			if type_idx_by_name.has(field_type_name):
-				field_type["type_idx"] = type_idx_by_name[field_type_name]
+
+			var base_type_name := _strip_type_prefixes(field_type_name)
+			if _is_known_builtin(base_type_name):
+				continue
+
+			if type_idx_by_name.has(base_type_name):
+				field_type["type_idx"] = type_idx_by_name[base_type_name]
 
 	var parsed_tables_list: Array[Dictionary] = []
 	for table_info in schema_tables:
-		var table_name := _snake_name(table_info.get("source_name", ""))
+		var table_name := _snake_name(table_info.get("source_name", ""),module_pascal)
 		var ref_idx := int(table_info.get("product_type_ref", -1))
 		if ref_idx < 0 or table_name.is_empty():
 			SpacetimePlugin.print_err("Skipped table with: ref_idx_raw, table_name_str")
@@ -197,7 +153,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 
 		var original_type_name := ""
 		if ref_idx < schema_types_raw.size():
-			original_type_name = _source_name(schema_types_raw[ref_idx])
+			original_type_name = module_pascal + _source_name(schema_types_raw[ref_idx])
 
 		var target_type_idx := type_idx_by_name.get(original_type_name, -1)
 		var target_type_def: Dictionary = (
@@ -213,6 +169,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 					original_type_name if not original_type_name.is_empty() else "N/A",
 				]
 			)
+			SpacetimePlugin.print_err(target_type_def)
 			continue
 
 		var table_data: Dictionary = {
@@ -245,11 +202,14 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 
 		var parsed_unique_indexes: Array[Dictionary] = []
 		for constraint_def in table_info.get("constraints", []):
-			var constraint_name: String = constraint_def.get("source_name", {}).get("some", null)
-			var column_indices: Array = constraint_def.get("data", {}).get("Unique", {}).get(
-				"columns",
-				[]
+			var constraint_name: String = constraint_def.get("source_name", {}).get(
+				"some",
+				null
 			)
+			var column_indices: Array = constraint_def.get("data", {}).get(
+				"Unique",
+				{}
+			).get("columns", [])
 			if column_indices.size() != 1 or constraint_name == null:
 				continue
 
@@ -279,17 +239,19 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 		schema_reducers,
 		schema_types_raw,
 		parsed_types_list,
+		module_pascal,
 		false
 	)
 	var parsed_procedure_list: Array[Dictionary] = _parse_callables(
 		schema_procedures,
 		schema_types_raw,
 		parsed_types_list,
+		module_pascal,
 		true
 	)
 
 	for view: Dictionary in schema_views:
-		var name := _snake_name(view.get("source_name", ""))
+		var name := _snake_name(view.get("source_name", ""),module_pascal)
 		var return_type_dict: Dictionary = view.get("return_type", {})
 		var type_index := _unwrap_ref_index(return_type_dict)
 		if type_index < 0 or type_index >= parsed_types_list.size():
@@ -304,6 +266,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 		if return_type.get("table_names", []).is_empty():
 			return_type = {
 				"name": return_type.get("name", ""),
+				"godot_type_hint": return_type.get("godot_type_hint", ""),
 				"struct": return_type.get("struct", []),
 				"table_names": [name],
 				"table_name": name,
@@ -349,9 +312,6 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	parsed_schema.tables = parsed_tables_list
 	parsed_schema.reducers = parsed_reducers_list
 	parsed_schema.procedures = parsed_procedure_list
-	parsed_schema.type_map = type_map
-	parsed_schema.meta_type_map = meta_type_map
-	parsed_schema.typespace = schema_typespace
 	return parsed_schema
 
 static func _collect_sections(sections: Array) -> Dictionary:
@@ -378,8 +338,8 @@ static func _source_name(value: Variant) -> String:
 			return str(value.get("some", ""))
 	return "" if value == null else str(value)
 
-static func _snake_name(value: Variant) -> String:
-	return _source_name(value).to_snake_case()
+static func _snake_name(value: Variant, module_pascal: StringName) -> String:
+	return (module_pascal+ "_"+_source_name(value)).to_snake_case()
 
 static func _variant_name(variant: Dictionary) -> String:
 	return str(variant.get("name", {}).get("some", ""))
@@ -400,120 +360,193 @@ static func _is_known_builtin(type_name: String) -> bool:
 	return GDNATIVE_PRIMITIVE_TYPES.has(type_name) \
 		or GDNATIVE_ARRAYLIKE_TYPES.has(type_name) \
 		or GDNATIVE_DICTLIKE_TYPES.has(type_name) \
-		or DEFAULT_TYPE_MAP.has(type_name)
+		or BUILTIN_TYPE_NAMES.has(type_name)
 
-static func _push_nested(data: Dictionary, nested_name: String) -> void:
-	var nested: Array = data.get("nested_type", [])
-	nested.append(nested_name)
-	data["nested_type"] = nested
+static func _strip_type_prefixes(type_name: String) -> String:
+	var out := type_name
+	var changed := true
+	while changed:
+		changed = false
+		for prefix in ["vec_", "opt_", "ret_"]:
+			if out.begins_with(prefix):
+				out = out.substr(prefix.length())
+				changed = true
+	return out
 
-static func _mark_array(data: Dictionary) -> void:
-	if data.has("is_option"):
-		data["is_array_inside_option"] = true
-	elif data.has("is_result"):
-		data["is_array_inside_result"] = true
-	else:
-		data["is_array"] = true
+static func _resolve_godot_type_hint(type_name: String,module_name: String) -> String:
+	if GDNATIVE_PRIMITIVE_TYPES.has(type_name.trim_prefix(module_name)):
+		return GDNATIVE_PRIMITIVE_TYPES[type_name.trim_prefix(module_name)]
+	if GDNATIVE_ARRAYLIKE_TYPES.has(type_name.trim_prefix(module_name)):
+		return GDNATIVE_ARRAYLIKE_TYPES[type_name.trim_prefix(module_name)]
+	if GDNATIVE_DICTLIKE_TYPES.has(type_name.trim_prefix(module_name)):
+		return GDNATIVE_DICTLIKE_TYPES[type_name.trim_prefix(module_name)]
 
-static func _mark_option(data: Dictionary) -> void:
-	if data.has("is_array"):
-		data["is_option_inside_array"] = true
-	elif data.has("is_result"):
-		data["is_option_inside_result"] = true
-	else:
-		data["is_option"] = true
+	match type_name:
+		"__identity__":
+			return "PackedByteArray"
+		"__connection_id__":
+			return "PackedByteArray"
+		"__timestamp_micros_since_unix_epoch__":
+			return "int"
+		"__time_duration_micros__":
+			return "int"
+		"U128":
+			return "PackedByteArray"
+		_:
+			pass
+	return "%s" % [type_name.to_pascal_case()]
 
-static func _mark_result(data: Dictionary) -> void:
-	if data.has("is_array"):
-		data["is_result_inside_array"] = true
-	elif data.has("is_option"):
-		data["is_result_inside_option"] = true
-	else:
-		data["is_result"] = true
-
-static func _parse_type_tree(
+static func _parse_type_info(
 	node: Dictionary,
-	data: Dictionary,
 	schema_types: Array,
+	module_pascal: String,
 	collect_all := false
-) -> Array[String]:
+) -> Dictionary:
 	if node.has("Array"):
-		_push_nested(data, "Array")
-		_mark_array(data)
-		return _parse_type_tree(node["Array"], data, schema_types, collect_all)
+		var inner := _parse_type_info(node["Array"], schema_types, module_pascal, collect_all)
+		if inner.is_empty():
+			return {}
+
+		var inner_type: String = inner.get("type", "")
+		var inner_hint: String = inner.get("godot_type_hint", "Variant")
+
+		return {
+			"type": "vec_%s" % inner_type,
+			"godot_type_hint": "Array[%s]" % inner_hint,
+		}
 
 	if node.has("Sum"):
 		var sum_def: Dictionary = node["Sum"]
 
 		if _is_sum_option(sum_def):
-			_push_nested(data, "Option")
-			_mark_option(data)
-			var some_variant: Dictionary= sum_def.get("variants", [])[0].get("algebraic_type", {})
-			return _parse_type_tree(some_variant, data, schema_types, collect_all)
+			var some_variant: Dictionary = sum_def.get("variants", [])[0].get(
+				"algebraic_type",
+				{}
+			)
+			var some_info := _parse_type_info(
+				some_variant,
+				schema_types,
+				module_pascal,
+				collect_all
+			)
+			if some_info.is_empty():
+				return {}
+
+			return {
+				"type": "opt_%s" % some_info.get("type", ""),
+				"godot_type_hint": "Option",
+			}
 
 		if collect_all and _is_sum_result(sum_def):
-			_push_nested(data, "Result")
-			_mark_result(data)
-			var out: Array[String] = []
+			var type_parts: Array[String] = []
 			for v in sum_def.get("variants", []):
-				out.append_array(
-					_parse_type_tree(v.get("algebraic_type", {}), data, schema_types, collect_all)
+				var variant_info := _parse_type_info(
+					v.get("algebraic_type", {}),
+					schema_types,
+					module_pascal,
+					collect_all
 				)
-			return out
+				if variant_info.is_empty():
+					continue
+				type_parts.append(variant_info.get("type", ""))
 
-		var first_variant: Dictionary= sum_def.get("variants", [])[0].get("algebraic_type", {})
-		return _parse_type_tree(first_variant, data, schema_types, collect_all)
+			if type_parts.is_empty():
+				return {}
+
+			return {
+				"type": "ret_%s" % "_".join(type_parts),
+				"godot_type_hint": "Variant",
+			}
+
+		var first_variant: Dictionary = sum_def.get("variants", [])[0].get(
+			"algebraic_type",
+			{}
+		)
+		return _parse_type_info(first_variant, schema_types, module_pascal, collect_all)
 
 	if node.has("Product"):
 		var elements: Array = node["Product"].get("elements", [])
 		if elements.is_empty():
-			return []
-		return [str(elements[0].get("name", {}).get("some", ""))]
+			return {}
+
+		var element_name := str(elements[0].get("name", {}).get("some", ""))
+		if element_name.is_empty():
+			return {}
+
+		return {
+			"type": element_name,
+			"godot_type_hint": _resolve_godot_type_hint(element_name, module_pascal),
+		}
 
 	if node.has("Ref"):
 		var idx := int(node["Ref"])
 		if idx >= 0 and idx < schema_types.size():
-			return [_source_name(schema_types[idx])]
-		return []
+			var ref_name := module_pascal + _source_name(schema_types[idx])
+			if ref_name.is_empty():
+				return {}
+
+			return {
+				"type": _resolve_godot_type_hint(ref_name,module_pascal),
+				"godot_type_hint": _resolve_godot_type_hint(ref_name,module_pascal),
+			}
+		return {}
 
 	if node.is_empty():
-		return []
+		return {}
 
 	var keys: Array = node.keys()
-	return [str(keys[0]) if not keys.is_empty() else ""]
+	if keys.is_empty():
+		return {}
+
+	var fallback_name := str(keys[0])
+	return {
+		"type": fallback_name,
+		"godot_type_hint": _resolve_godot_type_hint(fallback_name,module_pascal),
+	}
 
 static func _parse_type_name(
 	field_type: Dictionary,
-	data: Dictionary,
-	schema_types: Array
-) -> String:
-	var parsed: Array[String] = _parse_type_tree(field_type, data, schema_types, false)
-	return parsed[0] if not parsed.is_empty() else ""
+	schema_types: Array,
+	module_pascal: String
+) -> Dictionary:
+	return _parse_type_info(field_type, schema_types, module_pascal, false)
 
-static func _parse_return_data(field_type: Dictionary, schema_types: Array) -> Dictionary:
-	var data: Dictionary = {}
-	var parsed: Array[String] = _parse_type_tree(field_type, data, schema_types, true)
-	if not parsed.is_empty():
-		data["type"] = parsed
-	else:
-		data["type"] = [&""]
+static func _parse_return_data(
+	field_type: Dictionary,
+	schema_types: Array,
+	module_pascal: String
+) -> Dictionary:
+	var data: Dictionary = _parse_type_info(field_type, schema_types, module_pascal, true)
+	if data.is_empty():
+		data["type"] = ""
+		data["godot_type_hint"] = "Variant"
 	return data
 
-static func _parse_named_elements(elements: Array, schema_types: Array) -> Array[Dictionary]:
+static func _parse_named_elements(
+	elements: Array,
+	schema_types: Array,
+	module_pascal: String
+) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for el in elements:
 		var data: Dictionary = {
 			"name": el.get("name", {}).get("some", null),
 		}
-		var type_name := _parse_type_name(el.get("algebraic_type", {}), data, schema_types)
-		if not type_name.is_empty():
-			data["type"] = type_name
+		var type_info := _parse_type_name(
+			el.get("algebraic_type", {}),
+			schema_types,
+			module_pascal
+		)
+		if not type_info.is_empty():
+			data["type"] = type_info.get("type", "")
+			data["godot_type_hint"] = type_info.get("godot_type_hint", "")
 		out.append(data)
 	return out
 
 static func _parse_sum_variants(
 	variants: Array,
 	schema_types: Array,
+	module_pascal: String,
 	is_sum_type: bool
 ) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
@@ -521,14 +554,15 @@ static func _parse_sum_variants(
 		var data: Dictionary = {
 			"name": _variant_name(variant),
 		}
-		var variant_type := _parse_type_tree(
+		var variant_info := _parse_type_info(
 			variant.get("algebraic_type", {}),
-			data,
 			schema_types,
+			module_pascal,
 			is_sum_type
 		)
-		if not variant_type.is_empty():
-			data["type"] = variant_type[0] if variant_type.size() == 1 else variant_type
+		if not variant_info.is_empty():
+			data["type"] = variant_info.get("type", "")
+			data["godot_type_hint"] = variant_info.get("godot_type_hint", "")
 		out.append(data)
 	return out
 
@@ -536,6 +570,7 @@ static func _parse_callables(
 	entries: Array,
 	schema_types: Array,
 	parsed_types: Array,
+	module_pascal: String,
 	include_return := false
 ) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
@@ -547,7 +582,7 @@ static func _parse_callables(
 		if info.get("visibility", {}).has("Private"):
 			continue
 
-		var name := _snake_name(info.get("source_name", ""))
+		var name: String= info.get("source_name", "").to_snake_case()
 		if name.is_empty():
 			SpacetimePlugin.print_err("Callable found with no name: %s" % [info])
 			continue
@@ -555,24 +590,84 @@ static func _parse_callables(
 		var callable_data: Dictionary = {"name": name}
 		callable_data["params"] = _parse_named_elements(
 			info.get("params", {}).get("elements", []),
-			schema_types
+			schema_types,
+			module_pascal
 		)
 
 		for param in callable_data["params"]:
 			var type_name: String = param.get("type", "")
-			if type_name.is_empty() or _is_known_builtin(type_name):
+			if type_name.is_empty():
 				continue
-			if type_idx_by_name.has(type_name):
-				param["type_idx"] = type_idx_by_name[type_name]
+
+			var base_type_name := _strip_type_prefixes(type_name)
+			if _is_known_builtin(base_type_name):
+				continue
+
+			if type_idx_by_name.has(base_type_name):
+				param["type_idx"] = type_idx_by_name[base_type_name]
 
 		if include_return:
-			var return_data := _parse_return_data(info.get("return_type", {}), schema_types)
+			var return_data := _parse_return_data(
+				info.get("return_type", {}),
+				schema_types,
+				module_pascal
+			)
 			if not return_data.is_empty():
 				callable_data["return_type"] = return_data
 
 		out.append(callable_data)
 
 	return out
+
+static func _validate_struct_fields(fields: Array, type_name: String) -> bool:
+	if type_name == "Vector4":
+		return _validate_vector_like(fields, type_name, 4, "float")
+	if type_name == "Vector4I":
+		return _validate_vector_like(fields, type_name, 4, "int")
+	if type_name == "Vector3":
+		return _validate_vector_like(fields, type_name, 3, "float")
+	if type_name == "Vector3I":
+		return _validate_vector_like(fields, type_name, 3, "int")
+	if type_name == "Vector2":
+		return _validate_vector_like(fields, type_name, 2, "float")
+	if type_name == "Vector2I":
+		return _validate_vector_like(fields, type_name, 2, "int")
+	if type_name == "Quaternion":
+		return _validate_vector_like(fields, type_name, 4, "float")
+	if type_name == "Color":
+		return _validate_vector_like(fields, type_name, 4, "float")
+	return true
+
+static func _validate_vector_like(
+	fields: Array,
+	type_name: String,
+	expected_size: int,
+	expected_primitive_type: String
+) -> bool:
+	if fields.size() != expected_size:
+		SpacetimePlugin.print_err(
+			"Array-like GD native type '%s' expected length of %d but is %d"
+			% [type_name, expected_size, fields.size()]
+		)
+		return false
+
+	for element in fields:
+		var primitive_type := GDNATIVE_PRIMITIVE_TYPES.get(element.get("type", ""), null)
+		if not primitive_type:
+			SpacetimePlugin.print_err(
+				"Property '%s' in array-like GD native type '%s' must be a primitive type"
+				% [element.get("name", ""), type_name]
+			)
+			return false
+
+		if primitive_type != expected_primitive_type:
+			SpacetimePlugin.print_err(
+				"Property '%s' in array-like GD native type '%s' should map to a '%s' primitive type"
+				% [element.get("name", ""), type_name, expected_primitive_type]
+			)
+			return false
+
+	return true
 
 static func _is_gd_native(type_name: String) -> bool:
 	return GDNATIVE_PRIMITIVE_TYPES.has(type_name) \
@@ -588,66 +683,6 @@ static func _set_gd_native(type_name: String, type_data) -> void:
 		type_data["gd_arraylike"] = true
 	elif GDNATIVE_DICTLIKE_TYPES.has(type_name):
 		type_data["gd_dictlike"] = true
-
-static func _validate_gd_native(type_name: String, type_data) -> bool:
-	if type_data.has("gd_primitive"):
-		return true
-
-	if type_data.has("gd_arraylike"):
-		var expected_struct_size := 0
-		var expected_primitive_type := "float"
-
-		match type_name:
-			"Vector4":
-				expected_struct_size = 4
-			"Vector4I":
-				expected_struct_size = 4
-				expected_primitive_type = "int"
-			"Vector3":
-				expected_struct_size = 3
-			"Vector3I":
-				expected_struct_size = 3
-				expected_primitive_type = "int"
-			"Vector2":
-				expected_struct_size = 2
-			"Vector2I":
-				expected_struct_size = 2
-				expected_primitive_type = "int"
-			"Quaternion":
-				expected_struct_size = 4
-			"Color":
-				expected_struct_size = 4
-			_:
-				SpacetimePlugin.print_err("Unsupported array-like GD native type: %s" % [type_name])
-				return false
-
-		if type_data.struct.size() != expected_struct_size:
-			SpacetimePlugin.print_err(
-				"Array-like GD native type '%s' expected length of %d but is %d"
-				% [type_name, expected_struct_size, type_data.struct.size()]
-			)
-			return false
-
-		for element in type_data.struct:
-			var primitive_type := GDNATIVE_PRIMITIVE_TYPES.get(element.get("type", ""), null)
-			if not primitive_type:
-				SpacetimePlugin.print_err(
-					"Property '%s' in array-like GD native type '%s' must be a primitive type"
-					% [element.get("name", ""), type_name]
-				)
-				return false
-
-			if primitive_type != expected_primitive_type:
-				SpacetimePlugin.print_err(
-					"Property '%s' in array-like GD native type '%s' should map to a '%s' primitive type"
-					% [element.get("name", ""), type_name, expected_primitive_type]
-				)
-				return false
-
-	if type_data.has("gd_dictlike"):
-		pass
-
-	return true
 
 static func _is_sum_type(sum_def) -> bool:
 	for variant in sum_def.get("variants", []):

@@ -3,11 +3,12 @@
 [ext_resource type="Script" uid="uid://bg5ywsrsomvr7" path="res://example_code/integration_tests.gd" id="1_11tcf"]
 [ext_resource type="Script" uid="uid://jvk6ou7i2d4s" path="res://addons/SpacetimeDB/nodes/row_receiver/row_receiver.gd" id="2_3ljp4"]
 [ext_resource type="PackedScene" uid="uid://unjs4buic6sv" path="res://scenes/table_tab_ui.tscn" id="2_p8i4h"]
-[ext_resource type="Script" uid="uid://bex15th7rnyek" path="res://spacetime_bindings/schema/types/main_test_table_datatypes.gd" id="4_7ntsj"]
-[ext_resource type="Script" uid="uid://4o2e6yvm8wu4" path="res://spacetime_bindings/schema/types/main_test_type.gd" id="5_7ntsj"]
-[ext_resource type="Script" uid="uid://c1fbqq1wfo5xg" path="res://spacetime_bindings/schema/types/main_test_scheduled_table.gd" id="6_ruhfi"]
-[ext_resource type="Script" uid="uid://kkbq2n3gc20w" path="res://spacetime_bindings/schema/types/main_view_type.gd" id="7_26wxn"]
-[ext_resource type="Script" uid="uid://c8neu2o0kv57g" path="res://spacetime_bindings/schema/types/main_test_event_table.gd" id="8_sijad"]
+[ext_resource type="Script" uid="uid://t7ytfbxj4fbx" path="res://spacetime_bindings/schema/types/main_test_table_datatypes.gd" id="4_wkhtg"]
+[ext_resource type="Script" uid="uid://dcgkau1btq4tj" path="res://spacetime_bindings/schema/types/main_test_enum.gd" id="5_ruhfi"]
+[ext_resource type="Script" uid="uid://cli8s40vbap0l" path="res://spacetime_bindings/schema/types/main_test_type.gd" id="6_26wxn"]
+[ext_resource type="Script" uid="uid://cmo06p40wxpex" path="res://spacetime_bindings/schema/types/main_test_scheduled_table.gd" id="7_sijad"]
+[ext_resource type="Script" uid="uid://di8hxgy38sha" path="res://spacetime_bindings/schema/types/main_view_type.gd" id="8_cdput"]
+[ext_resource type="Script" uid="uid://djmw4u8rstb1d" path="res://spacetime_bindings/schema/types/main_test_event_table.gd" id="9_81h2f"]
 
 [sub_resource type="Gradient" id="Gradient_p8i4h"]
 offsets = PackedFloat32Array(0.7097792, 1)
@@ -30,74 +31,8 @@ region_rect = Rect2(0, 0, 64, 64)
 [sub_resource type="Theme" id="Theme_7ntsj"]
 Label/styles/normal = SubResource("StyleBoxTexture_m5x7f")
 
-[sub_resource type="Resource" id="Resource_cdput"]
-script = ExtResource("4_7ntsj")
-metadata/primary_key = "t_u_64"
-metadata/bsatn_type_t_u_64 = &"u64"
-metadata/bsatn_type_t_u_8 = &"u8"
-metadata/bsatn_type_t_u_16 = &"u16"
-metadata/bsatn_type_t_u_32 = &"u32"
-metadata/bsatn_type_t_u_128 = &"u128"
-metadata/bsatn_type_t_f_32 = &"f32"
-metadata/bsatn_type_t_f_64 = &"f64"
-metadata/bsatn_type_t_i_8 = &"i8"
-metadata/bsatn_type_t_i_16 = &"i16"
-metadata/bsatn_type_t_i_32 = &"i32"
-metadata/bsatn_type_t_i_64 = &"i64"
-metadata/bsatn_type_t_string = &"string"
-metadata/bsatn_type_t_vec_string = &"string"
-metadata/bsatn_type_t_vec_u_8 = &"u8"
-metadata/underlying_type_t_opt_string = &"String"
-metadata/bsatn_type_t_opt_string = &"string"
-metadata/underlying_type_t_opt_u_64 = &"int"
-metadata/bsatn_type_t_opt_u_64 = &"u64"
-metadata/bsatn_type_t_test_enum = &"u8"
-metadata/bsatn_type_t_test_enum_vec = &"u8"
-metadata/underlying_type_t_test_enum_option = &"MainModuleClient.Types.TestEnum"
-metadata/bsatn_type_t_test_enum_option = &"u8"
-metadata/bsatn_type_t_test_type = &"MainTestType"
-metadata/bsatn_type_t_test_type_vec = &"MainTestType"
-metadata/underlying_type_t_test_type_option = &"MainTestType"
-metadata/bsatn_type_t_test_type_option = &"MainTestType"
-metadata/bsatn_type_t_test_color = &"color"
-metadata/bsatn_type_t_test_vector_2 = &"vector2"
-metadata/bsatn_type_t_test_vector_3 = &"vector3"
-
-[sub_resource type="Resource" id="Resource_81h2f"]
-script = ExtResource("4_7ntsj")
-metadata/primary_key = "t_u_64"
-metadata/bsatn_type_t_u_64 = &"u64"
-metadata/bsatn_type_t_u_8 = &"u8"
-metadata/bsatn_type_t_u_16 = &"u16"
-metadata/bsatn_type_t_u_32 = &"u32"
-metadata/bsatn_type_t_u_128 = &"u128"
-metadata/bsatn_type_t_f_32 = &"f32"
-metadata/bsatn_type_t_f_64 = &"f64"
-metadata/bsatn_type_t_i_8 = &"i8"
-metadata/bsatn_type_t_i_16 = &"i16"
-metadata/bsatn_type_t_i_32 = &"i32"
-metadata/bsatn_type_t_i_64 = &"i64"
-metadata/bsatn_type_t_string = &"string"
-metadata/bsatn_type_t_vec_string = &"string"
-metadata/bsatn_type_t_vec_u_8 = &"u8"
-metadata/underlying_type_t_opt_string = &"String"
-metadata/bsatn_type_t_opt_string = &"string"
-metadata/underlying_type_t_opt_u_64 = &"int"
-metadata/bsatn_type_t_opt_u_64 = &"u64"
-metadata/bsatn_type_t_test_enum = &"u8"
-metadata/bsatn_type_t_test_enum_vec = &"u8"
-metadata/underlying_type_t_test_enum_option = &"MainModuleClient.Types.TestEnum"
-metadata/bsatn_type_t_test_enum_option = &"u8"
-metadata/bsatn_type_t_test_type = &"MainTestType"
-metadata/bsatn_type_t_test_type_vec = &"MainTestType"
-metadata/underlying_type_t_test_type_option = &"MainTestType"
-metadata/bsatn_type_t_test_type_option = &"MainTestType"
-metadata/bsatn_type_t_test_color = &"color"
-metadata/bsatn_type_t_test_vector_2 = &"vector2"
-metadata/bsatn_type_t_test_vector_3 = &"vector3"
-
 [sub_resource type="Resource" id="Resource_kjelw"]
-script = ExtResource("4_7ntsj")
+script = ExtResource("4_wkhtg")
 metadata/primary_key = "t_u_64"
 metadata/bsatn_type_t_u_64 = &"u64"
 metadata/bsatn_type_t_u_8 = &"u8"
@@ -111,26 +46,22 @@ metadata/bsatn_type_t_i_16 = &"i16"
 metadata/bsatn_type_t_i_32 = &"i32"
 metadata/bsatn_type_t_i_64 = &"i64"
 metadata/bsatn_type_t_string = &"string"
-metadata/bsatn_type_t_vec_string = &"string"
-metadata/bsatn_type_t_vec_u_8 = &"u8"
-metadata/underlying_type_t_opt_string = &"String"
-metadata/bsatn_type_t_opt_string = &"string"
-metadata/underlying_type_t_opt_u_64 = &"int"
-metadata/bsatn_type_t_opt_u_64 = &"u64"
-metadata/bsatn_type_t_test_enum = &"u8"
-metadata/bsatn_type_t_test_enum_vec = &"u8"
-metadata/underlying_type_t_test_enum_option = &"MainModuleClient.Types.TestEnum"
-metadata/bsatn_type_t_test_enum_option = &"u8"
-metadata/bsatn_type_t_test_type = &"MainTestType"
-metadata/bsatn_type_t_test_type_vec = &"MainTestType"
-metadata/underlying_type_t_test_type_option = &"MainTestType"
-metadata/bsatn_type_t_test_type_option = &"MainTestType"
+metadata/bsatn_type_t_vec_string = &"vec_string"
+metadata/bsatn_type_t_vec_u_8 = &"vec_u8"
+metadata/bsatn_type_t_opt_string = &"opt_string"
+metadata/bsatn_type_t_opt_u_64 = &"opt_u64"
+metadata/bsatn_type_t_test_enum = &"testenum"
+metadata/bsatn_type_t_test_enum_vec = &"vec_testenum"
+metadata/bsatn_type_t_test_enum_option = &"opt_testenum"
+metadata/bsatn_type_t_test_type = &"testtype"
+metadata/bsatn_type_t_test_type_vec = &"vec_testtype"
+metadata/bsatn_type_t_test_type_option = &"opt_testtype"
 metadata/bsatn_type_t_test_color = &"color"
 metadata/bsatn_type_t_test_vector_2 = &"vector2"
 metadata/bsatn_type_t_test_vector_3 = &"vector3"
 
 [sub_resource type="Resource" id="Resource_kgsjp"]
-script = ExtResource("4_7ntsj")
+script = ExtResource("4_wkhtg")
 metadata/primary_key = "t_u_64"
 metadata/bsatn_type_t_u_64 = &"u64"
 metadata/bsatn_type_t_u_8 = &"u8"
@@ -144,46 +75,80 @@ metadata/bsatn_type_t_i_16 = &"i16"
 metadata/bsatn_type_t_i_32 = &"i32"
 metadata/bsatn_type_t_i_64 = &"i64"
 metadata/bsatn_type_t_string = &"string"
-metadata/bsatn_type_t_vec_string = &"string"
-metadata/bsatn_type_t_vec_u_8 = &"u8"
-metadata/underlying_type_t_opt_string = &"String"
-metadata/bsatn_type_t_opt_string = &"string"
-metadata/underlying_type_t_opt_u_64 = &"int"
-metadata/bsatn_type_t_opt_u_64 = &"u64"
-metadata/bsatn_type_t_test_enum = &"u8"
-metadata/bsatn_type_t_test_enum_vec = &"u8"
-metadata/underlying_type_t_test_enum_option = &"MainModuleClient.Types.TestEnum"
-metadata/bsatn_type_t_test_enum_option = &"u8"
-metadata/bsatn_type_t_test_type = &"MainTestType"
-metadata/bsatn_type_t_test_type_vec = &"MainTestType"
-metadata/underlying_type_t_test_type_option = &"MainTestType"
-metadata/bsatn_type_t_test_type_option = &"MainTestType"
+metadata/bsatn_type_t_vec_string = &"vec_string"
+metadata/bsatn_type_t_vec_u_8 = &"vec_u8"
+metadata/bsatn_type_t_opt_string = &"opt_string"
+metadata/bsatn_type_t_opt_u_64 = &"opt_u64"
+metadata/bsatn_type_t_test_enum = &"testenum"
+metadata/bsatn_type_t_test_enum_vec = &"vec_testenum"
+metadata/bsatn_type_t_test_enum_option = &"opt_testenum"
+metadata/bsatn_type_t_test_type = &"testtype"
+metadata/bsatn_type_t_test_type_vec = &"vec_testtype"
+metadata/bsatn_type_t_test_type_option = &"opt_testtype"
 metadata/bsatn_type_t_test_color = &"color"
 metadata/bsatn_type_t_test_vector_2 = &"vector2"
 metadata/bsatn_type_t_test_vector_3 = &"vector3"
 
 [sub_resource type="Resource" id="Resource_ykujm"]
-script = ExtResource("6_ruhfi")
-metadata/primary_key = "scheduled_id"
-metadata/bsatn_type_scheduled_id = &"u64"
-metadata/bsatn_type_h_1 = &"u16"
-metadata/bsatn_type_scheduled_at = &"scheduled_at"
-metadata/bsatn_type_h_2 = &"u16"
-metadata/bsatn_type_public_count = &"u64"
-metadata/bsatn_type_private_count = &"u64"
+script = ExtResource("4_wkhtg")
+metadata/primary_key = "t_u_64"
+metadata/bsatn_type_t_u_64 = &"u64"
+metadata/bsatn_type_t_u_8 = &"u8"
+metadata/bsatn_type_t_u_16 = &"u16"
+metadata/bsatn_type_t_u_32 = &"u32"
+metadata/bsatn_type_t_u_128 = &"u128"
+metadata/bsatn_type_t_f_32 = &"f32"
+metadata/bsatn_type_t_f_64 = &"f64"
+metadata/bsatn_type_t_i_8 = &"i8"
+metadata/bsatn_type_t_i_16 = &"i16"
+metadata/bsatn_type_t_i_32 = &"i32"
+metadata/bsatn_type_t_i_64 = &"i64"
+metadata/bsatn_type_t_string = &"string"
+metadata/bsatn_type_t_vec_string = &"vec_string"
+metadata/bsatn_type_t_vec_u_8 = &"vec_u8"
+metadata/bsatn_type_t_opt_string = &"opt_string"
+metadata/bsatn_type_t_opt_u_64 = &"opt_u64"
+metadata/bsatn_type_t_test_enum = &"testenum"
+metadata/bsatn_type_t_test_enum_vec = &"vec_testenum"
+metadata/bsatn_type_t_test_enum_option = &"opt_testenum"
+metadata/bsatn_type_t_test_type = &"testtype"
+metadata/bsatn_type_t_test_type_vec = &"vec_testtype"
+metadata/bsatn_type_t_test_type_option = &"opt_testtype"
+metadata/bsatn_type_t_test_color = &"color"
+metadata/bsatn_type_t_test_vector_2 = &"vector2"
+metadata/bsatn_type_t_test_vector_3 = &"vector3"
 
 [sub_resource type="Resource" id="Resource_snbse"]
-script = ExtResource("6_ruhfi")
-metadata/primary_key = "scheduled_id"
-metadata/bsatn_type_scheduled_id = &"u64"
-metadata/bsatn_type_h_1 = &"u16"
-metadata/bsatn_type_scheduled_at = &"scheduled_at"
-metadata/bsatn_type_h_2 = &"u16"
-metadata/bsatn_type_public_count = &"u64"
-metadata/bsatn_type_private_count = &"u64"
+script = ExtResource("4_wkhtg")
+metadata/primary_key = "t_u_64"
+metadata/bsatn_type_t_u_64 = &"u64"
+metadata/bsatn_type_t_u_8 = &"u8"
+metadata/bsatn_type_t_u_16 = &"u16"
+metadata/bsatn_type_t_u_32 = &"u32"
+metadata/bsatn_type_t_u_128 = &"u128"
+metadata/bsatn_type_t_f_32 = &"f32"
+metadata/bsatn_type_t_f_64 = &"f64"
+metadata/bsatn_type_t_i_8 = &"i8"
+metadata/bsatn_type_t_i_16 = &"i16"
+metadata/bsatn_type_t_i_32 = &"i32"
+metadata/bsatn_type_t_i_64 = &"i64"
+metadata/bsatn_type_t_string = &"string"
+metadata/bsatn_type_t_vec_string = &"vec_string"
+metadata/bsatn_type_t_vec_u_8 = &"vec_u8"
+metadata/bsatn_type_t_opt_string = &"opt_string"
+metadata/bsatn_type_t_opt_u_64 = &"opt_u64"
+metadata/bsatn_type_t_test_enum = &"testenum"
+metadata/bsatn_type_t_test_enum_vec = &"vec_testenum"
+metadata/bsatn_type_t_test_enum_option = &"opt_testenum"
+metadata/bsatn_type_t_test_type = &"testtype"
+metadata/bsatn_type_t_test_type_vec = &"vec_testtype"
+metadata/bsatn_type_t_test_type_option = &"opt_testtype"
+metadata/bsatn_type_t_test_color = &"color"
+metadata/bsatn_type_t_test_vector_2 = &"vector2"
+metadata/bsatn_type_t_test_vector_3 = &"vector3"
 
 [sub_resource type="Resource" id="Resource_fb8b1"]
-script = ExtResource("6_ruhfi")
+script = ExtResource("7_sijad")
 metadata/primary_key = "scheduled_id"
 metadata/bsatn_type_scheduled_id = &"u64"
 metadata/bsatn_type_h_1 = &"u16"
@@ -193,7 +158,7 @@ metadata/bsatn_type_public_count = &"u64"
 metadata/bsatn_type_private_count = &"u64"
 
 [sub_resource type="Resource" id="Resource_52gag"]
-script = ExtResource("6_ruhfi")
+script = ExtResource("7_sijad")
 metadata/primary_key = "scheduled_id"
 metadata/bsatn_type_scheduled_id = &"u64"
 metadata/bsatn_type_h_1 = &"u16"
@@ -203,7 +168,7 @@ metadata/bsatn_type_public_count = &"u64"
 metadata/bsatn_type_private_count = &"u64"
 
 [sub_resource type="Resource" id="Resource_ru3ul"]
-script = ExtResource("6_ruhfi")
+script = ExtResource("7_sijad")
 metadata/primary_key = "scheduled_id"
 metadata/bsatn_type_scheduled_id = &"u64"
 metadata/bsatn_type_h_1 = &"u16"
@@ -213,28 +178,48 @@ metadata/bsatn_type_public_count = &"u64"
 metadata/bsatn_type_private_count = &"u64"
 
 [sub_resource type="Resource" id="Resource_umquh"]
-script = ExtResource("7_26wxn")
-metadata/primary_key = ""
-metadata/bsatn_type_row = &"u64"
-metadata/bsatn_type_name = &"string"
+script = ExtResource("7_sijad")
+metadata/primary_key = "scheduled_id"
+metadata/bsatn_type_scheduled_id = &"u64"
+metadata/bsatn_type_h_1 = &"u16"
+metadata/bsatn_type_scheduled_at = &"scheduled_at"
+metadata/bsatn_type_h_2 = &"u16"
+metadata/bsatn_type_public_count = &"u64"
+metadata/bsatn_type_private_count = &"u64"
 
 [sub_resource type="Resource" id="Resource_ngfkt"]
-script = ExtResource("7_26wxn")
-metadata/primary_key = ""
-metadata/bsatn_type_row = &"u64"
-metadata/bsatn_type_name = &"string"
+script = ExtResource("7_sijad")
+metadata/primary_key = "scheduled_id"
+metadata/bsatn_type_scheduled_id = &"u64"
+metadata/bsatn_type_h_1 = &"u16"
+metadata/bsatn_type_scheduled_at = &"scheduled_at"
+metadata/bsatn_type_h_2 = &"u16"
+metadata/bsatn_type_public_count = &"u64"
+metadata/bsatn_type_private_count = &"u64"
 
 [sub_resource type="Resource" id="Resource_mqncn"]
-script = ExtResource("7_26wxn")
+script = ExtResource("8_cdput")
 metadata/primary_key = ""
 metadata/bsatn_type_row = &"u64"
 metadata/bsatn_type_name = &"string"
 
 [sub_resource type="Resource" id="Resource_oe61d"]
-script = ExtResource("8_sijad")
+script = ExtResource("8_cdput")
+metadata/primary_key = ""
+metadata/bsatn_type_row = &"u64"
+metadata/bsatn_type_name = &"string"
+
+[sub_resource type="Resource" id="Resource_t05xv"]
+script = ExtResource("8_cdput")
+metadata/primary_key = ""
+metadata/bsatn_type_row = &"u64"
+metadata/bsatn_type_name = &"string"
+
+[sub_resource type="Resource" id="Resource_wkhtg"]
+script = ExtResource("9_81h2f")
 metadata/primary_key = "id"
-metadata/bsatn_type_id = &"u32"
-metadata/bsatn_type_id_2 = &"u32"
+metadata/bsatn_type_id = &"U32"
+metadata/bsatn_type_id_2 = &"U32"
 
 [node name="IntegrationTests" type="Control" unique_id=1412664590]
 layout_mode = 3
@@ -267,7 +252,7 @@ metadata/_tab_index = 0
 
 [node name="Receiver [MainTestTableDatatypes]" type="Node" parent="VBoxContainer/TabContainer/TestTableDatatypes" unique_id=2138347038]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_cdput")
+table_to_receive = SubResource("Resource_kjelw")
 selected_table_name = "test_table_datatypes"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
@@ -279,7 +264,7 @@ metadata/_tab_index = 1
 
 [node name="Receiver [MainTestTableDatatypes]" type="Node" parent="VBoxContainer/TabContainer/ViewDatatypesAllrows" unique_id=2013281197]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_81h2f")
+table_to_receive = SubResource("Resource_kgsjp")
 selected_table_name = "test_anonymous_all_types"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
@@ -291,7 +276,7 @@ metadata/_tab_index = 2
 
 [node name="Receiver [MainTestTableDatatypes]" type="Node" parent="VBoxContainer/TabContainer/ViewDatatypesFirstRow" unique_id=1410077938]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_kjelw")
+table_to_receive = SubResource("Resource_ykujm")
 selected_table_name = "test_first_type_row"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
@@ -303,8 +288,8 @@ metadata/_tab_index = 3
 
 [node name="Receiver [MainTestTableDatatypes]" type="Node" parent="VBoxContainer/TabContainer/ViewDatatypesAt30" unique_id=231777589]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_kgsjp")
-selected_table_name = "test_table_datatypes"
+table_to_receive = SubResource("Resource_snbse")
+selected_table_name = "test_u_32_at_30"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
 [node name="TestScheduledTable" parent="VBoxContainer/TabContainer" unique_id=1202664408 node_paths=PackedStringArray("row_receiver") instance=ExtResource("2_p8i4h")]
@@ -315,7 +300,7 @@ metadata/_tab_index = 4
 
 [node name="Receiver [MainTestScheduledTable]" type="Node" parent="VBoxContainer/TabContainer/TestScheduledTable" unique_id=74907839]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_ykujm")
+table_to_receive = SubResource("Resource_fb8b1")
 selected_table_name = "test_scheduled_table"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
@@ -327,8 +312,8 @@ metadata/_tab_index = 5
 
 [node name="Receiver [MainTestScheduledTable]" type="Node" parent="VBoxContainer/TabContainer/ViewScheduledPublic" unique_id=295188833]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_snbse")
-selected_table_name = "test_public_scheduled_count"
+table_to_receive = SubResource("Resource_52gag")
+selected_table_name = "test_option"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
 [node name="ViewScheduledPrivate" parent="VBoxContainer/TabContainer" unique_id=818018630 node_paths=PackedStringArray("row_receiver") instance=ExtResource("2_p8i4h")]
@@ -339,7 +324,7 @@ metadata/_tab_index = 6
 
 [node name="Receiver [MainTestScheduledTable]" type="Node" parent="VBoxContainer/TabContainer/ViewScheduledPrivate" unique_id=1146059265]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_fb8b1")
+table_to_receive = SubResource("Resource_ru3ul")
 selected_table_name = "test_private_scheduled_count"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
@@ -351,8 +336,8 @@ metadata/_tab_index = 7
 
 [node name="Receiver [MainTestScheduledTable]" type="Node" parent="VBoxContainer/TabContainer/ViewTestOption" unique_id=1304192585]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_52gag")
-selected_table_name = "test_option"
+table_to_receive = SubResource("Resource_umquh")
+selected_table_name = "test_public_scheduled_count"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
 [node name="ViewTestQuery" parent="VBoxContainer/TabContainer" unique_id=1270783554 node_paths=PackedStringArray("row_receiver") instance=ExtResource("2_p8i4h")]
@@ -363,7 +348,7 @@ metadata/_tab_index = 8
 
 [node name="Receiver [MainTestScheduledTable]" type="Node" parent="VBoxContainer/TabContainer/ViewTestQuery" unique_id=1860002987]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_ru3ul")
+table_to_receive = SubResource("Resource_ngfkt")
 selected_table_name = "test_query"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
@@ -376,7 +361,7 @@ metadata/_tab_index = 9
 [node name="Receiver [MainViewType]" type="Node" parent="VBoxContainer/TabContainer/ViewNoPkOption" unique_id=1261867129]
 script = ExtResource("2_3ljp4")
 debug_mode = true
-table_to_receive = SubResource("Resource_umquh")
+table_to_receive = SubResource("Resource_mqncn")
 selected_table_name = "test_no_pk_option"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
@@ -389,7 +374,7 @@ metadata/_tab_index = 10
 [node name="Receiver [MainViewType]" type="Node" parent="VBoxContainer/TabContainer/ViewNoPkQuery" unique_id=396937499]
 script = ExtResource("2_3ljp4")
 debug_mode = true
-table_to_receive = SubResource("Resource_ngfkt")
+table_to_receive = SubResource("Resource_oe61d")
 selected_table_name = "test_no_pk_query"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
@@ -401,7 +386,7 @@ metadata/_tab_index = 11
 
 [node name="Receiver [MainViewType]" type="Node" parent="VBoxContainer/TabContainer/ViewNoPkVec" unique_id=1157552964]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_mqncn")
+table_to_receive = SubResource("Resource_t05xv")
 selected_table_name = "test_no_pk_vec"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
@@ -413,8 +398,8 @@ metadata/_tab_index = 12
 
 [node name="Receiver [MainTestEventTable]" type="Node" parent="VBoxContainer/TabContainer/Control" unique_id=385035299]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_oe61d")
-selected_table_name = "test_event_table"
+table_to_receive = SubResource("Resource_wkhtg")
+selected_table_name = "main_test_event_table"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=1146252556]

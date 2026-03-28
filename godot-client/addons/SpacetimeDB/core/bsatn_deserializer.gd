@@ -305,23 +305,23 @@ func read_bsatn_row_list(spb: StreamPeerBuffer) -> Array[PackedByteArray]:
 # Helper to get a primitive reader Callable based on a BSATN type string.
 func _get_primitive_reader_from_bsatn_type(bsatn_type_str: String) -> Callable:
 	match bsatn_type_str:
-		&"u64": return Callable(self, "read_u64_le")
-		&"i64": return Callable(self, "read_i64_le")
-		&"f64": return Callable(self, "read_f64_le")
-		&"u32": return Callable(self, "read_u32_le")
-		&"i32": return Callable(self, "read_i32_le")
-		&"f32": return Callable(self, "read_f32_le")
-		&"u16": return Callable(self, "read_u16_le")
-		&"i16": return Callable(self, "read_i16_le")
-		&"u8": return Callable(self, "read_u8")
-		&"i8": return Callable(self, "read_i8")
-		&"u128": return Callable(self, "read_u128")
-		&"identity": return Callable(self, "read_identity")
+		&"U64": return Callable(self, "read_u64_le")
+		&"I64": return Callable(self, "read_i64_le")
+		&"F64": return Callable(self, "read_f64_le")
+		&"U32": return Callable(self, "read_u32_le")
+		&"I32": return Callable(self, "read_i32_le")
+		&"F32": return Callable(self, "read_f32_le")
+		&"U16": return Callable(self, "read_u16_le")
+		&"I16": return Callable(self, "read_i16_le")
+		&"U8": return Callable(self, "read_u8")
+		&"I8": return Callable(self, "read_i8")
+		&"U128": return Callable(self, "read_u128")
+		&"__identity__": return Callable(self, "read_identity")
 		&"connection_id": return Callable(self, "read_connection_id")
-		&"timestamp": return Callable(self, "read_timestamp")
+		&"__timestamp_micros_since_unix_epoch__": return Callable(self, "read_timestamp")
 		&"scheduled_at": return Callable(self, "read_scheduled_at")
-		&"bool": return Callable(self, "read_bool")
-		&"string": return Callable(self, "read_string_with_u32_len")
+		&"Bool": return Callable(self, "read_bool")
+		&"String": return Callable(self, "read_string_with_u32_len")
 		&"SubscribeAppliedMessage": return Callable(self, "_read_subscripton_applied_message")
 		&"UnsubscribeAppliedMessage": return Callable(self, "_read_unsubscripton_applied_message")
 		&"SubscriptionErrorMessage": return Callable(self, "_read_subscription_error_message")
@@ -714,9 +714,6 @@ func _read_one_off_query_message(spb: StreamPeerBuffer)-> OneOffQueryResponseMes
 
 func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 	print_log("DEBUG: parsing bsatn_type: %s" % bsatn_type)
-	if bsatn_type != "IdentityTokenMessage":
-		print("breakpoint")
-
 	if bsatn_type.begins_with("opt_"):
 		return _read_option(spb, bsatn_type.trim_prefix("opt_"))
 	elif bsatn_type.begins_with("vec_"):
@@ -728,7 +725,8 @@ func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 		return result_type_array
 	elif bsatn_type.begins_with("ret_"):
 		return _read_result(spb, bsatn_type.trim_prefix("ret_"))
-
+	elif NATIVE_ARRAYLIKE.has(bsatn_type):
+		return _read_native_arraylike(spb, bsatn_type)
 	var script: GDScript
 	if _schema.core_types.has(bsatn_type):
 		var reader_callablce := _get_primitive_reader_from_bsatn_type(bsatn_type)
@@ -759,9 +757,7 @@ func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 		if reader_callablce.is_valid():
 			print_log("DEBUG: parsing prop %s with type %s" %[prop.name,bsatn_type_str])
 			result_resource[prop.name] = reader_callablce.call(spb)
-		elif NATIVE_ARRAYLIKE.has(bsatn_type_str):
-			result_resource[prop.name] = _read_native_arraylike(spb,bsatn_type_str)
-		elif _schema.module_types.has(bsatn_type_str) or bsatn_type_str.begins_with("opt_") or bsatn_type_str.begins_with("ret_"):
+		elif _schema.module_types.has(bsatn_type_str) or bsatn_type_str.begins_with("opt_") or bsatn_type_str.begins_with("ret_") or NATIVE_ARRAYLIKE.has(bsatn_type_str):
 			result_resource[prop.name] = _parse_generic_type(spb, bsatn_type_str)
 		elif bsatn_type_str.begins_with("vec_"):
 			var result_type_array = _parse_generic_type(spb, bsatn_type_str)

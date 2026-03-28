@@ -1,3 +1,4 @@
+@tool
 class_name SpacetimeCodegen extends Resource
 
 const REQUIRED_FOLDERS_IN_CODEGEN_FOLDER: Array[String] = ["tables", "types"]
@@ -25,72 +26,56 @@ func _write_text(path: String, body: String) -> void:
 		handle.close()
 
 
-func _gd_type(schema: SpacetimeParsedSchema, raw_name: String) -> String:
-	return schema.type_map.get(raw_name, "Variant")
+func _type_hint(schema: SpacetimeParsedSchema, def: Dictionary, fallback: String = "Variant") -> String:
+	if def.has("godot_type_hint") and not String(def.get("godot_type_hint", "")).is_empty():
+		return String(def.get("godot_type_hint", fallback))
+
+	var raw_name := String(def.get("type", fallback))
+	for type_def in schema.types:
+		if type_def.get("name", "") == raw_name:
+			if type_def.has("godot_type_hint"):
+				return String(type_def.get("godot_type_hint", raw_name))
+			break
+
+	return fallback if raw_name.is_empty() else raw_name
 
 
-func _meta_type(schema: SpacetimeParsedSchema, raw_name: String) -> String:
-	return schema.meta_type_map.get(raw_name, raw_name)
+func _gd_type(schema: SpacetimeParsedSchema, raw_name: String, member_def: Dictionary = {}) -> String:
+	if member_def.has("godot_type_hint") and not String(member_def.get("godot_type_hint", "")).is_empty():
+		return String(member_def.get("godot_type_hint", "Variant"))
+
+	for type_def in schema.types:
+		if type_def.get("name", "") == raw_name:
+			if type_def.has("godot_type_hint"):
+				return String(type_def.get("godot_type_hint", raw_name))
+			break
+
+	return raw_name if not raw_name.is_empty() else "Variant"
 
 
 func _nested_label(schema: SpacetimeParsedSchema, member_def: Dictionary) -> String:
 	var parts: Array = member_def.get("nested_type", []).duplicate()
-	parts.append(_gd_type(schema, member_def.get("type", "Variant")))
+	parts.append(_gd_type(schema, member_def.get("type", "Variant"), member_def))
 	return " of ".join(parts)
 
 
 func _member_gd_type(schema: SpacetimeParsedSchema, member_def: Dictionary) -> String:
-	var raw_name: String = member_def.get("type", "Variant")
+	var raw_name: String = String(member_def.get("type", "Variant"))
 
 	if member_def.has("is_option"):
 		return OPTION_CLASS_NAME
 
 	if member_def.has("is_array"):
-		var item_type := _gd_type(schema, raw_name)
+		var item_type := _gd_type(schema, raw_name, member_def)
 		if member_def.has("is_option_inside_array"):
 			item_type = OPTION_CLASS_NAME
 		return "Array[%s]" % item_type
 
-	return _gd_type(schema, raw_name)
-
-
-func _raw_bsatn_type(
-	schema: SpacetimeParsedSchema,
-	member_def: Dictionary,
-	ref_def: Dictionary,
-	mode: String = ""
-) -> String:
-	var raw_name: String = member_def.get("type", "Variant")
-
-	if mode == "option":
-		if member_def.has("is_array_inside_option"):
-			return "vec_%s" % _meta_type(schema, raw_name)
-		return "opt_%s" % _meta_type(schema, raw_name)
-
-	if mode == "result":
-		if member_def.has("is_array_inside_option"):
-			return "vec_%s" % _meta_type(schema, raw_name)
-		return _meta_type(schema, raw_name)
-
-	if ref_def and ref_def.has("gd_arraylike"):
-		var outer_type := _meta_type(schema, raw_name)
-		var inner_types: Array[String] = []
-		for inner_def in ref_def.get("struct", []):
-			inner_types.append(_meta_type(schema, inner_def.type))
-		return "%s[%s]" % [outer_type, ",".join(inner_types)]
-
-	if member_def.has("is_array"):
-		return "vec_%s" % _meta_type(schema, raw_name)
-
-	return _meta_type(schema, raw_name)
+	return _gd_type(schema, raw_name, member_def)
 
 
 func _param_bsatn_literal(raw_type: String) -> String:
 	return "''" if raw_type.is_empty() else "&'%s'" % raw_type
-
-
-func _return_bsatn_literal(raw_type: String) -> String:
-	return "&'%s'" % raw_type
 
 
 func generate_bindings() -> Array[String]:
@@ -164,7 +149,7 @@ func _generate_gdscript_from_schema(
 	var generated_files: Array[String] = []
 
 	for type_def in schema.types:
-		if type_def.has("gd_native"):
+		if SpacetimeSchemaParser.GDNATIVE_ARRAYLIKE_TYPES.has(type_def.get("name")):
 			continue
 
 		var content := ""
@@ -181,14 +166,11 @@ func _generate_gdscript_from_schema(
 
 			content = _generate_struct_gdscript(schema, type_def, table_names_to_emit)
 		elif type_def.has("enum"):
-			if not type_def.get("is_sum_type"):
-				continue
 			content = _generate_enum_gdscript(schema, type_def)
 		else:
 			continue
 
-		var output_file_name := "%s_%s.gd" % [
-			schema.module.to_snake_case(),
+		var output_file_name := "%s.gd" % [
 			type_def.get("name", "").to_snake_case(),
 		]
 		var folder_path := "%s/types" % _schema_path
@@ -210,10 +192,9 @@ func _generate_gdscript_from_schema(
 			var index_content := _generate_table_unique_index_gdscript(
 				schema,
 				unique_index_def,
-				table_def,
+				table_def
 			)
-			var index_file_name := "%s_%s_%s_unique_index.gd" % [
-				schema.module.to_snake_case(),
+			var index_file_name := "%s_%s_unique_index.gd" % [
 				table_name.to_snake_case(),
 				unique_index_def.get("name", "").to_snake_case(),
 			]
@@ -225,8 +206,7 @@ func _generate_gdscript_from_schema(
 			generated_files.append(index_path)
 
 		var table_content := _generate_table_gdscript(schema, table_def)
-		var table_file_name := "%s_%s_table.gd" % [
-			schema.module.to_snake_case(),
+		var table_file_name := "%s_table.gd" % [
 			table_name.to_snake_case(),
 		]
 		var table_folder := "%s/tables" % _schema_path
@@ -276,15 +256,11 @@ func _generate_table_unique_index_gdscript(
 ) -> String:
 	var table_name: String = table_def.get("name", "")
 	var field_name: String = unique_index_def.get("name", "")
-	var field_type: String = schema.type_map.get(
-		unique_index_def.get("type", "Variant"),
-		"Variant",
-	)
+	var field_type: String = _gd_type(schema, unique_index_def.get("type", "Variant"), unique_index_def)
 	var type_def: Dictionary = schema.types[table_def.get("type_idx")] if table_def.has("type_idx") else {}
-	var type_name: String = schema.type_map.get(type_def.get("name", "Variant"), "Variant")
+	var type_name: String = _gd_type(schema, type_def.get("name", "Variant"), type_def)
 
-	var class_name_text := "%s%s%sUniqueIndex" % [
-		schema.module.to_pascal_case(),
+	var class_name_text := "%s%sUniqueIndex" % [
 		table_name.to_pascal_case(),
 		field_name.to_pascal_case(),
 	]
@@ -295,10 +271,10 @@ func _generate_table_unique_index_gdscript(
 		"func _init() -> void:\n" + \
 		"\tset_meta(\"table_name\", \"%s\")\n" % table_name + \
 		"\tset_meta(\"field_name\", \"%s\")\n\n" % field_name + \
-		"static func create(p_local_db: LocalDatabase) -> %s:\n" % class_name_text +\
-		"\tvar index: %s = %s.new()\n" %[class_name_text,class_name_text] + \
+		"static func create(p_local_db: LocalDatabase) -> %s:\n" % class_name_text + \
+		"\tvar index: %s = %s.new()\n" % [class_name_text, class_name_text] + \
 		"\tindex._connect_cache_to_db(index._cache, p_local_db)\n" + \
-		"\treturn index\n\n" +\
+		"\treturn index\n\n" + \
 		"func find(col_val: %s) -> %s:\n" % [field_type, type_name] + \
 		"\treturn _cache.get(col_val, null)\n"
 
@@ -309,19 +285,17 @@ func _generate_table_gdscript(
 ) -> String:
 	var table_name: String = table_def.get("name", "")
 	var type_def: Dictionary = schema.types[table_def.get("type_idx")] if table_def.has("type_idx") else {}
-	var type_name: String = schema.type_map.get(type_def.get("name", "Variant"), "Variant")
+	var type_name: String = _gd_type(schema, type_def.get("name", "Variant"), type_def)
 
 	var unique_index_classes: Dictionary[String, String] = {}
 	for unique_index_def in table_def.get("unique_indexes", []):
 		var field_name: String = unique_index_def.get("name", "")
-		unique_index_classes[field_name] = "%s%s%sUniqueIndex" % [
-			schema.module.to_pascal_case(),
+		unique_index_classes[field_name] = "%s%sUniqueIndex" % [
 			table_name.to_pascal_case(),
 			field_name.to_pascal_case(),
 		]
 
-	var class_name_text := "%s%sTable" % [
-		schema.module.to_pascal_case(),
+	var class_name_text := "%sTable" % [
 		table_name.to_pascal_case(),
 	]
 
@@ -333,11 +307,11 @@ func _generate_table_gdscript(
 
 	content += "\nfunc _init() -> void:\n" + \
 		"\tset_meta(\"table_name\", \"%s\")\n" % table_name + \
-		"\tset_meta(\"is_event\", \"%s\")\n" % table_def.get("is_event") +\
+		"\tset_meta(\"is_event\", \"%s\")\n" % table_def.get("is_event") + \
 		"\tset_meta(\"type\", \"%s\")\n" % type_name
 
 	content += "\nstatic func create(p_local_db: LocalDatabase) -> %s:\n" % class_name_text + \
-		"\tvar table: %s = %s.new()\n" % [class_name_text,class_name_text] +\
+		"\tvar table: %s = %s.new()\n" % [class_name_text, class_name_text] + \
 		"\ttable._db = p_local_db\n"
 
 	for field_name in unique_index_classes:
@@ -346,8 +320,6 @@ func _generate_table_gdscript(
 			unique_index_classes[field_name],
 		]
 	content += "\treturn table\n"
-
-
 
 	content += "\nfunc iter() -> Array[%s]:\n" % type_name + \
 		"\tvar rows: Array = super()\n" + \
@@ -366,11 +338,12 @@ func _generate_struct_gdscript(
 	var struct_name: String = type_def.get("name", "")
 	var fields: Array = type_def.get("struct", [])
 	var meta_lines: Array[String] = []
-	var table_name: String = type_def.get("table_name", "")
-	var class_name_text := schema.module.to_pascal_case() + struct_name.to_pascal_case()
+	var table_name: String = type_def.get("table_names", [""]).get(0)
+	var class_name_text := struct_name.to_pascal_case()
 	var base_class := "Resource"
 
-	if table_name:
+
+	if not table_name.is_empty():
 		base_class = "_ModuleTableType"
 		var primary_key_name: String = type_def.get("primary_key_name", "")
 		if table_names.size() != 0:
@@ -386,95 +359,31 @@ func _generate_struct_gdscript(
 
 	var class_fields: Array = []
 	var create_doc := ""
-
-	for i in fields.size():
-		var field_def: Dictionary = fields[i]
-		var field_name: String = field_def.get("name", "")
-		var raw_name: String = field_def.get("type", "Variant")
-		var ref_def: Dictionary = schema.types[field_def.get("type_idx", -1)] \
-			if field_def.has("type_idx") else {}
-		var nested_parts: Array = field_def.get("nested_type", []).duplicate()
-		nested_parts.append(_gd_type(schema, raw_name))
-
-		var gd_field_type := ""
-		var bsatn_type := ""
-		var inline_comment := ""
-		var add_meta := false
-
-		if field_def.has("is_option"):
-			gd_field_type = OPTION_CLASS_NAME
-			inline_comment = "## %s" % _nested_label(schema, field_def)
-			create_doc += "## %d. %s: %s[br]\n" % [
-				i,
-				field_name,
-				" of ".join(nested_parts),
-			]
-			bsatn_type = (
-				"vec_%s" % _meta_type(schema, raw_name)
-				if field_def.has("is_array_inside_option")
-				else "opt_%s" % _meta_type(schema, raw_name)
-			)
-			add_meta = true
-			meta_lines.append(
-				"set_meta('underlying_type_%s', &'%s')" % [field_name, nested_parts[1]]
-			)
-		elif field_def.has("is_array"):
-			var element_type := _gd_type(schema, raw_name)
-			if field_def.has("is_option_inside_array"):
-				element_type = OPTION_CLASS_NAME
-				inline_comment = "## %s" % _nested_label(schema, field_def)
-				meta_lines.append(
-					"set_meta('underlying_type_%s', &'%s')" % [field_name, nested_parts[1]]
-				)
-			create_doc += "## %d. %s: %s[br]\n" % [
-				i,
-				field_name,
-				" of ".join(nested_parts),
-			]
-			gd_field_type = "Array[%s]" % element_type
-			bsatn_type = "vec_%s" % _meta_type(schema, raw_name)
-			add_meta = true
-		elif ref_def and ref_def.has("gd_arraylike"):
-			create_doc += "## %d. %s: %s[br]\n" % [
-				i,
-				field_name,
-				" of ".join(nested_parts),
-			]
-			gd_field_type = _gd_type(schema, raw_name)
-			var outer_type := _meta_type(schema, raw_name)
-			var inner_types: Array[String] = []
-			for inner_def in ref_def.struct:
-				inner_types.append(_meta_type(schema, inner_def.type))
-			bsatn_type = "%s[%s]" % [outer_type, ",".join(inner_types)]
-			add_meta = true
-		else:
-			gd_field_type = _gd_type(schema, raw_name)
-			bsatn_type = _meta_type(schema, raw_name)
-			create_doc += "## %d. %s: %s[br]\n" % [
-				i,
-				field_name,
-				" of ".join(nested_parts),
-			]
-			add_meta = schema.meta_type_map.has(raw_name) or not SpacetimeSchemaParser._is_gd_native(raw_name)
-
+	var count := 0
+	for prop: Dictionary in fields:
+		count += 1
+		var field_name: String = prop.get("name", "")
+		var bsatn_type: String = prop.get("type", "")
+		var godot_type_hint : String = prop.get("godot_type_hint", "Variant")
 		if field_name == "scheduled_at":
 			bsatn_type = "scheduled_at"
+		create_doc += "## %d. %s: %s[br]\n" % [count,field_name,godot_type_hint]
+		meta_lines.append("set_meta('bsatn_type_%s', &'%s')" % [field_name,bsatn_type])
 
-		if add_meta and not bsatn_type.is_empty():
-			meta_lines.append("set_meta('bsatn_type_%s', &'%s')" % [field_name, bsatn_type])
-
-		content += "@export var %s: %s %s\n" % [field_name, gd_field_type, inline_comment]
-		class_fields.append([field_name, gd_field_type])
+		content += "@export var %s: %s\n" % [field_name, godot_type_hint]
+		class_fields.append([field_name, godot_type_hint])
 
 	content += "\nfunc _init() -> void:\n\t_reset_metadata()\n"
 	content += "\nfunc _reset_metadata() -> void:\n"
 	content += "\t# Clear old metadata\n"
 	content += "\tfor key : StringName in get_meta_list():\n\t\tset_meta(key, null)\n\n"
 
-	for line in meta_lines:
-		content += "\t%s\n" % line
 	if meta_lines.is_empty():
 		content += "\tpass\n"
+	else:
+		for line in meta_lines:
+			content += "\t%s\n" % line
+
 
 	content += "\n" + create_doc
 	content += "static func create(%s) -> %s:\n" % [
@@ -494,11 +403,9 @@ func _generate_enum_gdscript(
 ) -> String:
 	var enum_name: String = type_def.get("name", "")
 	var variants: Array = type_def.get("enum", [])
-	var class_name_text := schema.module.to_pascal_case() + enum_name.to_pascal_case()
+	var class_name_text := enum_name.to_pascal_case()
 
-	var variant_lines := "\n".join(
-		variants.map(func(x): return "\t%s," % x.get("name", ""))
-	)
+	var variant_lines := "\n".join(variants.map(func(x): return "\t%s," % x.get("name", "")))
 
 	var content := AUTOGENERATED_COMMENT + \
 		"class_name %s extends RustEnum\n\n" % class_name_text + \
@@ -509,16 +416,10 @@ func _generate_enum_gdscript(
 		"\tset_meta('enum_options', [%s])\n" % [ \
 			", ".join(variants.map(func(x):
 				var raw_name: String = x.get("type", "")
-				var rust_name := _meta_type(schema, raw_name)
-				if x.has("is_array_inside_option"):
-					rust_name = "opt_vec_%s" % rust_name
-				elif x.has("is_option_inside_array"):
-					rust_name = "vec_opt_%s" % rust_name
-				elif x.has("is_array"):
-					rust_name = "vec_%s" % rust_name
-				elif x.has("is_option"):
-					rust_name = "opt_%s" % rust_name
-				return "&'%s'" % rust_name if not rust_name.is_empty() else "&''" ))] + \
+				var rust_name := raw_name
+				return "&'%s'" % rust_name if not rust_name.is_empty() else "''" \
+			))
+		] + \
 		"\tset_meta('bsatn_enum_type', &'%s')\n\n" % class_name_text + \
 		"static func parse_enum_name(i: int) -> String:\n\tmatch i:\n"
 
@@ -531,7 +432,7 @@ func _generate_enum_gdscript(
 
 	for variant_def in variants:
 		var variant_name: String = variant_def.get("name", "")
-		var variant_type: String = _gd_type(schema, variant_def.get("type", "Variant"))
+		var variant_type: String = _gd_type(schema, variant_def.get("type", "Variant"), variant_def)
 		var nested_parts: Array = variant_def.get("nested_type", []).duplicate()
 		nested_parts.append(variant_type)
 
@@ -547,8 +448,10 @@ func _generate_enum_gdscript(
 				get_funcs.append("## Returns: %s\n" % " of ".join(nested_parts))
 				create_funcs.append("## 0. data: %s\n" % " of ".join(nested_parts))
 			get_funcs.append(
-				"func get_%s() -> %s:\n\treturn data\n\n"
-				% [variant_name.to_snake_case(), variant_type]
+				"func get_%s() -> %s:\n\treturn data\n\n" % [
+					variant_name.to_snake_case(),
+					variant_type,
+				]
 			)
 			create_funcs.append(
 				"static func create_%s(_data: %s) -> %s:\n\treturn create(Options.%s, _data)\n\n"
@@ -591,35 +494,7 @@ func _generate_module_client_gdscript(
 	if not types_part.is_empty():
 		content += types_part + "\n"
 
-	content += "\n## example usage:\n" + \
-		"## [codeblock]\n" + \
-		"## # Reducer call returns a call object that the response will use to send out it's callback signals\n" + \
-		"## var call : SpacetimeDBReducerCall = SpacetimeDB.%s.reducers.example_reducer()\n" % schema.module.to_pascal_case() + \
-		"##\n" + \
-		"## # checking if the reducer call was send out successfully\n" + \
-		"## if call.error:\n" + \
-		"##     # handle reducer call error\n" + \
-		"##     pass\n" + \
-		"##\n" + \
-		"## # general callback signal\n" + \
-		"## call.response.connect(func(update:ReducerResultMessage) -> void: pass)\n" + \
-		"##\n" + \
-		"## # reducer successfully ran and returned with data (general subscription data)\n" + \
-		"## call.on_ok.connect(func(update:ReducerResultMessage) -> void: pass)\n" + \
-		"##\n" + \
-		"## # reducer successfully ran and returned without data\n" + \
-		"## call.on_ok_empty.connect(func(update:ReducerResultMessage) -> void: pass)\n" + \
-		"##\n" + \
-		"## # reducer failed to run and returned with the error string\n" + \
-		"## call.on_error.conect(func(err: String) -> void: pass)\n" + \
-		"##\n" + \
-		"## # reducer failed with internal error. not expected to be ever called.\n" + \
-		"## call.on_internal_error.conect(func(err: String) -> void: pass)\n" + \
-		"##\n" + \
-		"## # waiting for the reducer response\n" + \
-		"## await call.response\n" + \
-		"## [/codeblock]\n" + \
-		"var reducers: %sModuleReducers\n" % schema.module.to_pascal_case() + \
+	content += "\nvar reducers: %sModuleReducers\n" % schema.module.to_pascal_case() + \
 		"var procedures: %sModuleProcedures\n" % schema.module.to_pascal_case() + \
 		"var db: %sModuleDb\n\n" % schema.module.to_pascal_case() + \
 		"func _init() -> void:\n" + \
@@ -655,8 +530,7 @@ func _generate_db_gdscript(
 			continue
 		if _plugin_config.module_configs[module_name].hide_private_tables and not table_def.get("is_public", true):
 			continue
-		tables[table_name] = "%s%sTable" % [
-			schema.module.to_pascal_case(),
+		tables[table_name] = "%sTable" % [
 			table_name.to_pascal_case(),
 		]
 		table_names.append("\"%s\"" % table_name)
@@ -672,10 +546,9 @@ func _generate_db_gdscript(
 	if tables.is_empty():
 		content += "\tpass\n"
 	for table_name in tables:
-		content += "\t%s = preload('%s/tables/%s_%s_table.gd').create(p_local_db)\n" % [
+		content += "\t%s = preload('%s/tables/%s_table.gd').create(p_local_db)\n" % [
 			table_name.to_snake_case(),
 			_schema_path,
-			schema.module.to_snake_case(),
 			table_name.to_snake_case(),
 		]
 
@@ -690,13 +563,11 @@ func _generate_types_gdscript(
 	var content := "" if const_pointer else AUTOGENERATED_COMMENT + "\n"
 
 	for type_def in schema.types:
-		if type_def.has("gd_native"):
+		if SpacetimeSchemaParser.GDNATIVE_ARRAYLIKE_TYPES.has(type_def.get("name")):
 			continue
 
 		var type_name: String = type_def.get("name", "")
 		if type_def.has("table_name"):
-			if not type_def.has("primary_key_name"):
-				continue
 			if _plugin_config.module_configs[module_name].hide_private_tables and not type_def.get("is_public", []).has(true):
 				continue
 
@@ -706,23 +577,11 @@ func _generate_types_gdscript(
 				type_name.to_pascal_case(),
 			]
 		else:
-			if type_def.has("is_sum_type") and not type_def.get("is_sum_type"):
-				content += "enum %s {\n" % type_name.to_pascal_case()
-				var variants_text := ""
-				for variant_def in type_def.get("enum", []):
-					var variant_text = variant_def.get("name", "")
-					variants_text += "\t%s,\n" % variant_text.to_pascal_case()
-				if not variants_text.is_empty():
-					variants_text = variants_text.left(-2)
-				content += variants_text
-				content += "\n}\n"
-			else:
-				content += "const %s = preload('%s/types/%s_%s.gd')\n" % [
-					type_name.to_pascal_case(),
-					_schema_path,
-					schema.module.to_snake_case(),
-					type_name.to_snake_case(),
-				]
+			content += "const %s = preload('%s/types/%s.gd')\n" % [
+				type_name.to_pascal_case(),
+				_schema_path,
+				type_name.to_snake_case(),
+			]
 
 	return content
 
@@ -745,7 +604,7 @@ func _generate_reducers_gdscript(
 			var param_def: Dictionary = reducer_params[i]
 			var param_name: String = param_def.get("name", "")
 			var nested_parts: Array = param_def.get("nested_type", []).duplicate()
-			nested_parts.append(_gd_type(schema, param_def.get("type", "Variant")))
+			nested_parts.append(_gd_type(schema, param_def.get("type", "Variant"), param_def))
 			description_comment.append("## %d. %s: %s [br]" % [
 				i,
 				param_name,
@@ -755,7 +614,7 @@ func _generate_reducers_gdscript(
 			params_str_parts.append("%s: %s" % [param_name, _member_gd_type(schema, param_def)])
 		var params_str := ", ".join(params_str_parts)
 
-		var param_names_list :Array= reducer_def.get("params", []).map(func(x): return x.get("name", ""))
+		var param_names_list: Array = reducer_def.get("params", []).map(func(x): return x.get("name", ""))
 		var param_names_str := ", ".join(param_names_list) if not param_names_list.is_empty() else ""
 
 		var param_bsatn_types_list := (reducer_def.get("params", []) as Array).map(func(x):
@@ -764,20 +623,20 @@ func _generate_reducers_gdscript(
 			var raw_type := ""
 			if x.has("is_option"):
 				raw_type = (
-					"vec_%s" % _meta_type(schema, raw_name)
+					"vec_%s" % raw_name
 					if x.has("is_array_inside_option")
-					else _meta_type(schema, raw_name)
+					else raw_name
 				)
 			elif ref_def and ref_def.has("gd_arraylike"):
-				var outer_type := _meta_type(schema, raw_name)
+				var outer_type := raw_name
 				var inner_types: Array[String] = []
-				for inner_def in ref_def.struct:
-					inner_types.append(_meta_type(schema, inner_def.type))
+				for inner_def in ref_def.get("struct", []):
+					inner_types.append(inner_def.get("type", ""))
 				raw_type = "%s[%s]" % [outer_type, ",".join(inner_types)]
 			elif x.has("is_array"):
-				raw_type = "vec_%s" % _meta_type(schema, raw_name)
+				raw_type = "vec_%s" % raw_name
 			else:
-				raw_type = _meta_type(schema, raw_name)
+				raw_type = raw_name
 			return _param_bsatn_literal(raw_type)
 		)
 
@@ -813,17 +672,16 @@ func _generate_procedures_gdscript(
 			var param_def: Dictionary = procedure_params[i]
 			var param_name: String = param_def.get("name", "")
 			var nested_parts: Array = param_def.get("nested_type", []).duplicate()
-			nested_parts.append(_gd_type(schema, param_def.get("type", "Variant")))
+			nested_parts.append(_gd_type(schema, param_def.get("type", "Variant"), param_def))
 			description_comment.append("## %d. %s: %s [br]" % [
 				i,
 				param_name,
 				" of ".join(nested_parts),
 			])
-
 			params_str_parts.append("%s: %s" % [param_name, _member_gd_type(schema, param_def)])
-		var params_str := ", ".join(params_str_parts)
 
-		var param_names_list :Array= procedure_def.get("params", []).map(func(x): return x.get("name", ""))
+		var params_str := ", ".join(params_str_parts)
+		var param_names_list: Array = procedure_def.get("params", []).map(func(x): return x.get("name", ""))
 		var param_names_str := ", ".join(param_names_list) if not param_names_list.is_empty() else ""
 
 		var param_bsatn_types_list := (procedure_def.get("params", []) as Array).map(func(x):
@@ -832,63 +690,35 @@ func _generate_procedures_gdscript(
 			var raw_type := ""
 			if x.has("is_option"):
 				raw_type = (
-					"vec_%s" % _meta_type(schema, raw_name)
+					"vec_%s" % raw_name
 					if x.has("is_array_inside_option")
-					else _meta_type(schema, raw_name)
+					else raw_name
 				)
 			elif ref_def and ref_def.has("gd_arraylike"):
-				var outer_type := _meta_type(schema, raw_name)
+				var outer_type := raw_name
 				var inner_types: Array[String] = []
-				for inner_def in ref_def.struct:
-					inner_types.append(_meta_type(schema, inner_def.type))
+				for inner_def in ref_def.get("struct", []):
+					inner_types.append(inner_def.get("type", ""))
 				raw_type = "%s[%s]" % [outer_type, ",".join(inner_types)]
 			elif x.has("is_array"):
-				raw_type = "vec_%s" % _meta_type(schema, raw_name)
+				raw_type = "vec_%s" % raw_name
 			else:
-				raw_type = _meta_type(schema, raw_name)
+				raw_type = raw_name
 			return _param_bsatn_literal(raw_type)
 		)
 		var param_bsatn_types_str := ", ".join(param_bsatn_types_list) if not param_bsatn_types_list.is_empty() else ""
 
 		var return_def: Dictionary = procedure_def.get("return_type", {})
-		var return_names: Array = return_def.get("type", [])
-		var ref_def: Dictionary = schema.types[return_def.type_idx] if return_def.has("type_idx") else {}
-		var return_bsatn_list: Array[String] = []
-
-		for return_name in return_names:
-			var raw_type := ""
-			if return_def.has("is_option"):
-				raw_type = (
-					"vec_%s" % _meta_type(schema, return_name)
-					if return_def.has("is_array_inside_option")
-					else "opt_%s" % _meta_type(schema, return_name)
-				)
-			elif return_def.has("is_result"):
-				raw_type = _meta_type(schema, return_name)
-			elif ref_def and ref_def.has("gd_arraylike"):
-				var outer_type := _meta_type(schema, return_name)
-				var inner_types: Array[String] = []
-				for inner_def in ref_def.struct:
-					inner_types.append(_meta_type(schema, inner_def.type))
-				raw_type = "%s[%s]" % [outer_type, ",".join(inner_types)]
-			elif return_def.has("is_array"):
-				raw_type = "vec_%s" % _meta_type(schema, return_name)
-			else:
-				raw_type = _meta_type(schema, return_name)
-			return_bsatn_list.append(raw_type)
-
-		if return_bsatn_list.size() >= 2:
-			return_bsatn_list.push_front("ret")
-		var return_bsatn_literal := _return_bsatn_literal("_".join(return_bsatn_list))
+		var return_name: String = return_def.get("type", "")
 
 		content += "\n".join(description_comment) + "\n"
 		var procedure_name: String = procedure_def.get("name", "")
 		content += "func %s(%s) -> SpacetimeDBProcedureCall:\n" % [procedure_name, params_str] + \
-			"\treturn _client.call_procedure('%s', [%s], [%s], %s)\n\n" % [
+			"\treturn _client.call_procedure('%s', [%s], [%s], '%s')\n\n" % [
 				procedure_name,
 				param_names_str,
 				param_bsatn_types_str,
-				return_bsatn_literal,
+				return_name,
 			]
 
 	return content

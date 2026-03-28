@@ -170,7 +170,8 @@ func _is_alphanumerical(string: String)-> bool:
 	var regex = RegEx.new()
 	regex.compile("[^[:alnum:]]+")
 	var result = regex.search(string)
-	if not result.get_string().is_empty():
+
+	if result and not result.get_string().is_empty():
 		add_err("INVALID string. Alphanumeric only but found: %s" % result.get_string())
 		return false
 	return true
