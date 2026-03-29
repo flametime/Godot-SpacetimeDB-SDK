@@ -200,7 +200,6 @@ func _read_option(spb: StreamPeerBuffer, bsatn_type_str: StringName) -> Option:
 	if has_error(): return null # Error reading tag
 	if is_present_tag == 1: # It's None
 		option_instance.set_none()
-		print_log("DEBUG: _read_option: Read None for Option with bsatn_type: '%s'" % bsatn_type_str)
 		return option_instance
 	elif is_present_tag == 0: # It's Some
 		option_instance.set_some(_parse_generic_type(spb,bsatn_type_str))
@@ -713,13 +712,11 @@ func _read_one_off_query_message(spb: StreamPeerBuffer)-> OneOffQueryResponseMes
 	return response_res
 
 func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
-	print_log("DEBUG: parsing bsatn_type: %s" % bsatn_type)
 	if bsatn_type.begins_with("opt_"):
 		return _read_option(spb, bsatn_type.trim_prefix("opt_"))
 	elif bsatn_type.begins_with("vec_"):
 		var result_type_array: Array = []
 		var count = read_u32_le(spb)
-		print_log("DEBUG: parsing %s with array size %s" %[bsatn_type,count])
 		for i in count:
 			result_type_array.append(_parse_generic_type(spb, bsatn_type.trim_prefix("vec_")))
 		return result_type_array
@@ -734,7 +731,6 @@ func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 		if reader_callablce.is_valid():
 			return reader_callablce.call(spb)
 		else:
-			print_log("DEBUG: got core type Script for bsatn_type: %s " % bsatn_type)
 			script = _schema.get_core_type_script(bsatn_type)
 	elif _schema.module_types.has(bsatn_type):
 		script = _schema.get_type_script(bsatn_type)
@@ -748,6 +744,10 @@ func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 		_set_error("script: %s is empty or can't instantiate" % script)
 
 	var result_resource := script.new()
+	if result_resource is RustEnum:
+		# error handling?
+		_populate_enum_from_bytes(spb,result_resource)
+		return result_resource
 	var properties: Array = script.get_script_property_list()
 	for prop in properties:
 		if not (prop.usage & PROPERTY_USAGE_STORAGE):
@@ -755,7 +755,6 @@ func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 		var bsatn_type_str: StringName = result_resource.get_meta("bsatn_type_"+prop.name)
 		var reader_callablce := _get_primitive_reader_from_bsatn_type(bsatn_type_str)
 		if reader_callablce.is_valid():
-			print_log("DEBUG: parsing prop %s with type %s" %[prop.name,bsatn_type_str])
 			result_resource[prop.name] = reader_callablce.call(spb)
 		elif _schema.module_types.has(bsatn_type_str) or bsatn_type_str.begins_with("opt_") or bsatn_type_str.begins_with("ret_") or NATIVE_ARRAYLIKE.has(bsatn_type_str):
 			result_resource[prop.name] = _parse_generic_type(spb, bsatn_type_str)

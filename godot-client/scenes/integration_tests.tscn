@@ -31,34 +31,34 @@ region_rect = Rect2(0, 0, 64, 64)
 [sub_resource type="Theme" id="Theme_7ntsj"]
 Label/styles/normal = SubResource("StyleBoxTexture_m5x7f")
 
-[sub_resource type="Resource" id="Resource_kjelw"]
+[sub_resource type="Resource" id="Resource_26wxn"]
 script = ExtResource("4_wkhtg")
 metadata/primary_key = "t_u_64"
-metadata/bsatn_type_t_u_64 = &"u64"
-metadata/bsatn_type_t_u_8 = &"u8"
-metadata/bsatn_type_t_u_16 = &"u16"
-metadata/bsatn_type_t_u_32 = &"u32"
-metadata/bsatn_type_t_u_128 = &"u128"
-metadata/bsatn_type_t_f_32 = &"f32"
-metadata/bsatn_type_t_f_64 = &"f64"
-metadata/bsatn_type_t_i_8 = &"i8"
-metadata/bsatn_type_t_i_16 = &"i16"
-metadata/bsatn_type_t_i_32 = &"i32"
-metadata/bsatn_type_t_i_64 = &"i64"
-metadata/bsatn_type_t_string = &"string"
-metadata/bsatn_type_t_vec_string = &"vec_string"
-metadata/bsatn_type_t_vec_u_8 = &"vec_u8"
-metadata/bsatn_type_t_opt_string = &"opt_string"
-metadata/bsatn_type_t_opt_u_64 = &"opt_u64"
-metadata/bsatn_type_t_test_enum = &"testenum"
-metadata/bsatn_type_t_test_enum_vec = &"vec_testenum"
-metadata/bsatn_type_t_test_enum_option = &"opt_testenum"
-metadata/bsatn_type_t_test_type = &"testtype"
-metadata/bsatn_type_t_test_type_vec = &"vec_testtype"
-metadata/bsatn_type_t_test_type_option = &"opt_testtype"
-metadata/bsatn_type_t_test_color = &"color"
-metadata/bsatn_type_t_test_vector_2 = &"vector2"
-metadata/bsatn_type_t_test_vector_3 = &"vector3"
+metadata/bsatn_type_t_u_64 = &"U64"
+metadata/bsatn_type_t_u_8 = &"U8"
+metadata/bsatn_type_t_u_16 = &"U16"
+metadata/bsatn_type_t_u_32 = &"U32"
+metadata/bsatn_type_t_u_128 = &"U128"
+metadata/bsatn_type_t_f_32 = &"F32"
+metadata/bsatn_type_t_f_64 = &"F64"
+metadata/bsatn_type_t_i_8 = &"I8"
+metadata/bsatn_type_t_i_16 = &"I16"
+metadata/bsatn_type_t_i_32 = &"I32"
+metadata/bsatn_type_t_i_64 = &"I64"
+metadata/bsatn_type_t_string = &"String"
+metadata/bsatn_type_t_vec_string = &"vec_String"
+metadata/bsatn_type_t_vec_u_8 = &"vec_U8"
+metadata/bsatn_type_t_opt_string = &"opt_String"
+metadata/bsatn_type_t_opt_u_64 = &"opt_U64"
+metadata/bsatn_type_t_test_enum = &"MainTestEnum"
+metadata/bsatn_type_t_test_enum_vec = &"vec_MainTestEnum"
+metadata/bsatn_type_t_test_enum_option = &"opt_MainTestEnum"
+metadata/bsatn_type_t_test_type = &"MainTestType"
+metadata/bsatn_type_t_test_type_vec = &"vec_MainTestType"
+metadata/bsatn_type_t_test_type_option = &"opt_MainTestType"
+metadata/bsatn_type_t_test_color = &"Color"
+metadata/bsatn_type_t_test_vector_2 = &"Vector2"
+metadata/bsatn_type_t_test_vector_3 = &"Vector3"
 
 [sub_resource type="Resource" id="Resource_kgsjp"]
 script = ExtResource("4_wkhtg")
@@ -252,7 +252,7 @@ metadata/_tab_index = 0
 
 [node name="Receiver [MainTestTableDatatypes]" type="Node" parent="VBoxContainer/TabContainer/TestTableDatatypes" unique_id=2138347038]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_kjelw")
+table_to_receive = SubResource("Resource_26wxn")
 selected_table_name = "test_table_datatypes"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
@@ -387,7 +387,7 @@ metadata/_tab_index = 11
 [node name="Receiver [MainViewType]" type="Node" parent="VBoxContainer/TabContainer/ViewNoPkVec" unique_id=1157552964]
 script = ExtResource("2_3ljp4")
 table_to_receive = SubResource("Resource_wkhtg")
-selected_table_name = "main_test_no_pk_vec"
+selected_table_name = "test_no_pk_vec"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
 [node name="Control" parent="VBoxContainer/TabContainer" unique_id=2017668363 node_paths=PackedStringArray("row_receiver") instance=ExtResource("2_p8i4h")]
