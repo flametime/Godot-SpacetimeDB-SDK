@@ -344,14 +344,14 @@ func write_native_arraylike(v: Variant, bsatn_type: String, prop: Dictionary) ->
 		bsatn_types_for_components = result.get_string("components")
 	else:
 		match value_type:
-			TYPE_VECTOR2:    bsatn_types_for_components = "f32,f32"
-			TYPE_VECTOR2I:   bsatn_types_for_components = "i32,i32"
-			TYPE_VECTOR3:    bsatn_types_for_components = "f32,f32,f32"
-			TYPE_VECTOR3I:   bsatn_types_for_components = "i32,i32,i32"
-			TYPE_VECTOR4:    bsatn_types_for_components = "f32,f32,f32,f32"
-			TYPE_VECTOR4I:   bsatn_types_for_components = "i32,i32,i32,i32"
-			TYPE_QUATERNION: bsatn_types_for_components = "f32,f32,f32,f32"
-			TYPE_COLOR:      bsatn_types_for_components = "f32,f32,f32,f32"
+			TYPE_VECTOR2:    bsatn_types_for_components = "F32,F32"
+			TYPE_VECTOR2I:   bsatn_types_for_components = "I32,I32"
+			TYPE_VECTOR3:    bsatn_types_for_components = "F32,F32,F32"
+			TYPE_VECTOR3I:   bsatn_types_for_components = "I32,I32,I32"
+			TYPE_VECTOR4:    bsatn_types_for_components = "F32,F32,F32,F32"
+			TYPE_VECTOR4I:   bsatn_types_for_components = "I32,I32,I32,I32"
+			TYPE_QUATERNION: bsatn_types_for_components = "F32,F32,F32,F32"
+			TYPE_COLOR:      bsatn_types_for_components = "F32,F32,F32,F32"
 			_: bsatn_types_for_components = ""
 	if bsatn_types_for_components.is_empty():
 		_set_error("Cannot determine inner component types for array-like gd type '%s' from 'bsatn_type' metadata ('%s')" % [prop_name, bsatn_type])
@@ -394,23 +394,23 @@ func _get_value_class_name(value: Variant) -> String:
 # Helper to get the specific BSATN writer METHOD NAME based on metadata value.
 func _get_primitive_writer_from_bsatn_type(bsatn_type_str: String) -> Callable:
 	match bsatn_type_str:
-		&'u128': return Callable(self, "write_u128")
-		&"u64": return Callable(self, "write_u64_le")
-		&"i64": return Callable(self, "write_i64_le")
-		&"f64": return Callable(self, "write_f64_le")
-		&"u32": return Callable(self, "write_u32_le")
-		&"i32": return Callable(self, "write_i32_le")
-		&"f32": return Callable(self, "write_f32_le")
-		&"u16": return Callable(self, "write_u16_le")
-		&"i16": return Callable(self, "write_i16_le")
-		&"u8": return Callable(self, "write_u8")
-		&"i8": return Callable(self, "write_i8")
-		&"identity": return Callable(self, "write_identity")
+		&'U128': return Callable(self, "write_u128")
+		&"U64": return Callable(self, "write_u64_le")
+		&"I64": return Callable(self, "write_i64_le")
+		&"F64": return Callable(self, "write_f64_le")
+		&"U32": return Callable(self, "write_u32_le")
+		&"I32": return Callable(self, "write_i32_le")
+		&"F32": return Callable(self, "write_f32_le")
+		&"U16": return Callable(self, "write_u16_le")
+		&"I16": return Callable(self, "write_i16_le")
+		&"U8": return Callable(self, "write_u8")
+		&"I8": return Callable(self, "write_i8")
+		&"__identity__": return Callable(self, "write_identity")
 		&"connection_id": return Callable(self, "write_connection_id")
 		&"timestamp": return Callable(self, "write_timestamp")
-		&"vec_u8": return Callable(self, "write_vec_u8")
-		&"bool": return Callable(self, "write_bool")
-		&"string": return Callable(self, "write_string_with_u32_len")
+		&"vec_U8": return Callable(self, "write_vec_u8")
+		&"Bool": return Callable(self, "write_bool")
+		&"String": return Callable(self, "write_string_with_u32_len")
 		# Add other specific types mapped to writer methods if needed
 		_: return Callable() # Unknown or non-primitive type
 
@@ -450,17 +450,17 @@ func _get_writer_callable_for_property(prop: Dictionary, bsatn_type_str: String)
 				TYPE_BOOL: writer_callable = Callable(self, "write_bool")
 				TYPE_INT:
 					match bsatn_type_str:
-						&"u8": writer_callable = Callable(self, "write_u8")
-						&"u16": writer_callable = Callable(self, "write_u16_le")
-						&"u32": writer_callable = Callable(self, "write_u32_le")
-						&"u64": writer_callable = Callable(self, "write_u64_le")
-						&"i8": writer_callable = Callable(self, "write_i8")
-						&"i16": writer_callable = Callable(self, "write_i16_le")
-						&"i32": writer_callable = Callable(self, "write_i32_le")
+						&"U8": writer_callable = Callable(self, "write_u8")
+						&"U16": writer_callable = Callable(self, "write_u16_le")
+						&"U32": writer_callable = Callable(self, "write_u32_le")
+						&"U64": writer_callable = Callable(self, "write_u64_le")
+						&"I8": writer_callable = Callable(self, "write_i8")
+						&"I16": writer_callable = Callable(self, "write_i16_le")
+						&"I32": writer_callable = Callable(self, "write_i32_le")
 						_: writer_callable = Callable(self, "write_i64_le") #Default i64
 				TYPE_FLOAT:
 					match bsatn_type_str:
-						&"f64": writer_callable = Callable(self, "write_f64_le")
+						&"F64": writer_callable = Callable(self, "write_f64_le")
 						_: writer_callable = Callable(self, "write_f32_le") # Default f32
 				TYPE_STRING: writer_callable = Callable(self, "write_string_with_u32_len")
 				TYPE_PACKED_BYTE_ARRAY: writer_callable = Callable(self, "write_vec_u8") # Default Vec<u8> for arguments
@@ -494,20 +494,20 @@ func _call_writer_callable(writer_callable: Callable, value: Variant, bsatn_type
 func _generate_default_type(bsatn_type_name: String) -> Variant:
 	var bsatn_type_str := str(bsatn_type_name).to_lower()
 	match bsatn_type_str:
-		&"i8", &"i16", &"i32", &"i64", &"u8", &"u16", &"u32", &"u64":
+		&"I8", &"I16", &"I32", &"I64", &"U8", &"U16", &"U32", &"U64":
 			return int(0)
-		&"f32", &"f64":
+		&"F32", &"F64":
 			return float(0)
-		&"bool": return false
-		&"string": return ""
-		&"vector2": return Vector2.ZERO
-		&"vector2i": return Vector2i.ZERO
-		&"vector3": return Vector3.ZERO
-		&"vector3i": return Vector3i.ZERO
-		&"vector4": return Vector4.ZERO
-		&"vector4i": return Vector4i.ZERO
-		&"color": return Color.BLACK
-		&"quaternion": return Quaternion.IDENTITY
+		&"Bool": return false
+		&"String": return ""
+		&"Vector2": return Vector2.ZERO
+		&"Vector2i": return Vector2i.ZERO
+		&"Vector3": return Vector3.ZERO
+		&"Vector3i": return Vector3i.ZERO
+		&"Vector4": return Vector4.ZERO
+		&"Vector4i": return Vector4i.ZERO
+		&"Color": return Color.BLACK
+		&"Quaternion": return Quaternion.IDENTITY
 		_: return null
 
 ## Helper function to serialize a value based on BSATN type string.

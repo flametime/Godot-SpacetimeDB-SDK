@@ -209,13 +209,13 @@ metadata/primary_key = ""
 metadata/bsatn_type_row = &"u64"
 metadata/bsatn_type_name = &"string"
 
-[sub_resource type="Resource" id="Resource_t05xv"]
+[sub_resource type="Resource" id="Resource_wkhtg"]
 script = ExtResource("8_cdput")
 metadata/primary_key = ""
-metadata/bsatn_type_row = &"u64"
-metadata/bsatn_type_name = &"string"
+metadata/bsatn_type_row = &"U64"
+metadata/bsatn_type_name = &"String"
 
-[sub_resource type="Resource" id="Resource_wkhtg"]
+[sub_resource type="Resource" id="Resource_ruhfi"]
 script = ExtResource("9_81h2f")
 metadata/primary_key = "id"
 metadata/bsatn_type_id = &"U32"
@@ -386,8 +386,8 @@ metadata/_tab_index = 11
 
 [node name="Receiver [MainViewType]" type="Node" parent="VBoxContainer/TabContainer/ViewNoPkVec" unique_id=1157552964]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_t05xv")
-selected_table_name = "test_no_pk_vec"
+table_to_receive = SubResource("Resource_wkhtg")
+selected_table_name = "main_test_no_pk_vec"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
 [node name="Control" parent="VBoxContainer/TabContainer" unique_id=2017668363 node_paths=PackedStringArray("row_receiver") instance=ExtResource("2_p8i4h")]
@@ -398,8 +398,8 @@ metadata/_tab_index = 12
 
 [node name="Receiver [MainTestEventTable]" type="Node" parent="VBoxContainer/TabContainer/Control" unique_id=385035299]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_wkhtg")
-selected_table_name = "main_test_event_table"
+table_to_receive = SubResource("Resource_ruhfi")
+selected_table_name = "test_event_table"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=1146252556]

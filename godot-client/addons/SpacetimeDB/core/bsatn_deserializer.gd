@@ -18,14 +18,14 @@ const ROW_LIST_ROW_OFFSETS := 1
 
 # Native type handling
 const NATIVE_ARRAYLIKE := [
-	"vector2",
-	"vector2i",
-	"vector3",
-	"vector3i",
-	"vector4",
-	"vector4i",
-	"quaternion",
-	"color"
+	"Vector2",
+	"Vector2i",
+	"Vector3",
+	"Vector3i",
+	"Vector4",
+	"Vector4i",
+	"Quaternion",
+	"Color"
 ]
 
 # --- Properties ---
@@ -225,14 +225,14 @@ func _read_result(spb:StreamPeerBuffer,bsatn_type_str:StringName) -> Variant:
 func _read_native_arraylike(spb: StreamPeerBuffer, bsatn_type: StringName) -> Variant:
 	var bsatn_types_for_components: String = ""
 	match bsatn_type:
-		"vector2": bsatn_types_for_components = "f32,f32"
-		"vector2i": bsatn_types_for_components = "i32,i32"
-		"vector3": bsatn_types_for_components = "f32,f32,f32"
-		"vector3i": bsatn_types_for_components = "i32,i32,i32"
-		"vector4": bsatn_types_for_components = "f32,f32,f32,f32"
-		"vector4i": bsatn_types_for_components = "i32,i32,i32,i32"
-		"quaternion": bsatn_types_for_components = "f32,f32,f32,f32"
-		"color": bsatn_types_for_components = "f32,f32,f32,f32"
+		"Vector2": bsatn_types_for_components = "F32,F32"
+		"Vector2i": bsatn_types_for_components = "I32,I32"
+		"Vector3": bsatn_types_for_components = "F32,F32,F32"
+		"Vector3i": bsatn_types_for_components = "I32,I32,I32"
+		"Vector4": bsatn_types_for_components = "F32,F32,F32,F32"
+		"Vector4i": bsatn_types_for_components = "I32,I32,I32,I32"
+		"Quaternion": bsatn_types_for_components = "F32,F32,F32,F32"
+		"Color": bsatn_types_for_components = "F32,F32,F32,F32"
 		_:
 			return null
 	var components := []
@@ -244,14 +244,14 @@ func _read_native_arraylike(spb: StreamPeerBuffer, bsatn_type: StringName) -> Va
 			return null
 		components.append(component_value)
 	match bsatn_type:
-		"vector2": return Vector2.ZERO if has_error() else Vector2(components[0], components[1])
-		"vector2i": return Vector2i.ZERO if has_error() else Vector2i(components[0], components[1])
-		"vector3": return Vector3.ZERO if has_error() else Vector3(components[0], components[1], components[2])
-		"vector3i": return Vector3i.ZERO if has_error() else Vector3i(components[0], components[1], components[2])
-		"vector4": return Vector4.ZERO if has_error() else Vector4(components[0], components[1], components[2], components[3])
-		"vector4i": return Vector4i.ZERO if has_error() else Vector4i(components[0], components[1], components[2], components[3])
-		"quaternion": return Quaternion.IDENTITY if has_error() else Quaternion(components[0], components[1], components[2], components[3])
-		"color": return Color.BLACK if has_error() else Color(components[0], components[1], components[2], components[3])
+		"Vector2": return Vector2.ZERO if has_error() else Vector2(components[0], components[1])
+		"Vector2i": return Vector2i.ZERO if has_error() else Vector2i(components[0], components[1])
+		"Vector3": return Vector3.ZERO if has_error() else Vector3(components[0], components[1], components[2])
+		"Vector3i": return Vector3i.ZERO if has_error() else Vector3i(components[0], components[1], components[2])
+		"Vector4": return Vector4.ZERO if has_error() else Vector4(components[0], components[1], components[2], components[3])
+		"Vector4i": return Vector4i.ZERO if has_error() else Vector4i(components[0], components[1], components[2], components[3])
+		"Quaternion": return Quaternion.IDENTITY if has_error() else Quaternion(components[0], components[1], components[2], components[3])
+		"Color": return Color.BLACK if has_error() else Color(components[0], components[1], components[2], components[3])
 	_set_error("Cannot determine native gd type for property '%s'" % bsatn_type)
 	return null
 

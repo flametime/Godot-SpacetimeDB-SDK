@@ -157,6 +157,7 @@ func _generate_gdscript_from_schema(
 			var table_names_to_emit: Array[String] = []
 			if type_def.has("table_names"):
 				var table_names_arr: Array = type_def.get("table_names", [])
+				print(table_names_arr, "\n\n")
 				for i in table_names_arr.size():
 					var table_name: String = table_names_arr[i]
 					if _plugin_config.module_configs[module_name].hide_private_tables and not type_def.get("is_public", [])[i]:
@@ -269,7 +270,7 @@ func _generate_table_unique_index_gdscript(
 		"class_name %s extends _ModuleTableUniqueIndex\n\n" % class_name_text + \
 		"var _cache: Dictionary[%s, %s] = {}\n\n" % [field_type, type_name] + \
 		"func _init() -> void:\n" + \
-		"\tset_meta(\"table_name\", \"%s\")\n" % table_name + \
+		"\tset_meta(\"table_name\", \"%s\")\n" % table_name.trim_prefix(schema.module.to_lower() + "_") + \
 		"\tset_meta(\"field_name\", \"%s\")\n\n" % field_name + \
 		"static func create(p_local_db: LocalDatabase) -> %s:\n" % class_name_text + \
 		"\tvar index: %s = %s.new()\n" % [class_name_text, class_name_text] + \
@@ -304,9 +305,8 @@ func _generate_table_gdscript(
 
 	for field_name in unique_index_classes:
 		content += "var %s: %s\n" % [field_name, unique_index_classes[field_name]]
-
 	content += "\nfunc _init() -> void:\n" + \
-		"\tset_meta(\"table_name\", \"%s\")\n" % table_name + \
+		"\tset_meta(\"table_name\", \"%s\")\n" % table_name.trim_prefix(schema.module.to_lower() + "_") + \
 		"\tset_meta(\"is_event\", \"%s\")\n" % table_def.get("is_event") + \
 		"\tset_meta(\"type\", \"%s\")\n" % type_name
 

@@ -101,8 +101,9 @@ func _get_primary_key_field(table_name_lower: String) -> StringName:
 	return &""
 
 func get_is_event(table_name_original: StringName) -> bool:
-	var table: _ModuleTable = _module.db[table_name_original]
-	var is_event:bool = table.get_meta("is_event") == "true"
+	var table_script = _schema.get_table_script((_schema.module_name +"_"+ table_name_original).to_pascal_case()+"Table")
+	var table_instance = table_script.new()
+	var is_event:bool = table_instance.get_meta("is_event") == "true"
 	_is_event_table_cache[table_name_original] = is_event
 	return is_event
 

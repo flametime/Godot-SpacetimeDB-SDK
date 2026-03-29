@@ -145,7 +145,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 
 	var parsed_tables_list: Array[Dictionary] = []
 	for table_info in schema_tables:
-		var table_name := _snake_name(table_info.get("source_name", ""),module_pascal)
+		var table_name :String= table_info.get("source_name", "").to_snake_case()
 		var ref_idx := int(table_info.get("product_type_ref", -1))
 		if ref_idx < 0 or table_name.is_empty():
 			SpacetimePlugin.print_err("Skipped table with: ref_idx_raw, table_name_str")
@@ -173,7 +173,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 			continue
 
 		var table_data: Dictionary = {
-			"name": table_name,
+			"name": module_name + "_"+ table_name,
 			"type_idx": target_type_idx,
 		}
 
@@ -251,7 +251,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	)
 
 	for view: Dictionary in schema_views:
-		var name := _snake_name(view.get("source_name", ""),module_pascal)
+		var name :String= view.get("source_name", "").to_snake_case()
 		var return_type_dict: Dictionary = view.get("return_type", {})
 		var type_index := _unwrap_ref_index(return_type_dict)
 		if type_index < 0 or type_index >= parsed_types_list.size():
@@ -293,7 +293,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 		var new_table_dict: Dictionary
 		if tables_of_same_type.is_empty():
 			new_table_dict = {
-				"name": name,
+				"name": module_name + "_"+ name,
 				"type_idx": type_index,
 				"primary_key": 0,
 				"primary_key_name": "",
@@ -302,7 +302,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 			}
 		else:
 			new_table_dict = tables_of_same_type[0].duplicate()
-			new_table_dict["name"] = name
+			new_table_dict["name"] = module_name + "_"+ name
 			new_table_dict["is_public"] = true
 
 		parsed_tables_list.append(new_table_dict)
