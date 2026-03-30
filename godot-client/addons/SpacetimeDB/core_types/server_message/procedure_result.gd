@@ -9,5 +9,5 @@ class_name ProcedureResultMessage
 @export var request_id: int
 
 func _init():
-	set_meta("bsatn_type_timestamp", &"timestamp")
-	set_meta("bsatn_type_request_id", &"u32")
+	set_meta("bsatn_type_timestamp", &"__timestamp_micros_since_unix_epoch__")
+	set_meta("bsatn_type_request_id", &"U32")

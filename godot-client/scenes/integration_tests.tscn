@@ -243,27 +243,29 @@ theme_override_constants/separation = 0
 [node name="TabContainer" type="TabContainer" parent="VBoxContainer" unique_id=1530080011]
 layout_mode = 2
 size_flags_vertical = 3
-current_tab = 0
+current_tab = 1
 
 [node name="TestTableDatatypes" parent="VBoxContainer/TabContainer" unique_id=1146099436 node_paths=PackedStringArray("row_receiver") instance=ExtResource("2_p8i4h")]
+visible = false
 layout_mode = 2
 row_receiver = NodePath("Receiver [MainTestTableDatatypes]")
 metadata/_tab_index = 0
 
 [node name="Receiver [MainTestTableDatatypes]" type="Node" parent="VBoxContainer/TabContainer/TestTableDatatypes" unique_id=2138347038]
 script = ExtResource("2_3ljp4")
+debug_mode = true
 table_to_receive = SubResource("Resource_26wxn")
 selected_table_name = "test_table_datatypes"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
 [node name="ViewDatatypesAllrows" parent="VBoxContainer/TabContainer" unique_id=568196677 node_paths=PackedStringArray("row_receiver") instance=ExtResource("2_p8i4h")]
-visible = false
 layout_mode = 2
 row_receiver = NodePath("Receiver [MainTestTableDatatypes]")
 metadata/_tab_index = 1
 
 [node name="Receiver [MainTestTableDatatypes]" type="Node" parent="VBoxContainer/TabContainer/ViewDatatypesAllrows" unique_id=2013281197]
 script = ExtResource("2_3ljp4")
+debug_mode = true
 table_to_receive = SubResource("Resource_kgsjp")
 selected_table_name = "test_anonymous_all_types"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"

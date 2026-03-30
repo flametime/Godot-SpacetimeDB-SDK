@@ -38,10 +38,15 @@ func row_insert(new_row:_ModuleTableType) -> void:
 	var key :String = new_row.get_meta("primary_key")
 	if not key.is_empty():
 		row_nodes[new_row[key]] = row_ui
+	else:
+		print("row UI not saved")
 
 func row_update(prev_row: _ModuleTableType, new_row: _ModuleTableType) -> void:
-	var row_ui: TableRowUI = row_nodes[prev_row[prev_row.get_meta("primary_key")]]
-	row_ui.update_row(new_row)
+	#var pk :String = new_row.get_meta("primary_key")
+	#var row_ui: TableRowUI = row_nodes[new_row[pk]]
+	#row_ui.update_row(new_row)
+	pass
+
 
 func row_delete(old_row:_ModuleTableType) -> void:
 	var key :String = old_row.get_meta("primary_key")

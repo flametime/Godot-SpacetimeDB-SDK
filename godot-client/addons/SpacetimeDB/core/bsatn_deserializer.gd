@@ -332,44 +332,21 @@ func _get_primitive_reader_from_bsatn_type(bsatn_type_str: String) -> Callable:
 
 
 ## Populates the value property of a sumtype enum
-func _populate_enum_from_bytes(spb: StreamPeerBuffer, resource: Resource) -> bool:
-	var enum_type = resource.get_meta("bsatn_enum_type")
+func _populate_enum_from_bytes(spb: StreamPeerBuffer, resource: Resource) -> void:
+	var enum_types: Array = resource.get_meta("enum_options")
 	var enum_variant: int = spb.get_u8()
-	var instance: Resource = null
-	var script: GDScript = _schema.get_type_script(enum_type.to_lower())
-	if script and script.can_instantiate():
-		instance = script.new()
-		resource.value = enum_variant
-		_populate_enum_data_from_bytes(spb, resource)
-	return true
-
-## Populates the data property of a sumtype enum
-func _populate_enum_data_from_bytes(spb: StreamPeerBuffer, resource: Resource) -> bool:
-	var enum_type: StringName = resource.get_meta("enum_options")[resource.value]
-	if enum_type == &"": return true
-	# ReducerOutcome "ok" carries ReducerOk { ret_value: Bytes, transaction_update: TransactionUpdate }.
-	# We must read and skip ret_value, then read transaction_update; otherwise we misread ret_value length as query_sets count.
-	if resource is ReducerOutcomeEnum and resource.value == ReducerOutcomeEnum.Options.ok:
-		var ret_len := read_u32_le(spb)
-		if has_error(): return false
-		if ret_len > MAX_BYTE_ARRAY_LEN:
-			_set_error("ReducerOk ret_value length %d exceeds limit %d" % [ret_len, MAX_BYTE_ARRAY_LEN], spb.get_position() - 4)
-			return false
-		if ret_len > 0:
-			var _discard := read_bytes(spb, ret_len)
-			if has_error(): return false
-		var tx_msg := _read_transaction_update_message(spb)
-		if has_error() or tx_msg == null: return false
-		resource.data = tx_msg
-		return true
-	var data = _parse_generic_type(spb, enum_type)
+	resource.value = enum_variant
+	var bsatn_type = enum_types[enum_variant]
+	if bsatn_type.is_empty():
+		return
+	var data = _parse_generic_type(spb, bsatn_type)
 	if has_error():
 		printerr("enum failed with error: %s" % get_last_error())
 		clear_error()
 	if data:
 		resource.data = data
-		return true
-	return false
+
+
 #endregion
 
 
@@ -416,10 +393,7 @@ func _read_query_sets(spb: StreamPeerBuffer, _resource: Resource, _prop: Diction
 		var table_count := read_u32_le(spb)
 		if has_error(): return result
 		for j in range(table_count):
-			var table := TableUpdateData.new()
-			if not _read_table_update_instance(spb):
-				if not has_error(): _set_error("Failed reading TableUpdate element %d in query_sets" % j, spb.get_position())
-				return result
+			var table :TableUpdateData = _read_table_update_instance(spb)
 			dataset.tables.append(table)
 		result.append(dataset)
 	return result
@@ -435,8 +409,8 @@ func _read_table_update_instance(spb: StreamPeerBuffer) -> TableUpdateData:
 	var rows_count := read_u32_le(spb)
 	if has_error(): return null
 
-	var all_parsed_deletes: Array[Resource] = []
 	var all_parsed_inserts: Array[Resource] = []
+	var all_parsed_deletes: Array[Resource] = []
 	var table_type: StringName = _schema.get_type_of_table_name(resource.table_name)
 	var row_spb := StreamPeerBuffer.new()
 
@@ -444,8 +418,8 @@ func _read_table_update_instance(spb: StreamPeerBuffer) -> TableUpdateData:
 		if has_error(): break
 		var tag := read_u8(spb)
 		if has_error(): break
-		var raw_deletes: Array[PackedByteArray] = []
 		var raw_inserts: Array[PackedByteArray] = []
+		var raw_deletes: Array[PackedByteArray] = []
 		if tag == 0:  # PersistentTableRows
 			raw_inserts = read_bsatn_row_list(spb)
 			if has_error(): break
@@ -459,6 +433,19 @@ func _read_table_update_instance(spb: StreamPeerBuffer) -> TableUpdateData:
 			_set_error("Unknown TableUpdateRows tag %d for table '%s'" % [tag, resource.table_name], spb.get_position() - 1)
 			return null
 
+		for raw_row_bytes in raw_inserts:
+			row_spb.data_array = raw_row_bytes
+			var row_resource = _parse_generic_type(row_spb, table_type)
+			if has_error():
+				printerr("row skipped with error: %s" % get_last_error())
+				clear_error()
+				continue
+			if row_resource:
+				all_parsed_inserts.append(row_resource)
+			else:
+				push_error("Stopping v2 table update for table '%s' due to delete row parsing failure." % resource.table_name)
+				break
+		if has_error(): break
 		#if not row_schema_script: ????
 			#continue  # Already consumed bytes above
 		for raw_row_bytes in raw_deletes:
@@ -473,25 +460,14 @@ func _read_table_update_instance(spb: StreamPeerBuffer) -> TableUpdateData:
 			else:
 				push_error("Stopping v2 table update for table '%s' due to delete row parsing failure." % resource.table_name)
 				break
-		if has_error(): break
-		for raw_row_bytes in raw_inserts:
-			row_spb.data_array = raw_row_bytes
-			var row_resource = _parse_generic_type(row_spb, table_type)
-			if has_error():
-				printerr("row skipped with error: %s" % get_last_error())
-				clear_error()
-				continue
-			if row_resource:
-				all_parsed_deletes.append(row_resource)
-			else:
-				push_error("Stopping v2 table update for table '%s' due to delete row parsing failure." % resource.table_name)
-				break
+
+
 		if has_error(): break
 
 	if has_error(): return null
 	resource.num_rows = all_parsed_inserts.size() + all_parsed_deletes.size()
-	resource.deletes.assign(all_parsed_deletes)
 	resource.inserts.assign(all_parsed_inserts)
+	resource.deletes.assign(all_parsed_deletes)
 	return resource
 
 # Manual reader specifically for SubscriptionErrorMessage due to Option<T> fields
@@ -517,11 +493,7 @@ func _read_reducer_result_message(spb: StreamPeerBuffer)-> ReducerResultMessage:
 	var resource := ReducerResultMessage.new()
 	resource.request_id = read_u32_le(spb); if has_error(): return null
 	resource.timestamp = read_timestamp(spb); if has_error(): return null
-	var outcome : ReducerOutcomeEnum = ReducerOutcomeEnum.new()
-	resource.reducer_result = outcome
-	if not _populate_enum_from_bytes(spb, outcome):
-		if not has_error(): _set_error("failed to parse reducer result Enum")
-		return null
+	resource.reducer_result = _parse_generic_type(spb, "ReducerOutcomeEnum")
 	return resource
 
 func _read_procedure_result_message(spb: StreamPeerBuffer)-> ProcedureResultMessage:
@@ -554,7 +526,7 @@ func _read_procedure_result_message(spb: StreamPeerBuffer)-> ProcedureResultMess
 		return resource
 	## parsing of the return data
 	var call: SpacetimeDBProcedureCall = _client._pending_procedure_call.get(resource.request_id)
-	var return_type = call.return_type_bsatn.to_lower()
+	var return_type = call.return_type_bsatn
 	var spb2 := StreamPeerBuffer.new()
 	spb2.data_array = return_bytes
 	## not sure about this. might have edge cases

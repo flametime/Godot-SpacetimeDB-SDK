@@ -10,5 +10,5 @@ class_name TableUpdateData extends Resource
 @export var table_name: String
 @export var num_rows: int = -1 # u64
 #@export var TableType: TableTypeEnum
-@export var deletes: Array[Resource] # Array of specific table row resources (e.g., Message, User)
 @export var inserts: Array[Resource] # Array of specific table row resources
+@export var deletes: Array[Resource] # Array of specific table row resources (e.g., Message, User)

@@ -16,7 +16,7 @@ func _reset_metadata() -> void:
 	for key : StringName in get_meta_list():
 		set_meta(key, null)
 
-	set_meta('enum_options', [&'TransactionUpdateMessage', &'', &'vec_u8', &'string'])
+	set_meta('enum_options', [&'TransactionUpdateMessage', &'', &'vec_U8', &'String'])
 	set_meta('bsatn_enum_type', &'ReducerOutcomeEnum')
 
 static func parse_enum_name(i: int) -> String:
