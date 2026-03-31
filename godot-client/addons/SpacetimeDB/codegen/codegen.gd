@@ -568,12 +568,12 @@ func _generate_types_gdscript(
 
 		if const_pointer:
 			content += "const %s = Types.%s\n" % [
-				type_name.to_pascal_case(),
-				type_name.to_pascal_case(),
+				type_name.to_pascal_case().trim_prefix(module_name.to_pascal_case()),
+				type_name.to_pascal_case().trim_prefix(module_name.to_pascal_case()),
 			]
 		else:
 			content += "const %s = preload('%s/types/%s.gd')\n" % [
-				type_name.to_pascal_case(),
+				type_name.to_pascal_case().trim_prefix(module_name.to_pascal_case()),
 				_schema_path,
 				type_name.to_snake_case(),
 			]
