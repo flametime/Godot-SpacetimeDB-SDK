@@ -42,9 +42,10 @@ func row_insert(new_row:_ModuleTableType) -> void:
 		print("row UI not saved")
 
 func row_update(prev_row: _ModuleTableType, new_row: _ModuleTableType) -> void:
-	#var pk :String = new_row.get_meta("primary_key")
-	#var row_ui: TableRowUI = row_nodes[new_row[pk]]
-	#row_ui.update_row(new_row)
+	var pk :String = new_row.get_meta("primary_key")
+	var row_ui: TableRowUI = row_nodes.get(new_row[pk])
+	if row_ui:
+		row_ui.update_row(new_row)
 	pass
 
 

@@ -354,6 +354,7 @@ func _handle_parsed_message(message_resource: Resource):
 			var reducer_call := _pending_reducer_call[message_resource.request_id]
 			_pending_reducer_call.erase(message_resource.request_id)
 			reducer_call.on_response(message_resource)
+			print("Reducer call on_response called")
 		else:
 			printerr("SpacetimeDBClient: Reducer timed out before the response message arrived")
 		return

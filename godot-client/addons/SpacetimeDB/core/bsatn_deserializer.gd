@@ -326,7 +326,7 @@ func _get_primitive_reader_from_bsatn_type(bsatn_type_str: String) -> Callable:
 		&"SubscriptionErrorMessage": return Callable(self, "_read_subscription_error_message")
 		&"TransactionUpdateMessage": return Callable(self, "_read_transaction_update_message")
 		&"OneOffQueryResponseMessage": return Callable(self, "_read_one_off_query_message")
-		&"ReducerResultMessage": return Callable(self, "_read_reducer_result_message")
+		#&"ReducerResultMessage": return Callable(self, "_read_reducer_result_message")
 		&"ProcedureResultMessage": return Callable(self, "_read_procedure_result_message")
 		_: return Callable() # Return invalid Callable if type is not primitive/known
 
@@ -334,6 +334,7 @@ func _get_primitive_reader_from_bsatn_type(bsatn_type_str: String) -> Callable:
 ## Populates the value property of a sumtype enum
 func _populate_enum_from_bytes(spb: StreamPeerBuffer, resource: Resource) -> void:
 	var enum_types: Array = resource.get_meta("enum_options")
+	var pos = spb.get_position()
 	var enum_variant: int = spb.get_u8()
 	resource.value = enum_variant
 	var bsatn_type = enum_types[enum_variant]
@@ -489,12 +490,6 @@ func _read_subscription_error_message(spb: StreamPeerBuffer) -> SubscriptionErro
 	resource.error_message = read_string_with_u32_len(spb)
 	return null if has_error() else resource
 
-func _read_reducer_result_message(spb: StreamPeerBuffer)-> ReducerResultMessage:
-	var resource := ReducerResultMessage.new()
-	resource.request_id = read_u32_le(spb); if has_error(): return null
-	resource.timestamp = read_timestamp(spb); if has_error(): return null
-	resource.reducer_result = _parse_generic_type(spb, "ReducerOutcomeEnum")
-	return resource
 
 func _read_procedure_result_message(spb: StreamPeerBuffer)-> ProcedureResultMessage:
 	# v2 ProcedureResult wire format (fields in declaration order):
@@ -728,7 +723,7 @@ func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 		var reader_callablce := _get_primitive_reader_from_bsatn_type(bsatn_type_str)
 		if reader_callablce.is_valid():
 			result_resource[prop.name] = reader_callablce.call(spb)
-		elif _schema.module_types.has(bsatn_type_str) or bsatn_type_str.begins_with("opt_") or bsatn_type_str.begins_with("ret_") or NATIVE_ARRAYLIKE.has(bsatn_type_str):
+		elif _schema.module_types.has(bsatn_type_str) or _schema.core_types.has(bsatn_type_str) or bsatn_type_str.begins_with("opt_") or bsatn_type_str.begins_with("ret_") or NATIVE_ARRAYLIKE.has(bsatn_type_str):
 			result_resource[prop.name] = _parse_generic_type(spb, bsatn_type_str)
 		elif bsatn_type_str.begins_with("vec_"):
 			var result_type_array = _parse_generic_type(spb, bsatn_type_str)
@@ -769,8 +764,8 @@ func _parse_message_from_stream(spb: StreamPeerBuffer) -> Resource:
 	var remaining_bytes := spb.get_size() - spb.get_position()
 	if remaining_bytes > 0:
 		# This might indicate a parsing error or extra data. Warning is appropriate.
-		push_warning("Bytes remaining after parsing message type 0x%02X: %d" % [msg_type, remaining_bytes])
-
+		push_error("Bytes remaining after parsing message type 0x%02X: %d" % [msg_type, remaining_bytes])
+		spb.clear()
 	return result_resource
 
 func process_bytes_and_extract_messages(raw_data: PackedByteArray) -> Array[Resource]:

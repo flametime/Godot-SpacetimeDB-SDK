@@ -81,7 +81,12 @@ func _on_button_pressed() -> void:
 
 
 func _on_button_2_pressed() -> void:
-	SpacetimeDB.Main.reducers.clear_integration_tests() # Replace with function body.
+	var call1: SpacetimeDBReducerCall = SpacetimeDB.Main.reducers.clear_integration_tests() # Replace with function body.
+	call1.response.connect(func(x:ReducerResultMessage) -> void:
+		prints("hello world", x)
+		)
+	await call1.response
+
 
 func procedure_response(response: ProcedureResultMessage, p_call: SpacetimeDBProcedureCall)-> void:
 	if response.result_ok:
