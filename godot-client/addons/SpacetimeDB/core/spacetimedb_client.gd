@@ -278,13 +278,13 @@ func _handle_parsed_message(message_resource: Resource):
 			_token = identity_token.token
 		_connection_id = identity_token.connection_id
 		self.connected.emit(_identity, _token)
+		if not _received_initial_subscription:
+			_received_initial_subscription = true
+			self.database_initialized.emit()
 
 	elif message_resource is SubscribeAppliedMessage:
 		var message: SubscribeAppliedMessage = message_resource
 		_local_db.apply_database_subscription_applied(message)
-		if not _received_initial_subscription:
-			_received_initial_subscription = true
-			self.database_initialized.emit()
 		var sub : SpacetimeDBSubscription= _pending_subscriptions.get(message.query_id.id)
 		sub.applied.emit()
 		_pending_subscriptions.erase(sub.query_id)
@@ -382,9 +382,6 @@ func _make_failed_status(failure_message: String) -> UpdateStatusData:
 func _handle_transaction_update(update_sets : TransactionUpdateMessage):
 	for tx_update: DatabaseUpdateData in update_sets.query_sets:
 		_local_db.apply_database_update(tx_update)
-		if not _received_initial_subscription:
-			_received_initial_subscription = true
-			self.database_initialized.emit()
 	# Emit the full transaction update signal regardless of status
 	self.transaction_update_received.emit(update_sets)
 
