@@ -338,9 +338,9 @@ func _handle_parsed_message(message_resource: Resource):
 		print_log("SpacetimeDBClient: Handle Reducer result message")
 		match message_resource.reducer_result.value:
 			ReducerOutcomeEnum.Options.ok:
-				var ok_payload: TransactionUpdateMessage = message_resource.reducer_result.get_ok()
+				var ok_payload: ReducerResultOk = message_resource.reducer_result.get_ok()
 				if ok_payload:
-					_handle_transaction_update(ok_payload)
+					_handle_transaction_update(ok_payload.tx_update)
 				print_log("SpacetimeDBClient: Reducer returned sucessfully with data: %s" % str(message_resource.reducer_result.get_ok()))
 			ReducerOutcomeEnum.Options.okEmpty:
 				print_log("SpacetimeDBClient: Reducer returned sucessfully without data")

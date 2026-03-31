@@ -16,7 +16,7 @@ func _reset_metadata() -> void:
 	for key : StringName in get_meta_list():
 		set_meta(key, null)
 
-	set_meta('enum_options', [&'TransactionUpdateMessage', &'', &'vec_U8', &'String'])
+	set_meta('enum_options', [&'ReducerResultOk', &'', &'vec_U8', &'String'])
 	set_meta('bsatn_enum_type', &'ReducerOutcomeEnum')
 
 static func parse_enum_name(i: int) -> String:
@@ -29,7 +29,7 @@ static func parse_enum_name(i: int) -> String:
 			printerr("Enum does not have value for %d. This is out of bounds." % i)
 			return &'Unknown'
 
-func get_ok() -> TransactionUpdateMessage:
+func get_ok() -> ReducerResultOk:
 	if value != 0:
 		printerr("ReducerOutcomeEnum Value is not 'ok' but get_err() got called")
 		return null
@@ -53,7 +53,7 @@ static func create(p_type: int, p_data: Variant = null) -> ReducerOutcomeEnum:
 	result.data = p_data
 	return result
 
-static func create_ok(_data: TransactionUpdateMessage) -> ReducerOutcomeEnum:
+static func create_ok(_data: ReducerResultOk) -> ReducerOutcomeEnum:
 	return create(Options.ok, _data)
 
 static func create_ok_empty() -> ReducerOutcomeEnum:
