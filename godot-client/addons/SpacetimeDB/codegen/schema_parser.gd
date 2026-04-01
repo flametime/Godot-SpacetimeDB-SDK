@@ -20,10 +20,13 @@ const GDNATIVE_PRIMITIVE_TYPES: Dictionary[String, String] = {
 const GDNATIVE_ARRAYLIKE_TYPES: Dictionary[String, String] = {
 	"Vector4": "Vector4",
 	"Vector4I": "Vector4i",
+	"Vector4i": "Vector4i",
 	"Vector3": "Vector3",
 	"Vector3I": "Vector3i",
+	"Vector3i": "Vector3i",
 	"Vector2": "Vector2",
 	"Vector2I": "Vector2i",
+	"Vector2i": "Vector2i",
 	"Quaternion": "Quaternion",
 	"Color": "Color",
 }

@@ -434,7 +434,7 @@ func _generate_enum_gdscript(
 		var variant_type: String = _gd_type(schema, variant_def.get("type", "Variant"), variant_def)
 		var nested_parts: Array = variant_def.get("nested_type", []).duplicate()
 		nested_parts.append(variant_type)
-
+#
 		if variant_def.has("is_option"):
 			variant_type = OPTION_CLASS_NAME
 		elif variant_def.has("is_array"):
@@ -615,23 +615,7 @@ func _generate_reducers_gdscript(
 			var ref_def: Dictionary = schema.types[x.type_idx] if x.has("type_idx") else {}
 			var raw_name: String = x.get("type", "Variant")
 			var raw_type := ""
-			if x.has("is_option"):
-				raw_type = (
-					"vec_%s" % raw_name
-					if x.has("is_array_inside_option")
-					else raw_name
-				)
-			elif ref_def and ref_def.has("gd_arraylike"):
-				var outer_type := raw_name
-				var inner_types: Array[String] = []
-				for inner_def in ref_def.get("struct", []):
-					inner_types.append(inner_def.get("type", ""))
-				raw_type = "%s[%s]" % [outer_type, ",".join(inner_types)]
-			elif x.has("is_array"):
-				raw_type = "vec_%s" % raw_name
-			else:
-				raw_type = raw_name
-			return _param_bsatn_literal(raw_type)
+			return _param_bsatn_literal(raw_name)
 		)
 
 		var param_bsatn_types_str := ", ".join(param_bsatn_types_list) if not param_bsatn_types_list.is_empty() else ""
@@ -681,24 +665,7 @@ func _generate_procedures_gdscript(
 		var param_bsatn_types_list := (procedure_def.get("params", []) as Array).map(func(x):
 			var ref_def: Dictionary = schema.types[x.type_idx] if x.has("type_idx") else {}
 			var raw_name: String = x.get("type", "Variant")
-			var raw_type := ""
-			if x.has("is_option"):
-				raw_type = (
-					"vec_%s" % raw_name
-					if x.has("is_array_inside_option")
-					else raw_name
-				)
-			elif ref_def and ref_def.has("gd_arraylike"):
-				var outer_type := raw_name
-				var inner_types: Array[String] = []
-				for inner_def in ref_def.get("struct", []):
-					inner_types.append(inner_def.get("type", ""))
-				raw_type = "%s[%s]" % [outer_type, ",".join(inner_types)]
-			elif x.has("is_array"):
-				raw_type = "vec_%s" % raw_name
-			else:
-				raw_type = raw_name
-			return _param_bsatn_literal(raw_type)
+			return _param_bsatn_literal(raw_name)
 		)
 		var param_bsatn_types_str := ", ".join(param_bsatn_types_list) if not param_bsatn_types_list.is_empty() else ""
 
