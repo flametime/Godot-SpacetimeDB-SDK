@@ -8,6 +8,6 @@ class_name ReducerResultMessage extends Resource
 @export var reducer_result: ReducerOutcomeEnum # Nested Resource
 
 func _init():
-	set_meta("bsatn_type_timestamp", &"timestamp")
-	set_meta("bsatn_type_request_id", &"u32")
+	set_meta("bsatn_type_request_id", &"U32")
+	set_meta("bsatn_type_timestamp", &"__timestamp_micros_since_unix_epoch__")
 	set_meta("bsatn_type_reducer_result", &"ReducerOutcomeEnum")

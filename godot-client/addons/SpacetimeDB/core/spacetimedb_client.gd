@@ -87,10 +87,9 @@ func initialize_and_connect():
 	# 1. Load Schema
 	var module_name: String = get_meta("module_name", "")
 	var schema := SpacetimeDBSchema.new(module_name, schema_path, debug_mode)
-
 	# 2. Initialize Parser
 	_deserializer = BSATNDeserializer.new(schema, self, debug_mode)
-	_serializer = BSATNSerializer.new(debug_mode)
+	_serializer = BSATNSerializer.new(schema,debug_mode)
 
 	# 3. Initialize Local Database
 	_local_db = LocalDatabase.new(schema, self)
@@ -279,13 +278,13 @@ func _handle_parsed_message(message_resource: Resource):
 			_token = identity_token.token
 		_connection_id = identity_token.connection_id
 		self.connected.emit(_identity, _token)
+		if not _received_initial_subscription:
+			_received_initial_subscription = true
+			self.database_initialized.emit()
 
 	elif message_resource is SubscribeAppliedMessage:
 		var message: SubscribeAppliedMessage = message_resource
 		_local_db.apply_database_subscription_applied(message)
-		if not _received_initial_subscription:
-			_received_initial_subscription = true
-			self.database_initialized.emit()
 		var sub : SpacetimeDBSubscription= _pending_subscriptions.get(message.query_id.id)
 		sub.applied.emit()
 		_pending_subscriptions.erase(sub.query_id)
@@ -339,9 +338,9 @@ func _handle_parsed_message(message_resource: Resource):
 		print_log("SpacetimeDBClient: Handle Reducer result message")
 		match message_resource.reducer_result.value:
 			ReducerOutcomeEnum.Options.ok:
-				var ok_payload: TransactionUpdateMessage = message_resource.reducer_result.get_ok()
+				var ok_payload: ReducerResultOk = message_resource.reducer_result.get_ok()
 				if ok_payload:
-					_handle_transaction_update(ok_payload)
+					_handle_transaction_update(ok_payload.tx_update)
 				print_log("SpacetimeDBClient: Reducer returned sucessfully with data: %s" % str(message_resource.reducer_result.get_ok()))
 			ReducerOutcomeEnum.Options.okEmpty:
 				print_log("SpacetimeDBClient: Reducer returned sucessfully without data")
@@ -355,6 +354,7 @@ func _handle_parsed_message(message_resource: Resource):
 			var reducer_call := _pending_reducer_call[message_resource.request_id]
 			_pending_reducer_call.erase(message_resource.request_id)
 			reducer_call.on_response(message_resource)
+			print("Reducer call on_response called")
 		else:
 			printerr("SpacetimeDBClient: Reducer timed out before the response message arrived")
 		return
@@ -382,9 +382,6 @@ func _make_failed_status(failure_message: String) -> UpdateStatusData:
 func _handle_transaction_update(update_sets : TransactionUpdateMessage):
 	for tx_update: DatabaseUpdateData in update_sets.query_sets:
 		_local_db.apply_database_update(tx_update)
-		if not _received_initial_subscription:
-			_received_initial_subscription = true
-			self.database_initialized.emit()
 	# Emit the full transaction update signal regardless of status
 	self.transaction_update_received.emit(update_sets)
 

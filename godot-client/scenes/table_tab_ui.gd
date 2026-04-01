@@ -28,8 +28,8 @@ func _on_spacetimedb_connected(_identity: PackedByteArray, _token: String) -> vo
 		printerr("Game: Failed to send subscription request.")
 		return
 
-	sub.applied.connect(func() -> void: print("subsciptions applied"))
-	print("Game: Subscription request sent (Query ID: %d)." % sub.query_id)
+	sub.applied.connect(func() -> void: print("subsciption '%s' applied" % query_string))
+	print("Game: Subscription request '%s' sent (Query ID: %d)." % [query_string, sub.query_id])
 
 func row_insert(new_row:_ModuleTableType) -> void:
 	var row_ui:TableRowUI = TABLE_ROW_UI.instantiate()
@@ -38,17 +38,28 @@ func row_insert(new_row:_ModuleTableType) -> void:
 	var key :String = new_row.get_meta("primary_key")
 	if not key.is_empty():
 		row_nodes[new_row[key]] = row_ui
+	else:
+		printerr("UI row insert skipped for table: %s" % row_receiver.selected_table_name)
 
 func row_update(prev_row: _ModuleTableType, new_row: _ModuleTableType) -> void:
-	var row_ui: TableRowUI = row_nodes[prev_row[prev_row.get_meta("primary_key")]]
-	row_ui.update_row(new_row)
+	var pk :String = new_row.get_meta("primary_key")
+	var row_ui: TableRowUI = row_nodes.get(new_row[pk])
+	if row_ui:
+		row_ui.update_row(new_row)
+	else:
+		printerr("UI row update skipped for table: %s" % row_receiver.selected_table_name)
+	pass
+
 
 func row_delete(old_row:_ModuleTableType) -> void:
 	var key :String = old_row.get_meta("primary_key")
 	if not key.is_empty():
-		var row_ui: TableRowUI = row_nodes[old_row[old_row.get_meta("primary_key")]]
-		row_nodes.erase(old_row[old_row.get_meta("primary_key")])
-		row_ui.queue_free()
+		var row_ui: TableRowUI = row_nodes.get(old_row[key])
+		if row_ui:
+			row_nodes.erase(old_row[key])
+			row_ui.queue_free()
+		else:
+			printerr("UI row delete skipped for table: %s" % row_receiver.selected_table_name)
 	else:
 		for row_ui :TableRowUI in table_container.get_children():
 			var is_same_row:bool = true

@@ -6,6 +6,6 @@ class_name IdentityTokenMessage extends Resource
 @export var token: String
 
 func _init():
-	set_meta("bsatn_type_identity", &"identity")
+	set_meta("bsatn_type_identity", &"__identity__")
 	set_meta("bsatn_type_connection_id", &"connection_id")
-	set_meta("bsatn_type_token", &"string")
+	set_meta("bsatn_type_token", &"String")

@@ -15,5 +15,5 @@ func _init(p_reducer_name: String = "", p_args: PackedByteArray = PackedByteArra
 	args = p_args
 	request_id = p_request_id
 	flags = p_flags
-	set_meta("bsatn_type_request_id", "u32")
-	set_meta("bsatn_type_flags", "u8")
+	set_meta("bsatn_type_request_id", &"U32")
+	set_meta("bsatn_type_flags", &"U8")

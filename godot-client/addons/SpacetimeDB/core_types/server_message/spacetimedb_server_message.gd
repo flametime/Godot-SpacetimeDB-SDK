@@ -1,4 +1,4 @@
-class_name SpacetimeDBServerMessage
+class_name SpacetimeDBServerMessage extends RefCounted
 
 # Server Message Tags (ensure these match protocol)
 const INITIAL_CONNECTION        := 0x00 #type file done,
@@ -10,15 +10,15 @@ const ONE_OFF_QUERY_RESPONSE    := 0x05
 const REDUCER_RESULT            := 0x06
 const PROCEDURE_RESULT          := 0x07
 
-static func get_resource_path(msg_type: int) -> String:
+static func get_core_type(msg_type: int) -> String:
 	match msg_type:
-		INITIAL_CONNECTION:        return "res://addons/SpacetimeDB/core_types/server_message/initial_connection.gd"
-		SUBSCRIBE_APPLIED:         return "res://addons/SpacetimeDB/core_types/server_message/subscribe_applied.gd"
-		UNSUBSCRIBE_APPLIED:       return "res://addons/SpacetimeDB/core_types/server_message/unsubscribe_applied.gd"
-		SUBSCRIPTION_ERROR:        return "res://addons/SpacetimeDB/core_types/server_message/subscription_error.gd" # Uses manual reader
-		TRANSACTION_UPDATE:        return "res://addons/SpacetimeDB/core_types/server_message/transaction_update.gd"
-		ONE_OFF_QUERY_RESPONSE:    return "res://addons/SpacetimeDB/core_types/server_message/one_off_query_response.gd" # IMPLEMENT READER
-		REDUCER_RESULT:            return "res://addons/SpacetimeDB/core_types/server_message/reducer_result.gd"
-		PROCEDURE_RESULT:          return "res://addons/SpacetimeDB/core_types/server_message/procedure_result.gd"
+		INITIAL_CONNECTION:        return "IdentityTokenMessage"
+		SUBSCRIBE_APPLIED:         return "SubscribeAppliedMessage"
+		UNSUBSCRIBE_APPLIED:       return "UnsubscribeAppliedMessage"
+		SUBSCRIPTION_ERROR:        return "SubscriptionErrorMessage"
+		TRANSACTION_UPDATE:        return "TransactionUpdateMessage"
+		ONE_OFF_QUERY_RESPONSE:    return "OneOffQueryResponseMessage"
+		REDUCER_RESULT:            return "ReducerResultMessage"
+		PROCEDURE_RESULT:          return "ProcedureResultMessage"
 		_:
 			return ""

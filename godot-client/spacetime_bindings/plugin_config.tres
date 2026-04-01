@@ -7,7 +7,7 @@
 [sub_resource type="Resource" id="Resource_l02ds"]
 script = ExtResource("2_l1dmy")
 
-[sub_resource type="Resource" id="Resource_uknru"]
+[sub_resource type="Resource" id="Resource_l1dmy"]
 script = ExtResource("1_uknru")
 name = "main"
 alias = "main"
@@ -17,5 +17,5 @@ parsed_schema = SubResource("Resource_l02ds")
 [resource]
 script = ExtResource("2_l02ds")
 module_configs = Dictionary[String, ExtResource("1_uknru")]({
-"main": SubResource("Resource_uknru")
+"main": SubResource("Resource_l1dmy")
 })
