@@ -67,15 +67,13 @@ func update_module_ui():
 			plugin_config_changed.emit()
 			)
 		name_input.text_changed.connect(func(text:String):
+			if not _is_alphanumerical(text):
+				return
 			module_config.name = text
 			plugin_config_changed.emit()
 			)
 		alias_input.text_changed.connect(func(text:String):
-			var regex = RegEx.new()
-			regex.compile("[^[:alnum:]]+")
-			var result = regex.search(text)
-			if result:
-				add_err("INVALID alias name. Alphanumeric only but found: %s" % result.get_string())
+			if not _is_alphanumerical(text):
 				return
 			_plugin_config.module_configs.erase(module_config.alias)
 			module_config.alias = text
@@ -168,7 +166,9 @@ func _on_copy_selected_logs() -> void:
 
 func _is_alphanumerical(string: String)-> bool:
 	var regex = RegEx.new()
-	regex.compile("[^[:alnum:]]+")
+	var err = regex.compile('[^[:alnum:]-]+')
+	if err != OK:
+		add_log("Regex err: %s" % error_string(err))
 	var result = regex.search(string)
 
 	if result and not result.get_string().is_empty():
