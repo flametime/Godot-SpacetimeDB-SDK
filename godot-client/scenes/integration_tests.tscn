@@ -3,12 +3,12 @@
 [ext_resource type="Script" uid="uid://bg5ywsrsomvr7" path="res://example_code/integration_tests.gd" id="1_11tcf"]
 [ext_resource type="Script" uid="uid://jvk6ou7i2d4s" path="res://addons/SpacetimeDB/nodes/row_receiver/row_receiver.gd" id="2_3ljp4"]
 [ext_resource type="PackedScene" uid="uid://unjs4buic6sv" path="res://scenes/table_tab_ui.tscn" id="2_p8i4h"]
-[ext_resource type="Script" uid="uid://t7ytfbxj4fbx" path="res://spacetime_bindings/schema/types/main_test_table_datatypes.gd" id="4_wkhtg"]
-[ext_resource type="Script" uid="uid://dcgkau1btq4tj" path="res://spacetime_bindings/schema/types/main_test_enum.gd" id="5_ruhfi"]
-[ext_resource type="Script" uid="uid://cli8s40vbap0l" path="res://spacetime_bindings/schema/types/main_test_type.gd" id="6_26wxn"]
-[ext_resource type="Script" uid="uid://cmo06p40wxpex" path="res://spacetime_bindings/schema/types/main_test_scheduled_table.gd" id="7_sijad"]
-[ext_resource type="Script" uid="uid://di8hxgy38sha" path="res://spacetime_bindings/schema/types/main_view_type.gd" id="8_cdput"]
-[ext_resource type="Script" uid="uid://djmw4u8rstb1d" path="res://spacetime_bindings/schema/types/main_test_event_table.gd" id="9_81h2f"]
+[ext_resource type="Script" path="res://spacetime_bindings/schema/types/main_test_table_datatypes.gd" id="4_wkhtg"]
+[ext_resource type="Script" path="res://spacetime_bindings/schema/types/main_test_enum.gd" id="5_ruhfi"]
+[ext_resource type="Script" path="res://spacetime_bindings/schema/types/main_test_type.gd" id="6_26wxn"]
+[ext_resource type="Script" path="res://spacetime_bindings/schema/types/main_test_scheduled_table.gd" id="7_sijad"]
+[ext_resource type="Script" path="res://spacetime_bindings/schema/types/main_view_type.gd" id="8_cdput"]
+[ext_resource type="Script" path="res://spacetime_bindings/schema/types/main_test_event_table.gd" id="9_81h2f"]
 
 [sub_resource type="Gradient" id="Gradient_p8i4h"]
 offsets = PackedFloat32Array(0.7097792, 1)
