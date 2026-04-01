@@ -247,7 +247,7 @@ func apply_table_update(table_update: TableUpdateData) -> Dictionary[String,Arra
 
 # --- Access Methods ---
 func get_row_by_pk(table_name: String, primary_key_value) -> _ModuleTableType:
-	var table_name_lower: String = table_name.to_lower().replace("_","")
+	var table_name_lower: String = table_name
 	if _tables.has(table_name_lower):
 		return _tables[table_name_lower].get(primary_key_value)
 	return null
@@ -264,7 +264,7 @@ func count_all_rows(table_name: String) -> int:
 	return rows.size()
 
 func _get_all_rows_untyped(table_name: String) -> Array:
-	var table_name_lower: String = table_name.to_lower().replace("_","")
+	var table_name_lower: String = table_name
 	if _tables.has(table_name_lower):
 		var table_dict: Dictionary = _tables[table_name_lower]
 		return table_dict.values()
