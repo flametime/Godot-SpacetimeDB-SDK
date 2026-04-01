@@ -157,7 +157,6 @@ func _generate_gdscript_from_schema(
 			var table_names_to_emit: Array[String] = []
 			if type_def.has("table_names"):
 				var table_names_arr: Array = type_def.get("table_names", [])
-				print(table_names_arr, "\n\n")
 				for i in table_names_arr.size():
 					var table_name: String = table_names_arr[i]
 					if _plugin_config.module_configs[module_name].hide_private_tables and not type_def.get("is_public", [])[i]:
