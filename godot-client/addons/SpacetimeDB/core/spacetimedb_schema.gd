@@ -10,7 +10,7 @@ var debug_mode: bool = false # Controls verbose debug printing
 
 func _init(p_module_name: String, p_schema_path: String = "res://spacetime_bindings/schema", p_debug_mode: bool = false) -> void:
 	debug_mode = p_debug_mode
-	module_name = p_module_name.to_snake_case().to_lower()
+	module_name = p_module_name.to_snake_case()
 	module_types = {}
 	# Load module type files
 	_load_files("%s/types" % p_schema_path, module_types)
