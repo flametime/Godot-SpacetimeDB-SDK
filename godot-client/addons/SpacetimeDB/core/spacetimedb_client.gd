@@ -61,6 +61,7 @@ signal row_transactions_completed(table_name: String)
 
 signal reducer_call_response(response: Resource) # TODO: Define response resource
 signal reducer_call_timeout(request_id: int) # TODO: Implement timeout logic
+signal procedure_call_response(response: ProcedureResultMessage)
 signal transaction_update_received(update: TransactionUpdateMessage)
 
 func _ready():
@@ -354,7 +355,7 @@ func _handle_parsed_message(message_resource: Resource):
 			var reducer_call := _pending_reducer_call[message_resource.request_id]
 			_pending_reducer_call.erase(message_resource.request_id)
 			reducer_call.on_response(message_resource)
-			print("Reducer call on_response called")
+			reducer_call_response.emit(message_resource)
 		else:
 			printerr("SpacetimeDBClient: Reducer timed out before the response message arrived")
 		return
@@ -365,6 +366,7 @@ func _handle_parsed_message(message_resource: Resource):
 		if not procedure_call:
 			printerr("SpacetimeDBClient: Pending procedure call for request_id %s not found"% request_id)
 		procedure_call.on_response(message_resource)
+		procedure_call_response.emit(message_resource)
 	else:
 		print_log("SpacetimeDBClient: Received unhandled message resource type: " + message_resource.get_class())
 
