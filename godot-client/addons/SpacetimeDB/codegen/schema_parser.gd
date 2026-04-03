@@ -585,12 +585,13 @@ static func _parse_callables(
 		if info.get("visibility", {}).has("Private"):
 			continue
 
-		var name: String= info.get("source_name", "").to_snake_case()
+		var source_name: String = info.get("source_name", "")
+		var name: String = source_name.to_snake_case()
 		if name.is_empty():
 			SpacetimePlugin.print_err("Callable found with no name: %s" % [info])
 			continue
 
-		var callable_data: Dictionary = {"name": name}
+		var callable_data: Dictionary = {"name": name, "source_name": source_name}
 		callable_data["params"] = _parse_named_elements(
 			info.get("params", {}).get("elements", []),
 			schema_types,
