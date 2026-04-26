@@ -1,15 +1,21 @@
 [gd_resource type="Resource" script_class="SpacetimeDBPluginConfig" format=3 uid="uid://dhr0x0310sjf0"]
 
 [ext_resource type="Script" uid="uid://dmrbbx5pa43y" path="res://addons/SpacetimeDB/core_types/module_config.gd" id="1_uknru"]
+[ext_resource type="Script" uid="uid://dmmc3e5wbqu30" path="res://addons/SpacetimeDB/codegen/parsed_schema.gd" id="2_l1dmy"]
 [ext_resource type="Script" uid="uid://c182ftnnoe62b" path="res://addons/SpacetimeDB/core_types/plugin_config.gd" id="2_l02ds"]
 
-[sub_resource type="Resource" id="Resource_uknru"]
+[sub_resource type="Resource" id="Resource_l02ds"]
+script = ExtResource("2_l1dmy")
+
+[sub_resource type="Resource" id="Resource_l1dmy"]
 script = ExtResource("1_uknru")
 name = "main"
 alias = "main"
+hide_private_tables = false
+parsed_schema = SubResource("Resource_l02ds")
 
 [resource]
 script = ExtResource("2_l02ds")
 module_configs = Dictionary[String, ExtResource("1_uknru")]({
-"main": SubResource("Resource_uknru")
+"main": SubResource("Resource_l1dmy")
 })

@@ -13,7 +13,6 @@ var _logs_label: RichTextLabel
 var _add_module_hint_label: RichTextLabel
 var _new_module_name_input: LineEdit
 var _new_module_alias_input: LineEdit
-var _new_module_reducer_checkbox: CheckBox
 var _new_module_table_checkbox: CheckBox
 var _generate_button: Button
 var _plugin_config: SpacetimeDBPluginConfig
@@ -25,7 +24,6 @@ func _enter_tree() -> void:
 	_add_module_hint_label = %AddModuleHint
 	_new_module_name_input = %ModuleNameInput
 	_new_module_alias_input = %ModuleAliasInput
-	_new_module_reducer_checkbox = %ReducerCheckbox
 	_new_module_table_checkbox = %TablesCheckbox
 	_generate_button = %GenerateButton
 
@@ -46,16 +44,14 @@ func update_module_ui():
 	for child in _modules_container.get_children():
 		_modules_container.remove_child(child)
 		child.queue_free()
-
+	set_uri(_plugin_config.uri)
 	for module_config: SpacetimeDBModuleConfig in _plugin_config.module_configs.values():
 		var new_module: Control = $"Prefabs/ModulePrefab".duplicate() as Control
 		var name_input: LineEdit = new_module.get_node("VBoxContainer/HBoxContainer/VBoxContainer/ModuleNameInput") as LineEdit
 		var alias_input: LineEdit = new_module.get_node("VBoxContainer/HBoxContainer/VBoxContainer/ModuleAliasInput") as LineEdit
-		var reducer_config_box: CheckBox = new_module.get_node("VBoxContainer/ReducerCheckbox") as CheckBox
 		var table_config_box: CheckBox = new_module.get_node("VBoxContainer/TableCheckbox") as CheckBox
 		name_input.text = module_config.name
 		alias_input.text = module_config.alias
-		reducer_config_box.button_pressed = module_config.hide_scheduled_reducers
 		table_config_box.button_pressed = module_config.hide_private_tables
 		_modules_container.add_child(new_module)
 
@@ -66,19 +62,19 @@ func update_module_ui():
 			update_module_ui()
 			)
 		new_module.show()
-		reducer_config_box.toggled.connect(func(on:bool):
-			module_config.hide_scheduled_reducers = on
-			plugin_config_changed.emit()
-			)
 		table_config_box.toggled.connect(func(on:bool):
 			module_config.hide_private_tables = on
 			plugin_config_changed.emit()
 			)
 		name_input.text_changed.connect(func(text:String):
+			if not _is_alphanumerical(text):
+				return
 			module_config.name = text
 			plugin_config_changed.emit()
 			)
 		alias_input.text_changed.connect(func(text:String):
+			if not _is_alphanumerical(text):
+				return
 			_plugin_config.module_configs.erase(module_config.alias)
 			module_config.alias = text
 			_plugin_config.module_configs.set(module_config.alias, module_config)
@@ -90,6 +86,7 @@ func update_module_ui():
 	else:
 		_add_module_hint_label.hide()
 		_generate_button.disabled = false
+
 
 func clear_logs():
 	_logs_label.text = ""
@@ -133,23 +130,27 @@ func destroy() -> void:
 
 func _on_check_uri() -> void:
 	_plugin_config.uri = _uri_input.text as StringName
+	update_module_ui()
 	check_uri.emit()
 
 func _on_generate_code() -> void:
+	update_module_ui()
 	generate_schema.emit()
 
 func _on_new_module() -> void:
-	var name := _new_module_name_input.text
-	var alias := _new_module_alias_input.text
+	var name := _new_module_name_input.text.to_lower()
+	if name.is_empty():
+		return
+	var alias := _new_module_alias_input.text.to_lower()
 	var table_config = _new_module_table_checkbox.button_pressed
-	var reducer_config = _new_module_reducer_checkbox.button_pressed
+	if not _is_alphanumerical(name) or not _is_alphanumerical(alias):
+		return
 	if alias.is_empty():
 		alias = name
 	var module_config: SpacetimeDBModuleConfig = _plugin_config.module_configs.get(alias, SpacetimeDBModuleConfig.new())
 	module_config.name = name
 	module_config.alias = alias
 	module_config.hide_private_tables = table_config
-	module_config.hide_scheduled_reducers = reducer_config
 	_plugin_config.module_configs.set(alias, module_config)
 	_new_module_name_input.text = ""
 	_new_module_alias_input.text = ""
@@ -162,3 +163,15 @@ func _on_clear_logs() -> void:
 
 func _on_copy_selected_logs() -> void:
 	copy_selected_logs()
+
+func _is_alphanumerical(string: String)-> bool:
+	var regex = RegEx.new()
+	var err = regex.compile('[^[:alnum:]-]+')
+	if err != OK:
+		add_log("Regex err: %s" % error_string(err))
+	var result = regex.search(string)
+
+	if result and not result.get_string().is_empty():
+		add_err("INVALID string. Alphanumeric only but found: %s" % result.get_string())
+		return false
+	return true

@@ -1,32 +1,34 @@
-[gd_scene load_steps=6 format=3 uid="uid://bn1hfkbb68wno"]
+[gd_scene format=3 uid="uid://bn1hfkbb68wno"]
 
 [ext_resource type="Texture2D" uid="uid://b6djqj4ukqhqb" path="res://icons/mouse.png" id="1_iog6k"]
 [ext_resource type="Script" uid="uid://dos40m6xo6f7l" path="res://example_code/mouse.gd" id="2_dexx5"]
 [ext_resource type="Script" uid="uid://jvk6ou7i2d4s" path="res://addons/SpacetimeDB/nodes/row_receiver/row_receiver.gd" id="3_j7mu1"]
-[ext_resource type="Script" uid="uid://b7lmx1vkhjv8y" path="res://spacetime_bindings/schema/types/main_user_data.gd" id="4_iog6k"]
+[ext_resource type="Script" uid="uid://bfraf7hx3dwg1" path="res://spacetime_bindings/schema/types/main_user_data.gd" id="4_iog6k"]
 
 [sub_resource type="Resource" id="Resource_dexx5"]
 script = ExtResource("4_iog6k")
-identity = PackedByteArray()
-online = false
-name = ""
-lobby_id = 0
-color = Color(0, 0, 0, 1)
-test_vec = Array[String]([])
-test_bytes_array = Array[int]([])
-last_position = Vector3(0, 0, 0)
-direction = Vector2(0, 0)
-player_speed = 0.0
-last_update = 0
+metadata/primary_key = "identity"
+metadata/bsatn_type_identity = &"__identity__"
+metadata/bsatn_type_online = &"Bool"
+metadata/bsatn_type_name = &"String"
+metadata/bsatn_type_lobby_id = &"U64"
+metadata/bsatn_type_color = &"Color"
+metadata/bsatn_type_test_vec = &"vec_String"
+metadata/bsatn_type_test_bytes_array = &"vec_U8"
+metadata/bsatn_type_test_dynamic_arraylike = &"Vector4"
+metadata/bsatn_type_last_position = &"Vector3"
+metadata/bsatn_type_direction = &"Vector2"
+metadata/bsatn_type_player_speed = &"F32"
+metadata/bsatn_type_last_update = &"__timestamp_micros_since_unix_epoch__"
 metadata/_custom_type_script = "uid://b7lmx1vkhjv8y"
 
-[node name="Mouse" type="Sprite2D" node_paths=PackedStringArray("receiver")]
+[node name="Mouse" type="Sprite2D" unique_id=426864469 node_paths=PackedStringArray("receiver")]
 scale = Vector2(0.262793, 0.229391)
 texture = ExtResource("1_iog6k")
 script = ExtResource("2_dexx5")
 receiver = NodePath("Receiver [MainUserData]")
 
-[node name="RichTextLabel" type="RichTextLabel" parent="."]
+[node name="RichTextLabel" type="RichTextLabel" parent="." unique_id=44412193]
 offset_left = -228.0
 offset_top = 139.0
 offset_right = 259.0
@@ -37,7 +39,7 @@ text = "[wave]flametime"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Receiver [MainUserData]" type="Node" parent="."]
+[node name="Receiver [MainUserData]" type="Node" parent="." unique_id=956750010]
 script = ExtResource("3_j7mu1")
 table_to_receive = SubResource("Resource_dexx5")
 selected_table_name = "user_data"

@@ -2,10 +2,12 @@ class_name LocalDatabase extends Node
 
 var _tables: Dictionary[String, Dictionary] = {}
 var _primary_key_cache: Dictionary = {}
+var _is_event_table_cache: Dictionary = {}
 var _schema: SpacetimeDBSchema
+## it should be "MainModuleClient" but the info is not available before codegen.
+var _module:SpacetimeDBClient
 
 var _cached_normalized_table_names: Dictionary = {}
-var _cached_pk_fields: Dictionary = {}
 var _insert_listeners_by_table: Dictionary = {}
 var _update_listeners_by_table: Dictionary = {}
 var _delete_listeners_by_table: Dictionary = {}
@@ -17,11 +19,13 @@ signal row_updated(table_name: String, old_row: _ModuleTableType, new_row: _Modu
 signal row_deleted(table_name: String, row: _ModuleTableType)
 signal row_transactions_completed(table_name: String)
 
-func _init(p_schema: SpacetimeDBSchema):
+func _init(p_schema: SpacetimeDBSchema, module:SpacetimeDBClient):
 	# Initialize _tables dictionary with known table names
 	_schema = p_schema
-	for table_name_lower in _schema.tables.keys():
-		_tables[table_name_lower] = {}
+	_module = module
+	for table_name in _schema.module_table_name_to_type_name.keys():
+		_tables.set(table_name, {})
+
 
 func subscribe_to_inserts(table_name: StringName, callable: Callable):
 	if not _insert_listeners_by_table.has(table_name):
@@ -78,45 +82,57 @@ func _get_primary_key_field(table_name_lower: String) -> StringName:
 	if _primary_key_cache.has(table_name_lower):
 		return _primary_key_cache[table_name_lower]
 
-	if not _schema.types.has(table_name_lower):
+	if not _schema.get_type_of_table_name(table_name_lower):
 		printerr("LocalDatabase: No schema found for table '", table_name_lower, "' to determine PK.")
 		return &"" # Return empty StringName
 
-	var schema := _schema.get_type(table_name_lower)
+	var table_type := _schema.get_type_of_table_name(table_name_lower)
+	var schema := _schema.get_type_script(table_type)
 	var instance = schema.new() # Need instance for metadata/properties
 
-	# 1. Check metadata (preferred)
 	if instance and instance.has_meta("primary_key"):
 		var pk_field: StringName = instance.get_meta("primary_key")
 		_primary_key_cache[table_name_lower] = pk_field
 		return pk_field
-
-	# 2. Convention: Check for "identity" or "id" field
-	var properties = schema.get_script_property_list()
-	for prop in properties:
-		if prop.usage & PROPERTY_USAGE_STORAGE:
-			if prop.name == &"identity" or prop.name == &"id":
-				_primary_key_cache[table_name_lower] = prop.name
-				return prop.name
-			# 3. Fallback: Assume first exported property (less reliable)
-			# Uncomment if this is your desired convention
-			# _primary_key_cache[table_name_lower] = prop.name
-			# return prop.name
 
 	#printerr("LocalDatabase: Could not determine primary key for table '", table_name_lower, "'. Add metadata or use convention.")
 	print_debug("LocalDatabase: table %s has no primary_key" % table_name_lower)
 	_primary_key_cache[table_name_lower] = &"" # Cache failure
 	return &""
 
+func get_is_event(table_name_original: StringName) -> bool:
+	var table_script = _schema.get_table_script((_schema.module_name +"_"+ table_name_original).to_pascal_case()+"Table")
+	var table_instance = table_script.new()
+	var is_event:bool = table_instance.get_meta("is_event") == "true"
+	_is_event_table_cache[table_name_original] = is_event
+	return is_event
 
 # --- Applying Updates ---
+func apply_database_subscription_applied(db_update:SubscribeAppliedMessage):
+	if not db_update: return
+	var changes:Array[Dictionary] = []
+	for table_update: TableUpdateData in db_update.tables:
+		var updates = apply_table_update(table_update)
+		changes.append(updates)
+	emit_db_callbacks(changes)
+
+func apply_database_unsubscription_applied(db_update:UnsubscribeAppliedMessage):
+	if not db_update: return
+	var changes:Array[Dictionary] = []
+	for table_update: TableUpdateData in db_update.tables:
+		var updates = apply_table_update(table_update)
+		changes.append(updates)
+	emit_db_callbacks(changes)
+
 func apply_database_update(db_update: DatabaseUpdateData):
 	if not db_update: return
 	var changes:Array[Dictionary] = []
 	for table_update: TableUpdateData in db_update.tables:
 		var updates = apply_table_update(table_update)
 		changes.append(updates)
+	emit_db_callbacks(changes)
 
+func emit_db_callbacks(changes:Array[Dictionary]):
 	for change in changes:
 		var table_name = change.get("table_name", ["__null__"])[0]
 		if table_name == "__null__":
@@ -158,42 +174,39 @@ func apply_database_update(db_update: DatabaseUpdateData):
 			row_transactions_completed.emit(table_name)
 
 func apply_table_update(table_update: TableUpdateData) -> Dictionary[String,Array]:
-	var table_name_original: StringName = StringName(table_update.table_name)
-	var table_name_lower: String
+	var table_name_original: StringName = StringName(table_update.table_name.to_snake_case())
 
-	if _cached_normalized_table_names.has(table_name_original):
-		table_name_lower = _cached_normalized_table_names[table_name_original]
-	else:
-		table_name_lower = table_update.table_name.to_lower().replace("_", "")
-		_cached_normalized_table_names[table_name_original] = table_name_lower
-
-	if not _tables.has(table_name_lower):
-		printerr("LocalDatabase: Received update for unknown table '", table_name_original, "' (normalized: '", table_name_lower, "')")
+	if not _tables.has(table_name_original):
+		printerr("LocalDatabase: Received update for unknown table: ", table_name_original)
 		return {"table_name": [table_name_original],
 				"inserts": [],
 				"updates": [],
 				"deletes": []}
-
-	var pk_field: StringName
-	if _cached_pk_fields.has(table_name_lower):
-		pk_field = _cached_pk_fields[table_name_lower]
+	var is_event: bool
+	if _is_event_table_cache.has(table_name_original):
+		is_event = _is_event_table_cache[table_name_original]
 	else:
-		pk_field = _get_primary_key_field(table_name_lower)
-		if pk_field == &"":
-			var inserts_no_pk: Array = []
-			for row in table_update.inserts:
-				inserts_no_pk.append([row])
-			var deletes_no_pk: Array = []
-			for row in table_update.deletes:
-				deletes_no_pk.append([row])
-			var changes :Dictionary[String, Array] = {"table_name": [table_name_original],
-				"inserts": inserts_no_pk,
-				"updates": [],
-				"deletes": deletes_no_pk}
-			return changes
-		_cached_pk_fields[table_name_lower] = pk_field
+		is_event = get_is_event(table_name_original)
+	var pk_field: StringName
+	if _primary_key_cache.has(table_name_original):
+		pk_field = _primary_key_cache[table_name_original]
+	else:
+		pk_field = _get_primary_key_field(table_name_original)
+		_primary_key_cache[table_name_original] = pk_field
+	if pk_field == &"" or is_event:
+		var inserts_no_pk: Array = []
+		for row in table_update.inserts:
+			inserts_no_pk.append([row])
+		var deletes_no_pk: Array = []
+		for row in table_update.deletes:
+			deletes_no_pk.append([row])
+		var changes :Dictionary[String, Array] = {"table_name": [table_name_original],
+			"inserts": inserts_no_pk,
+			"updates": [],
+			"deletes": deletes_no_pk}
+		return changes
 
-	var table_dict: Dictionary = _tables[table_name_lower]
+	var table_dict: Dictionary = _tables[table_name_original]
 
 	var inserted_pks_set: Dictionary = {} # { pk_value: true }
 	var inserts_to_emit: Array
@@ -234,7 +247,7 @@ func apply_table_update(table_update: TableUpdateData) -> Dictionary[String,Arra
 
 # --- Access Methods ---
 func get_row_by_pk(table_name: String, primary_key_value) -> _ModuleTableType:
-	var table_name_lower: String = table_name.to_lower().replace("_","")
+	var table_name_lower: String = table_name
 	if _tables.has(table_name_lower):
 		return _tables[table_name_lower].get(primary_key_value)
 	return null
@@ -251,7 +264,7 @@ func count_all_rows(table_name: String) -> int:
 	return rows.size()
 
 func _get_all_rows_untyped(table_name: String) -> Array:
-	var table_name_lower: String = table_name.to_lower().replace("_","")
+	var table_name_lower: String = table_name
 	if _tables.has(table_name_lower):
 		var table_dict: Dictionary = _tables[table_name_lower]
 		return table_dict.values()

@@ -4,12 +4,12 @@ class_name SpacetimeDBConnection extends Node
 var _websocket := WebSocketPeer.new()
 var _target_url: String
 var _token: String
-var _is_connected := false
-var _connection_requested := false
-var _debug_mode := false
-
+var _is_connected: bool = false
+var _connection_requested: bool = false
+var _debug_mode: bool = false
+var version: String = "v1"
 # Protocol constants
-const BSATN_PROTOCOL = "v1.bsatn.spacetimedb"
+const BSATN_PROTOCOL = "v2.bsatn.spacetimedb"
 
 enum CompressionPreference { NONE = 0, BROTLI = 1, GZIP = 2 }
 var preferred_compression: CompressionPreference = CompressionPreference.NONE # Default to None
@@ -102,7 +102,7 @@ func send_bytes(bytes: PackedByteArray) -> Error:
 		total_bytes.emit(_total_bytes_send, _total_bytes_received)
 	return err
 
-func connect_to_database(base_url: String, database_name: String, connection_id: String): # Added connection_id
+func connect_to_database(base_url: String, database_name: String, connection_id: String, confirmed_reads:bool): # Added connection_id
 	if _is_connected or _connection_requested:
 		_print_log("SpacetimeDBConnection: Already connected or connecting.")
 		return
@@ -117,7 +117,7 @@ func connect_to_database(base_url: String, database_name: String, connection_id:
 
 	# Construct WebSocket URL base
 	var ws_url_base := base_url.replace("http", "ws").replace("https", "wss")
-	ws_url_base = ws_url_base.path_join("/v1/database").path_join(database_name).path_join("subscribe")
+	ws_url_base = ws_url_base.path_join("/"+version+"/database").path_join(database_name).path_join("subscribe")
 
 	# --- Add Query Parameters ---
 	# Start with connection_id
@@ -134,10 +134,7 @@ func connect_to_database(base_url: String, database_name: String, connection_id:
 
 
 	query_params += "&compression=" + compression_str
-	# Add light mode parameter if needed (based on C# code)
-	# var light_mode = false # Example
-	# if light_mode:
-	#	 query_params += "&light=true"
+	query_params += "&confirmed=%s" % confirmed_reads
 
 	if OS.get_name() == "Web":
 		query_params += "&token=" + _token
@@ -212,7 +209,7 @@ func _physics_process(delta: float) -> void:
 			var reason := _websocket.get_close_reason()
 			if _is_connected or _connection_requested: # Only report if we were connected or trying
 				if code == -1: # Abnormal closure
-					printerr("SpacetimeDBConnection: Connection closed unexpectedly.")
+					printerr("SpacetimeDBConnection: connection_error ", code, " Abnormal closure with reason:")
 					emit_signal("connection_error", code, "Abnormal closure")
 				else:
 					_print_log("SpacetimeDBConnection: Connection closed (Code: %d, Reason: %s)" % [code, reason])

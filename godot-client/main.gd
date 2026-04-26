@@ -32,7 +32,8 @@ func _on_spacetimedb_connected(identity: PackedByteArray, _token: String) -> voi
 func subscribe_self_updates() -> void:
 	var id := SpacetimeDB.Main.get_local_identity()
 	var query_string := [
-		"SELECT * FROM user WHERE identity = '0x%s'" % id.hex_encode()
+		"SELECT * FROM user WHERE identity = '0x%s'" % id.hex_encode(),
+		#"SELECT * FROM none"
 	]
 	var sub := SpacetimeDB.Main.subscribe(query_string)
 	if sub.error:

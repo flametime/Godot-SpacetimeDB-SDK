@@ -1,13 +1,13 @@
-[gd_scene load_steps=14 format=3 uid="uid://cd0jglqxoggeg"]
+[gd_scene format=3 uid="uid://cd0jglqxoggeg"]
 
 [ext_resource type="PackedScene" uid="uid://dly6cualhlp8k" path="res://scenes/stats.tscn" id="1_5vw27"]
 [ext_resource type="Script" uid="uid://b2l7hyu8fw2wg" path="res://main.gd" id="1_h2yge"]
 [ext_resource type="PackedScene" uid="uid://dvenminxkaei3" path="res://scenes/player.tscn" id="2_0xm2m"]
 [ext_resource type="Script" uid="uid://cv6bu0sabs8yh" path="res://example_code/spawner.gd" id="3_h2yge"]
 [ext_resource type="Script" uid="uid://jvk6ou7i2d4s" path="res://addons/SpacetimeDB/nodes/row_receiver/row_receiver.gd" id="5_7mycd"]
-[ext_resource type="Script" uid="uid://b7lmx1vkhjv8y" path="res://spacetime_bindings/schema/types/main_user_data.gd" id="6_5vw27"]
+[ext_resource type="Script" uid="uid://j7ves41fl8xj" path="res://spacetime_bindings/schema/types/main_user_data.gd" id="6_5vw27"]
 [ext_resource type="Script" uid="uid://cbeq6brew0wkm" path="res://example_code/LobbyHolder.gd" id="6_7mycd"]
-[ext_resource type="Script" uid="uid://cpccn08pln75t" path="res://spacetime_bindings/schema/types/main_user.gd" id="8_kek77"]
+[ext_resource type="Script" uid="uid://cqp5djsaxa615" path="res://spacetime_bindings/schema/types/main_user.gd" id="8_kek77"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_0xm2m"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -24,18 +24,6 @@ glow_enabled = true
 
 [sub_resource type="Resource" id="Resource_4c57u"]
 script = ExtResource("6_5vw27")
-identity = PackedByteArray()
-online = false
-name = ""
-lobby_id = 0
-color = Color(0, 0, 0, 1)
-test_vec = Array[String]([])
-test_bytes_array = Array[int]([])
-test_dynamic_arraylike = Vector4(0, 0, 0, 0)
-last_position = Vector3(0, 0, 0)
-direction = Vector2(0, 0)
-player_speed = 0.0
-last_update = 0
 metadata/primary_key = "identity"
 metadata/bsatn_type_identity = &"identity"
 metadata/bsatn_type_online = &"bool"
@@ -53,56 +41,55 @@ metadata/_custom_type_script = "uid://b7lmx1vkhjv8y"
 
 [sub_resource type="Resource" id="Resource_efxa6"]
 script = ExtResource("8_kek77")
-identity = PackedByteArray()
-online = false
-lobby_id = 0
 metadata/primary_key = "identity"
 metadata/bsatn_type_identity = &"identity"
 metadata/bsatn_type_online = &"bool"
 metadata/bsatn_type_lobby_id = &"u64"
 metadata/bsatn_type_damage = &"MainDamage"
+metadata/underlying_type_test_option_string = &"Array"
 metadata/bsatn_type_test_option_string = &"vec_string"
+metadata/underlying_type_test_option_message = &"MainMessage"
 metadata/bsatn_type_test_option_message = &"MainMessage"
 metadata/_custom_type_script = "uid://cpccn08pln75t"
 
-[node name="Node3D" type="Node3D"]
+[node name="Node3D" type="Node3D" unique_id=1165170212]
 
-[node name="Stats" parent="." instance=ExtResource("1_5vw27")]
+[node name="Stats" parent="." unique_id=1089744298 instance=ExtResource("1_5vw27")]
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=808520082]
 transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
 shadow_enabled = true
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=380336278]
 environment = SubResource("Environment_1bvp3")
 
-[node name="CSGBox3D" type="CSGBox3D" parent="."]
+[node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=1226515004]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
 use_collision = true
 size = Vector3(32, 0.5, 32)
 
-[node name="MainClient" type="Node3D" parent="."]
+[node name="MainClient" type="Node3D" parent="." unique_id=1980141453]
 script = ExtResource("1_h2yge")
 
-[node name="Camera3D" type="Camera3D" parent="."]
+[node name="Camera3D" type="Camera3D" parent="." unique_id=517062433]
 transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 1, 15, 17)
 
-[node name="PlayerSpawner" type="Node3D" parent="." node_paths=PackedStringArray("receiver")]
+[node name="PlayerSpawner" type="Node3D" parent="." unique_id=288632673 node_paths=PackedStringArray("receiver")]
 script = ExtResource("3_h2yge")
 receiver = NodePath("Receiver [MainUserData]")
 player_scene = ExtResource("2_0xm2m")
 
-[node name="Receiver [MainUserData]" type="Node" parent="PlayerSpawner"]
+[node name="Receiver [MainUserData]" type="Node" parent="PlayerSpawner" unique_id=470585541]
 script = ExtResource("5_7mycd")
 table_to_receive = SubResource("Resource_4c57u")
 selected_table_name = "user_data"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
-[node name="Lobby" type="Node" parent="." node_paths=PackedStringArray("receiver")]
+[node name="Lobby" type="Node" parent="." unique_id=1187750849 node_paths=PackedStringArray("receiver")]
 script = ExtResource("6_7mycd")
 receiver = NodePath("Receiver [MainUser]")
 
-[node name="Receiver [MainUser]" type="Node" parent="Lobby"]
+[node name="Receiver [MainUser]" type="Node" parent="Lobby" unique_id=602768812]
 script = ExtResource("5_7mycd")
 table_to_receive = SubResource("Resource_efxa6")
 selected_table_name = "user"
