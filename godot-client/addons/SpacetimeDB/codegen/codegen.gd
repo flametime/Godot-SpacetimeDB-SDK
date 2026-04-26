@@ -269,7 +269,7 @@ func _generate_table_unique_index_gdscript(
 		"class_name %s extends _ModuleTableUniqueIndex\n\n" % class_name_text + \
 		"var _cache: Dictionary[%s, %s] = {}\n\n" % [field_type, type_name] + \
 		"func _init() -> void:\n" + \
-		"\tset_meta(\"table_name\", \"%s\")\n" % table_name.trim_prefix(schema.module.to_lower() + "_") + \
+		"\tset_meta(\"table_name\", \"%s\")\n" % table_name.to_snake_case().trim_prefix(schema.module.to_snake_case() + "_") + \
 		"\tset_meta(\"field_name\", \"%s\")\n\n" % field_name + \
 		"static func create(p_local_db: LocalDatabase) -> %s:\n" % class_name_text + \
 		"\tvar index: %s = %s.new()\n" % [class_name_text, class_name_text] + \
@@ -305,7 +305,7 @@ func _generate_table_gdscript(
 	for field_name in unique_index_classes:
 		content += "var %s: %s\n" % [field_name, unique_index_classes[field_name]]
 	content += "\nfunc _init() -> void:\n" + \
-		"\tset_meta(\"table_name\", \"%s\")\n" % table_name.trim_prefix(schema.module.to_lower() + "_") + \
+		"\tset_meta(\"table_name\", \"%s\")\n" % table_name.to_snake_case().trim_prefix(schema.module.to_snake_case() + "_") + \
 		"\tset_meta(\"is_event\", \"%s\")\n" % table_def.get("is_event") + \
 		"\tset_meta(\"type\", \"%s\")\n" % type_name
 
@@ -622,9 +622,10 @@ func _generate_reducers_gdscript(
 
 		content += "\n".join(description_comment) + "\n"
 		var reducer_name: String = reducer_def.get("name", "")
+		var reducer_source_name: String = reducer_def.get("source_name", reducer_name)
 		content += "func %s(%s) -> SpacetimeDBReducerCall:\n" % [reducer_name, params_str] + \
 			"\treturn _client.call_reducer('%s', [%s], [%s])\n\n" % [
-				reducer_name,
+				reducer_source_name,
 				param_names_str,
 				param_bsatn_types_str,
 			]
@@ -674,9 +675,10 @@ func _generate_procedures_gdscript(
 
 		content += "\n".join(description_comment) + "\n"
 		var procedure_name: String = procedure_def.get("name", "")
+		var procedure_source_name: String = procedure_def.get("source_name", procedure_name)
 		content += "func %s(%s) -> SpacetimeDBProcedureCall:\n" % [procedure_name, params_str] + \
 			"\treturn _client.call_procedure('%s', [%s], [%s], '%s')\n\n" % [
-				procedure_name,
+				procedure_source_name,
 				param_names_str,
 				param_bsatn_types_str,
 				return_name,

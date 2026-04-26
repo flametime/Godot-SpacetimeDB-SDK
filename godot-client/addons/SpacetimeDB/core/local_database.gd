@@ -174,7 +174,7 @@ func emit_db_callbacks(changes:Array[Dictionary]):
 			row_transactions_completed.emit(table_name)
 
 func apply_table_update(table_update: TableUpdateData) -> Dictionary[String,Array]:
-	var table_name_original: StringName = StringName(table_update.table_name)
+	var table_name_original: StringName = StringName(table_update.table_name.to_snake_case())
 
 	if not _tables.has(table_name_original):
 		printerr("LocalDatabase: Received update for unknown table: ", table_name_original)
