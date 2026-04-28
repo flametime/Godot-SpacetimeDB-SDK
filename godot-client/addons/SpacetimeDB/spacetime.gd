@@ -13,6 +13,7 @@ const UI_PANEL_NAME := "SpacetimeDB"
 const UI_PATH := "res://addons/SpacetimeDB/ui/ui.tscn"
 
 var http_request := HTTPRequest.new()
+var ui_logging := true
 var plugin_config: SpacetimeDBPluginConfig
 var ui: SpacetimePluginUI
 var dock : EditorDock
@@ -108,6 +109,10 @@ func _on_check_uri():
 	print_log("request took: "+ str(Time.get_ticks_usec() - ping_start) + " microseconds")
 
 func _on_generate_schema():
+	await generate_schema(http_request, plugin_config)
+	_register_autoload()
+
+static func generate_schema(http_request: HTTPRequest, plugin_config: SpacetimeDBPluginConfig):
 	if plugin_config.uri.ends_with("/"):
 		plugin_config.uri = plugin_config.uri.left(-1)
 
@@ -148,6 +153,7 @@ func _on_generate_schema():
 		print_log("Removing legacy data directory: %s" % LEGACY_DATA_PATH)
 		DirAccess.remove_absolute(LEGACY_DATA_PATH)
 
+func _register_autoload():
 	var setting_name := "autoload/" + AUTOLOAD_NAME
 	if ProjectSettings.has_setting(setting_name):
 		var current_autoload: String = ProjectSettings.get_setting(setting_name)
@@ -159,12 +165,12 @@ func _on_generate_schema():
 		add_autoload_singleton(AUTOLOAD_NAME, AUTOLOAD_PATH)
 	while get_editor_interface().get_resource_filesystem().is_scanning():
 		print_log("Waiting for auto scan to finish")
+		await get_tree().process_frame
 		continue
 	get_editor_interface().get_resource_filesystem().scan()
 	print_log("Code generation complete!")
 
-
-func _cleanup_unused_classes(dir_path: String = "res://schema", files: Array[String] = []) -> void:
+static func _cleanup_unused_classes(dir_path: String = "res://schema", files: Array[String] = []) -> void:
 	var dir = DirAccess.open(dir_path)
 	if not dir: return
 	print_log("File Cleanup: Scanning folder: " + dir_path)
@@ -185,13 +191,13 @@ static func clear_logs():
 		instance.ui.clear_logs()
 
 static func print_log(text: Variant) -> void:
-	if instance != null and is_instance_valid(instance.ui):
+	if instance != null and is_instance_valid(instance.ui) and instance.ui_logging:
 		instance.ui.add_log(text)
 	else:
 		print(text)
 
 static func print_err(text: Variant) -> void:
-	if instance != null and is_instance_valid(instance.ui):
+	if instance != null and is_instance_valid(instance.ui) and instance.ui_logging:
 		instance.ui.add_err(text)
 	else:
 		printerr(text)
