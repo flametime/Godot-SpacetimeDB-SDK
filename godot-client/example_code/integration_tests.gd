@@ -120,3 +120,7 @@ func _on_button_3_pressed() -> void:
 	procedure_call10.response.connect(procedure_response.bind(procedure_call10))
 
 	print("procedures tested") # Replace with function body.
+
+
+func _on_button_4_pressed() -> void:
+	get_tree().quit() # Replace with function body.

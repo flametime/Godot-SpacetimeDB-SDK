@@ -31,7 +31,7 @@ func _load_files(path: String, dict:Dictionary[StringName, GDScript], is_core: b
 		prints("path", path, "start loading")
 	dir.list_dir_begin()
 	while true:
-		var file_name := dir.get_next()
+		var file_name := dir.get_next().trim_suffix(".remap")
 		if file_name == "":
 			if debug_mode:
 				prints("path:", path, "finished loading")
