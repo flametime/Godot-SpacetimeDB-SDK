@@ -394,7 +394,7 @@ func connect_db(host_url: String, database_name: String, options: SpacetimeDBCon
 	if not options:
 		options = SpacetimeDBConnectionOptions.new()
 	connection_options = options
-	self.base_url = host_url
+	self.base_url = host_url.trim_suffix("/")
 	self.database_name = database_name.to_lower()
 	self.compression = options.compression
 	self.one_time_token = options.one_time_token
