@@ -416,7 +416,11 @@ static func _parse_type_info(
 
 		var inner_type: String = inner.get("type", "")
 		var inner_hint: String = inner.get("godot_type_hint", "Variant")
-
+		if inner_type == "U8":
+			return {
+			"type": "vec_%s" % inner_type,
+			"godot_type_hint": "PackedByteArray",
+		}
 		return {
 			"type": "vec_%s" % inner_type,
 			"godot_type_hint": "Array[%s]" % inner_hint,
