@@ -160,7 +160,7 @@ func disconnect_from_server(code: int = 1000, reason: String = "Client initiated
 	if _websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED and _websocket.get_ready_state() != WebSocketPeer.STATE_CLOSING:
 		_print_log("SpacetimeDBConnection: Closing connection...")
 		_websocket.close(code, reason)
-
+		get_tree().auto_accept_quit = false
 
 func is_connected_db() -> bool:
 	return _is_connected
@@ -209,30 +209,36 @@ func _physics_process(delta: float) -> void:
 				if code == -1: # Abnormal closure
 					printerr("SpacetimeDBConnection: connection_error ", code, " Abnormal closure with reason:")
 					emit_signal("connection_error", code, "Abnormal closure")
+					emit_signal("disconnected")
 				else:
 					_print_log("SpacetimeDBConnection: Connection closed (Code: %d, Reason: %s)" % [code, reason])
 					emit_signal("disconnected") # Normal closure signal
 			_is_connected = false
 			_connection_requested = false
+			get_tree().auto_accept_quit = true
 			set_physics_process(false) # Stop polling
 
 
 func _handle_game_closing():
 	disconnect_from_server()
-	while _websocket.get_ready_state() == WebSocketPeer.STATE_CLOSING:
+	if _websocket.get_ready_state() == WebSocketPeer.STATE_CLOSING:
 		_print_log("SpacetimeDBConnection: WS closing")
-		await get_tree().physics_frame
-	get_tree().auto_accept_quit = true
-	print("game closed")
+		if is_connected_db():
+			await disconnected
+	_print_log("game closed")
 	get_tree().quit()
+
+func _exit_tree() -> void:
+	_print_log("SpacetimeDBConnection: Exit Tree")
+	_handle_game_closing()
 
 func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_CRASH:
-			if _websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED and _websocket.get_ready_state() != WebSocketPeer.STATE_CLOSING:
-				get_tree().auto_accept_quit = false
+			printerr("the game crashed")
+			if _websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED:
 				_handle_game_closing()
 		NOTIFICATION_WM_CLOSE_REQUEST:
-			if _websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED and _websocket.get_ready_state() != WebSocketPeer.STATE_CLOSING:
-				get_tree().auto_accept_quit = false
+			print("WM_CLOSE_REQUEST")
+			if _websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED:
 				_handle_game_closing()
