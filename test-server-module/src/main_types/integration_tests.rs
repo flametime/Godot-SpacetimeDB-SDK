@@ -31,7 +31,8 @@ pub enum TestNestedEnum{
 pub struct  TestType {
     pub test_name : String,
     pub test_int: u64,
-    pub test_nested_enum: TestNestedEnum
+    pub test_nested_enum: TestNestedEnum,
+    pub test_connection_id: ConnectionId
 }
 
 #[table(accessor = test_table_datatypes, public)]
@@ -91,9 +92,9 @@ impl Default for TestTableDatatypes {
             t_test_enum: TestEnum::default(),
             t_test_enum_vec: vec![TestEnum::default()],
             t_test_enum_option: Some(TestEnum::default()),
-            t_test_type: TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty },
-            t_test_type_vec: vec![TestType{ test_name: "test_name".to_string(), test_int: 1 , test_nested_enum: TestNestedEnum::OkEmpty}],
-            t_test_type_option: Some(TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty }),
+            t_test_type: TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO },
+            t_test_type_vec: vec![TestType{ test_name: "test_name".to_string(), test_int: 1 , test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO}],
+            t_test_type_option: Some(TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO }),
             t_test_color: Color {
                 r: 50.0,
                 g: 50.0,
@@ -164,9 +165,9 @@ pub fn test_scheduled_reducer(ctx: &ReducerContext, mut row: TestScheduledTable)
                 t_test_enum: TestEnum::A,
                 t_test_enum_option: Some(TestEnum::A),
                 t_test_enum_vec: vec![TestEnum::A, TestEnum::B],
-                t_test_type: TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty },
-                t_test_type_vec: vec![TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty }, TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty }],
-                t_test_type_option: Some(TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty }),
+                t_test_type: TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO },
+                t_test_type_vec: vec![TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO  }, TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO }],
+                t_test_type_option: Some(TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO }),
                 t_test_color: Color {
                     r: 50.0,
                     g: 50.0,

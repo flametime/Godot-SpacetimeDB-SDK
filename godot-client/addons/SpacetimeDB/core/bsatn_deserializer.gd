@@ -316,7 +316,7 @@ func _get_primitive_reader_from_bsatn_type(bsatn_type_str: String) -> Callable:
 		&"I8": return Callable(self, "read_i8")
 		&"U128": return Callable(self, "read_u128")
 		&"__identity__": return Callable(self, "read_identity")
-		&"connection_id": return Callable(self, "read_connection_id")
+		&"__connection_id__": return Callable(self, "read_connection_id")
 		&"__timestamp_micros_since_unix_epoch__": return Callable(self, "read_timestamp")
 		&"__time_duration_micros__": return Callable(self, "read_timestamp")
 		&"scheduled_at": return Callable(self, "read_scheduled_at")
