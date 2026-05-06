@@ -256,9 +256,13 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	for view: Dictionary in schema_views:
 		var name :String= view.get("source_name", "").to_snake_case()
 		var return_type_dict: Dictionary = view.get("return_type", {})
-		var type_index := _unwrap_ref_index(return_type_dict)
+		var type_index :int = 0
+		if return_type_dict.has("Product"):
+			type_index = return_type_dict.get("Product").get("elements").get(0).get("algebraic_type").get("Ref")
+		else:
+			type_index = _unwrap_ref_index(return_type_dict)
 		if type_index < 0 or type_index >= parsed_types_list.size():
-			SpacetimePlugin.print_err("view return type not found: %s" % [return_type_dict])
+			SpacetimePlugin.print_err("view return type out of range: %s" % [return_type_dict])
 			continue
 
 		var return_type: Dictionary = parsed_types_list[type_index]
