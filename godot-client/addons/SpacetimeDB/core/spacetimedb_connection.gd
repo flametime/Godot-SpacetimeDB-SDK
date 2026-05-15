@@ -9,7 +9,20 @@ var _connection_requested: bool = false
 var _debug_mode: bool = false
 var version: String = "v1"
 # Protocol constants
-const BSATN_PROTOCOL = "v2.bsatn.spacetimedb"
+#
+# v3 (SpacetimeDB 2.2.0+, clockworklabs/SpacetimeDB PR #4761) does not
+# introduce a new outer message schema — it reuses the v2 ClientMessage /
+# ServerMessage values. The only on-the-wire change is that a single
+# WebSocket payload can contain one OR more BSATN-encoded v2 messages
+# concatenated back to back; senders may coalesce as they please, receivers
+# must decode sequentially until end-of-buffer.
+#
+# The existing BSATNDeserializer.process_bytes_and_extract_messages already
+# loops decoding messages from the incoming buffer until empty, so the
+# receive-side semantics work for free on v3. The send side keeps sending
+# one logical message per frame, which is still valid v3. A future
+# optimization is to coalesce client-side sends; not done in this PR.
+const BSATN_PROTOCOL = "v3.bsatn.spacetimedb"
 
 enum CompressionPreference { NONE = 0, BROTLI = 1, GZIP = 2 }
 var preferred_compression: CompressionPreference = CompressionPreference.NONE # Default to None
