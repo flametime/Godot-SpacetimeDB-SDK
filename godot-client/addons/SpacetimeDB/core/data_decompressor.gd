@@ -1,5 +1,12 @@
 class_name DataDecompressor extends RefCounted
 
+# Upper bound on the decompressed size of a single Brotli packet.
+# PackedByteArray.decompress_dynamic requires a hard cap. 64 MiB is
+# large enough to cover any reasonable single-frame BSATN payload from
+# a SpacetimeDB server; bigger payloads would already be refused by
+# the WebSocket layer's inbound_buffer_size on the way in.
+const BROTLI_MAX_DECOMPRESSED_BYTES: int = 64 * 1024 * 1024
+
 static func decompress_packet(compressed_bytes: PackedByteArray) -> PackedByteArray:
 	if compressed_bytes.is_empty():
 		return PackedByteArray()
@@ -33,3 +40,17 @@ static func decompress_packet(compressed_bytes: PackedByteArray) -> PackedByteAr
 			printerr("DataDecompressor Error: Failed while getting partial data.")
 			return []
 	return decompressed_data
+
+# Decompresses a Brotli-encoded payload using Godot's built-in
+# PackedByteArray.decompress_dynamic with FileAccess.COMPRESSION_BROTLI.
+# Godot doesn't ship a StreamPeerBrotli, so this is a one-shot non-streaming
+# call capped at BROTLI_MAX_DECOMPRESSED_BYTES.
+# Returns an empty PackedByteArray on failure (matches decompress_packet).
+static func decompress_brotli_packet(compressed_bytes: PackedByteArray) -> PackedByteArray:
+	if compressed_bytes.is_empty():
+		return PackedByteArray()
+	var decompressed: PackedByteArray = compressed_bytes.decompress_dynamic(
+		BROTLI_MAX_DECOMPRESSED_BYTES, FileAccess.COMPRESSION_BROTLI)
+	if decompressed.is_empty():
+		printerr("DataDecompressor Error: Brotli decompression returned empty payload (input %d bytes)." % compressed_bytes.size())
+	return decompressed

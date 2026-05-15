@@ -247,7 +247,7 @@ func _decompress_and_parse(raw_bytes: PackedByteArray) -> PackedByteArray:
 	var payload = raw_bytes.slice(1)
 	match compression:
 		0: pass
-		1: printerr("SpacetimeDBClient (Thread) : Brotli compression not supported!")
+		1: payload = DataDecompressor.decompress_brotli_packet(payload)
 		2: payload = DataDecompressor.decompress_packet(payload)
 	return payload
 
