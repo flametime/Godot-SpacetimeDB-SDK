@@ -2,7 +2,7 @@ use std::fmt::Display;
 use spacetimedb::*;
 use spacetimedb::rand::RngCore;
 use crate::main_types::color::Color;
-use crate::main_types::vectors::{Vector2, Vector3};
+use crate::main_types::vectors::{Vector2, Vector3, Vector4};
 
 #[derive(Debug, SpacetimeType, Clone, Default)]
 pub enum TestEnum {
@@ -110,6 +110,17 @@ impl Default for TestTableDatatypes {
         }
     }
 }
+
+#[table(accessor = test_native_array_like, public)]
+pub struct TestNativeArrayLikes{
+    #[primary_key]
+    pub vector2: Vector2,
+    pub color: Color,
+    pub vector3: Vector3,
+    pub vector4: Vector4,
+
+}
+
 #[derive(Debug, Clone)]
 #[table(accessor = test_scheduled_table, public, scheduled(test_scheduled_reducer), index(accessor = get_by_public_count, btree(columns = [public_count])))]
 pub struct TestScheduledTable {
@@ -474,4 +485,15 @@ pub struct TestEventTable{
 #[reducer]
 pub fn trigger_event(ctx:&ReducerContext){
     ctx.db.test_event_table().insert(TestEventTable{ id: ctx.rng().next_u32(), id2: ctx.rng().next_u32() });
+}
+
+#[reducer]
+pub fn test_native_array_like_reducer(ctx:&ReducerContext, vector2: Vector2, color: Color){//, vector3: Vector3, vector4: Vector4){
+    ctx.db.test_native_array_like().vector2().insert_or_update(TestNativeArrayLikes{
+        vector2,
+        vector3: Vector3{x:10.0,y:10.0, z:10.0},
+        vector4: Vector4{x:10.0,y:10.0, z:10.0, w: 10.0},
+        color,
+    });
+
 }

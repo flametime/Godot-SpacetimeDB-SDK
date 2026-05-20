@@ -36,7 +36,7 @@ func _on_spacetimedb_connected(identity: PackedByteArray, _token: String) -> voi
 	sub.applied.connect(func() -> void:
 		print("User Subscription Applied")
 		await get_tree().create_timer(3).timeout
-		sub.unsubscribe()
+		#sub.unsubscribe()
 		)
 	sub.end.connect(func() -> void:
 		print("User Subscription ended")
@@ -143,7 +143,8 @@ func _on_button_3_pressed() -> void:
 	procedure_call9.response.connect(procedure_response.bind(procedure_call9))
 	var procedure_call10 := SpacetimeDB.Main.procedures.procedure_test_no_return()
 	procedure_call10.response.connect(procedure_response.bind(procedure_call10))
-
+	var reducer_call1 := SpacetimeDB.Main.reducers.test_native_array_like_reducer(Vector2(10,10), Color.WHITE) #Vector3(10,10,10), Vector4(10,10,10,10), Color.GOLD)
+	reducer_call1.response.connect(func(update: ReducerResultMessage) -> void: print("Reducer reducer_call1 returned with %s" % update))
 	print("procedures tested") # Replace with function body.
 
 
