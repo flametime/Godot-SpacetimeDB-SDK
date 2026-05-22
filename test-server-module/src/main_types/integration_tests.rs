@@ -2,7 +2,7 @@ use std::fmt::Display;
 use spacetimedb::*;
 use spacetimedb::rand::RngCore;
 use crate::main_types::color::Color;
-use crate::main_types::vectors::{Vector2, Vector3};
+use crate::main_types::vectors::{Vector2, Vector3, Vector4};
 
 #[derive(Debug, SpacetimeType, Clone, Default)]
 pub enum TestEnum {
@@ -31,7 +31,8 @@ pub enum TestNestedEnum{
 pub struct  TestType {
     pub test_name : String,
     pub test_int: u64,
-    pub test_nested_enum: TestNestedEnum
+    pub test_nested_enum: TestNestedEnum,
+    pub test_connection_id: ConnectionId
 }
 
 #[table(accessor = test_table_datatypes, public)]
@@ -91,9 +92,9 @@ impl Default for TestTableDatatypes {
             t_test_enum: TestEnum::default(),
             t_test_enum_vec: vec![TestEnum::default()],
             t_test_enum_option: Some(TestEnum::default()),
-            t_test_type: TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty },
-            t_test_type_vec: vec![TestType{ test_name: "test_name".to_string(), test_int: 1 , test_nested_enum: TestNestedEnum::OkEmpty}],
-            t_test_type_option: Some(TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty }),
+            t_test_type: TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO },
+            t_test_type_vec: vec![TestType{ test_name: "test_name".to_string(), test_int: 1 , test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO}],
+            t_test_type_option: Some(TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO }),
             t_test_color: Color {
                 r: 50.0,
                 g: 50.0,
@@ -109,6 +110,17 @@ impl Default for TestTableDatatypes {
         }
     }
 }
+
+#[table(accessor = test_native_array_like, public)]
+pub struct TestNativeArrayLikes{
+    #[primary_key]
+    pub vector2: Vector2,
+    pub color: Color,
+    pub vector3: Vector3,
+    pub vector4: Vector4,
+
+}
+
 #[derive(Debug, Clone)]
 #[table(accessor = test_scheduled_table, public, scheduled(test_scheduled_reducer), index(accessor = get_by_public_count, btree(columns = [public_count])))]
 pub struct TestScheduledTable {
@@ -164,9 +176,9 @@ pub fn test_scheduled_reducer(ctx: &ReducerContext, mut row: TestScheduledTable)
                 t_test_enum: TestEnum::A,
                 t_test_enum_option: Some(TestEnum::A),
                 t_test_enum_vec: vec![TestEnum::A, TestEnum::B],
-                t_test_type: TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty },
-                t_test_type_vec: vec![TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty }, TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty }],
-                t_test_type_option: Some(TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty }),
+                t_test_type: TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO },
+                t_test_type_vec: vec![TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO  }, TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO }],
+                t_test_type_option: Some(TestType{ test_name: "test_name".to_string(), test_int: 1, test_nested_enum: TestNestedEnum::OkEmpty, test_connection_id: ConnectionId::ZERO }),
                 t_test_color: Color {
                     r: 50.0,
                     g: 50.0,
@@ -215,7 +227,7 @@ pub fn clear_integration_tests(ctx: &ReducerContext) -> Result<(),String> {
 }
 
 #[reducer]
-pub fn reducer_test_parameters(ctx: &ReducerContext, datatypes: TestTableDatatypes, t_u32: u32, t_u64: u64, t_string: String, test_enum: TestEnum, test_nested_enum: TestNestedEnum, t_vec_u32: Vec<u32> ) -> Result<(),String> {
+pub fn reducer_test_parameters(ctx: &ReducerContext, connection_id: ConnectionId , datatypes: TestTableDatatypes, t_u32: u32, t_u64: u64, t_string: String, test_enum: TestEnum, test_nested_enum: TestNestedEnum, t_vec_u32: Vec<u32> ) -> Result<(),String> {
     if !datatypes.t_vec_string.first().eq(&Some(&"hello world".to_string())){
         return Err(format!("ReducerTest: datatypes parameter {} is not 'hello world'", datatypes.t_vec_string.first().unwrap()));
     }
@@ -473,4 +485,15 @@ pub struct TestEventTable{
 #[reducer]
 pub fn trigger_event(ctx:&ReducerContext){
     ctx.db.test_event_table().insert(TestEventTable{ id: ctx.rng().next_u32(), id2: ctx.rng().next_u32() });
+}
+
+#[reducer]
+pub fn test_native_array_like_reducer(ctx:&ReducerContext, vector2: Vector2, color: Color){//, vector3: Vector3, vector4: Vector4){
+    ctx.db.test_native_array_like().vector2().insert_or_update(TestNativeArrayLikes{
+        vector2,
+        vector3: Vector3{x:10.0,y:10.0, z:10.0},
+        vector4: Vector4{x:10.0,y:10.0, z:10.0, w: 10.0},
+        color,
+    });
+
 }

@@ -59,7 +59,6 @@ func _enter_tree():
 [ul]
 Name: Required
 Alias: Optional
-Hide scheduled reducer: Hides the scheduled reducer from the client.
 Hide private tables: Hides private tables from the client.
 [/ul]
 
