@@ -36,9 +36,9 @@ Label/styles/normal = SubResource("StyleBoxTexture_m5x7f")
 script = ExtResource("4_ruhfi")
 metadata/primary_key = "vector_2"
 metadata/bsatn_type_vector_2 = &"Vector2"
+metadata/bsatn_type_color = &"Color"
 metadata/bsatn_type_vector_3 = &"Vector3"
 metadata/bsatn_type_vector_4 = &"Vector4"
-metadata/bsatn_type_color = &"Color"
 metadata/bsatn_type_quaternion = &"Vector4"
 
 [sub_resource type="Resource" id="Resource_sijad"]

@@ -11,26 +11,22 @@ func _ready() -> void:
 func _initialize_player_on_insert(user_data: MainUserData) -> void:
 	if get_meta("id") != user_data.identity:
 		return
-	#last_position = Vector2(user_data.last_position.x, user_data.last_position.y)
+	last_position = Vector2(user_data.last_position.x, user_data.last_position.y)
 	$RichTextLabel.text = "[wave]"+ user_data.name
 
 func _update_player_on_row_update(_prev_value: MainUserData, user_data: MainUserData) -> void:
 	if get_meta("id") != user_data.identity:
 		return
-	#last_position = Vector2(user_data.last_position.x, user_data.last_position.y)
+	last_position = Vector2(user_data.last_position.x, user_data.last_position.y)
 
 func _process(delta: float) -> void:
 	if not SpacetimeDB.Main.is_connected_db():
 		return
-
+	if not last_position.is_equal_approx(global_position):
+		global_position = global_position.lerp(last_position, 10 * delta)
 	#if get_meta("local") == true:
 	var mouse_pos : Vector2 = get_global_mouse_position()
 	if last_position.is_equal_approx(mouse_pos):
 		return
-	prints(mouse_pos, last_position)
-	last_position = mouse_pos
-	var vec_to2d := Vector3(last_position.x, last_position.y, 0)
-
+	var vec_to2d := Vector3(mouse_pos.x, mouse_pos.y, 0)
 	SpacetimeDB.Main.reducers.move_user(Vector2(0,0), vec_to2d)
-
-	global_position = global_position.lerp(last_position, 10 * delta)

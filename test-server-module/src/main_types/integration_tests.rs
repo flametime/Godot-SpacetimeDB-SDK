@@ -227,7 +227,7 @@ pub fn clear_integration_tests(ctx: &ReducerContext) -> Result<(),String> {
 }
 
 #[reducer]
-pub fn reducer_test_parameters(ctx: &ReducerContext, datatypes: TestTableDatatypes, t_u32: u32, t_u64: u64, t_string: String, test_enum: TestEnum, test_nested_enum: TestNestedEnum, t_vec_u32: Vec<u32> ) -> Result<(),String> {
+pub fn reducer_test_parameters(ctx: &ReducerContext, connection_id: ConnectionId , datatypes: TestTableDatatypes, t_u32: u32, t_u64: u64, t_string: String, test_enum: TestEnum, test_nested_enum: TestNestedEnum, t_vec_u32: Vec<u32> ) -> Result<(),String> {
     if !datatypes.t_vec_string.first().eq(&Some(&"hello world".to_string())){
         return Err(format!("ReducerTest: datatypes parameter {} is not 'hello world'", datatypes.t_vec_string.first().unwrap()));
     }

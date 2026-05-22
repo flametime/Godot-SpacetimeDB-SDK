@@ -96,7 +96,7 @@ func _on_button_pressed() -> void:
 		Vector2.ONE,
 		Vector3.ONE )
 
-	var call2 : SpacetimeDBReducerCall = SpacetimeDB.Main.reducers.reducer_test_parameters(main_test_datatypes, 32,64,"hello world",MainTestEnum.create_a(),MainTestNestedEnum.create_ok_empty(),[32,32])
+	var call2 : SpacetimeDBReducerCall = SpacetimeDB.Main.reducers.reducer_test_parameters(SpacetimeDB.Main._connection_id, main_test_datatypes, 32,64,"hello world",MainTestEnum.create_a(),MainTestNestedEnum.create_ok_empty(),[32,32])
 	call2.on_ok.connect(func(update: ReducerResultMessage) -> void: print("Reducer call2 returned Ok with %s" % update))
 	call2.on_error.connect(func(err: String) -> void: print("Reducer call2 returned err with %s" % err))
 	var time2 := Time.get_ticks_usec()

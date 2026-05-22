@@ -4,7 +4,7 @@ func _ready() -> void:
 	var options := SpacetimeDBConnectionOptions.new()
 
 	options.one_time_token = true # <--- anonymous-like. set to false to persist
-	options.debug_mode = false # <--- enables lots of additional debug prints and warnings
+	options.debug_mode = true # <--- enables lots of additional debug prints and warnings
 	options.compression = SpacetimeDBConnection.CompressionPreference.GZIP
 	options.threading = false
 	# Increase buffer size. In general, you don't need this.
