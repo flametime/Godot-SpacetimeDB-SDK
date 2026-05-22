@@ -323,7 +323,7 @@ func _get_primitive_reader_from_bsatn_type(bsatn_type_str: String) -> Callable:
 		&"Bool": return Callable(self, "read_bool")
 		&"String": return Callable(self, "read_string_with_u32_len")
 		&"SubscribeAppliedMessage": return Callable(self, "_read_subscripton_applied_message")
-		&"UnsubscribeAppliedMessage": return Callable(self, "_read_unsubscripton_applied_message")
+		&"UnsubscribeAppliedMessage": return Callable(self, "_read_unsubscription_applied_message")
 		&"SubscriptionErrorMessage": return Callable(self, "_read_subscription_error_message")
 		&"TransactionUpdateMessage": return Callable(self, "_read_transaction_update_message")
 		&"OneOffQueryResponseMessage": return Callable(self, "_read_one_off_query_message")
@@ -587,7 +587,8 @@ func _read_subscripton_applied_message(spb: StreamPeerBuffer) -> SubscribeApplie
 
 # V2 SubscribeApplied: request_id, query_set_id, rows (QueryRows = tables: [SingleTableRows]).
 # Each SingleTableRows = table (RawIdentifier string), rows (BsatnRowList) — no compression tag.
-func _read_unsubscripton_applied_message(spb: StreamPeerBuffer) -> UnsubscribeAppliedMessage:
+func _read_unsubscription_applied_message(spb: StreamPeerBuffer) -> UnsubscribeAppliedMessage:
+	print("Unsubscription_Applied_message parse begin")
 	var sub_app_resource: UnsubscribeAppliedMessage = UnsubscribeAppliedMessage.new()
 	sub_app_resource.request_id = read_u32_le(spb)
 	if sub_app_resource.query_id == null:

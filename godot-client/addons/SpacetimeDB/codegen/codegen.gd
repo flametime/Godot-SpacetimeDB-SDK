@@ -622,7 +622,7 @@ func _generate_reducers_gdscript(
 
 		content += "\n".join(description_comment) + "\n"
 		var reducer_name: String = reducer_def.get("name", "")
-		var reducer_source_name: String = reducer_def.get("source_name", reducer_name)
+		var reducer_source_name: String = reducer_def.get("name", reducer_name)
 		content += "func %s(%s) -> SpacetimeDBReducerCall:\n" % [reducer_name, params_str] + \
 			"\treturn _client.call_reducer('%s', [%s], [%s])\n\n" % [
 				reducer_source_name,
@@ -675,7 +675,7 @@ func _generate_procedures_gdscript(
 
 		content += "\n".join(description_comment) + "\n"
 		var procedure_name: String = procedure_def.get("name", "")
-		var procedure_source_name: String = procedure_def.get("source_name", procedure_name)
+		var procedure_source_name: String = procedure_def.get("name", procedure_name)
 		content += "func %s(%s) -> SpacetimeDBProcedureCall:\n" % [procedure_name, params_str] + \
 			"\treturn _client.call_procedure('%s', [%s], [%s], '%s')\n\n" % [
 				procedure_source_name,
