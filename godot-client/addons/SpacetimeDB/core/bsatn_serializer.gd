@@ -126,7 +126,7 @@ func _get_primitive_writer_from_bsatn_type(bsatn_type_str: String) -> Callable:
 			return Callable(self, "write_i8")
 		"__identity__":
 			return Callable(self, "write_identity")
-		"connection_id":
+		"__connection_id__":
 			return Callable(self, "write_connection_id")
 		"__timestamp_micros_since_unix_epoch__":
 			return Callable(self, "write_timestamp")

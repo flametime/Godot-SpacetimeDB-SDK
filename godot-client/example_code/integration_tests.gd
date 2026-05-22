@@ -36,7 +36,7 @@ func _on_spacetimedb_connected(identity: PackedByteArray, _token: String) -> voi
 	sub.applied.connect(func() -> void:
 		print("User Subscription Applied")
 		await get_tree().create_timer(3).timeout
-		sub.unsubscribe()
+		#sub.unsubscribe()
 		)
 	sub.end.connect(func() -> void:
 		print("User Subscription ended")
@@ -96,7 +96,7 @@ func _on_button_pressed() -> void:
 		Vector2.ONE,
 		Vector3.ONE )
 
-	var call2 : SpacetimeDBReducerCall = SpacetimeDB.Main.reducers.reducer_test_parameters(main_test_datatypes, 32,64,"hello world",MainTestEnum.create_a(),MainTestNestedEnum.create_ok_empty(),[32,32])
+	var call2 : SpacetimeDBReducerCall = SpacetimeDB.Main.reducers.reducer_test_parameters(SpacetimeDB.Main._connection_id, main_test_datatypes, 32,64,"hello world",MainTestEnum.create_a(),MainTestNestedEnum.create_ok_empty(),[32,32])
 	call2.on_ok.connect(func(update: ReducerResultMessage) -> void: print("Reducer call2 returned Ok with %s" % update))
 	call2.on_error.connect(func(err: String) -> void: print("Reducer call2 returned err with %s" % err))
 	var time2 := Time.get_ticks_usec()
@@ -143,7 +143,8 @@ func _on_button_3_pressed() -> void:
 	procedure_call9.response.connect(procedure_response.bind(procedure_call9))
 	var procedure_call10 := SpacetimeDB.Main.procedures.procedure_test_no_return()
 	procedure_call10.response.connect(procedure_response.bind(procedure_call10))
-
+	var reducer_call1 := SpacetimeDB.Main.reducers.test_native_array_like_reducer(Vector2(10,10), Color.WHITE) #Vector3(10,10,10), Vector4(10,10,10,10), Color.GOLD)
+	reducer_call1.response.connect(func(update: ReducerResultMessage) -> void: print("Reducer reducer_call1 returned with %s" % update))
 	print("procedures tested") # Replace with function body.
 
 

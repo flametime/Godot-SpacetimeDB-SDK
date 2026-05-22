@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://b6djqj4ukqhqb" path="res://icons/mouse.png" id="1_iog6k"]
 [ext_resource type="Script" uid="uid://dos40m6xo6f7l" path="res://example_code/mouse.gd" id="2_dexx5"]
 [ext_resource type="Script" uid="uid://jvk6ou7i2d4s" path="res://addons/SpacetimeDB/nodes/row_receiver/row_receiver.gd" id="3_j7mu1"]
-[ext_resource type="Script" uid="uid://bfraf7hx3dwg1" path="res://spacetime_bindings/schema/types/main_user_data.gd" id="4_iog6k"]
+[ext_resource type="Script" uid="uid://8rt4f3cbytb1" path="res://spacetime_bindings/schema/types/main_user_data.gd" id="4_iog6k"]
 
 [sub_resource type="Resource" id="Resource_dexx5"]
 script = ExtResource("4_iog6k")
