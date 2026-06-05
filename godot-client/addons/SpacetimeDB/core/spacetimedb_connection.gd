@@ -165,7 +165,7 @@ func disconnect_from_server(code: int = 1000, reason: String = "Client initiated
 func is_connected_db() -> bool:
 	return _is_connected
 
-func _physics_process(delta: float) -> void:
+func _process(delta: float) -> void:
 	if _websocket == null: return
 
 	_websocket.poll()
@@ -181,6 +181,8 @@ func _physics_process(delta: float) -> void:
 
 			# Process incoming packets
 			while _websocket.get_available_packet_count() > 0:
+				if _websocket.get_available_packet_count() > 1:
+					_print_log("SpacetimeDBConnection: waiting packages " + str(_websocket.get_available_packet_count()))
 				var packet_bytes := _websocket.get_packet()
 				if packet_bytes.is_empty(): continue
 
@@ -188,8 +190,8 @@ func _physics_process(delta: float) -> void:
 				_second_bytes_received += packet_bytes.size()
 				_total_messages_received += 1
 				_second_messages_received += 1
-
 				message_received.emit(packet_bytes)
+
 				total_messages.emit(_total_messages_send, _total_messages_received)
 				total_bytes.emit(_total_bytes_send, _total_bytes_received)
 

@@ -199,8 +199,8 @@ func _on_websocket_message_received(raw_bytes: PackedByteArray):
 		_packet_mutex.unlock()
 		_packet_semaphore.post()
 	else:
-		var message = _parse_packet_and_get_resource(_decompress_and_parse(raw_bytes))
-		_result_queue.append(message)
+		var message := _parse_packet_and_get_resource(_decompress_and_parse(raw_bytes))
+		_handle_parsed_message(message)
 
 func _thread_loop() -> void:
 	while not _thread_should_exit:

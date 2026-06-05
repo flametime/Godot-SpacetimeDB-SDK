@@ -90,8 +90,8 @@ func _get_primary_key_field(table_name_lower: String) -> StringName:
 	var schema := _schema.get_type_script(table_type)
 	var instance = schema.new() # Need instance for metadata/properties
 
-	if instance and instance.has_meta("primary_key"):
-		var pk_field: StringName = instance.get_meta("primary_key")
+	if instance:
+		var pk_field: StringName = instance["primary_key"]
 		_primary_key_cache[table_name_lower] = pk_field
 		return pk_field
 

@@ -294,7 +294,7 @@ func write_option(option_value: Option, bsatn_type: String, prop: Dictionary) ->
 
 func write_rust_enum(rust_enum: RustEnum) -> void:
 	write_u8(rust_enum.value)
-	var options = rust_enum.get_meta("enum_options")
+	var options = rust_enum["enum_options"]
 	var sub_class := String(options[rust_enum.value]).to_lower()
 	var data = rust_enum.data
 
@@ -527,8 +527,7 @@ func _serialize_resource_fields(resource: Resource) -> bool:
 		var value = resource.get(prop.name)
 		var bsatn_type := ""
 		var meta_key := "bsatn_type_" + String(prop.name)
-		if resource.has_meta(meta_key):
-			bsatn_type = String(resource.get_meta(meta_key))
+		bsatn_type = resource.get(meta_key) if resource.get(meta_key) else ""
 
 		if bsatn_type.is_empty() and prop.type == TYPE_OBJECT and value is Resource:
 			write_nested_resource(value)

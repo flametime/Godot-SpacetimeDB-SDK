@@ -57,7 +57,6 @@ func _load_files(path: String, dict:Dictionary[StringName, GDScript], is_core: b
 				prints("path", script_path, "is not part of core or module %s. skipped" % module_name)
 			continue
 
-
 		if not ResourceLoader.exists(script_path):
 			printerr("SpacetimeDBSchema: Script file not found or inaccessible: ", script_path, " (Original name: ", file_name, ")")
 			continue

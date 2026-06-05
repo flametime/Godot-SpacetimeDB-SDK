@@ -32,7 +32,12 @@ pub struct  TestType {
     pub test_name : String,
     pub test_int: u64,
     pub test_nested_enum: TestNestedEnum,
-    pub test_connection_id: ConnectionId
+    pub test_connection_id: ConnectionId,
+}
+
+#[derive(Debug, SpacetimeType, Clone)]
+pub struct TestNestedType {
+    pub test_nest: Option<Box<TestNestedType>>
 }
 
 #[table(accessor = test_table_datatypes, public)]
@@ -140,7 +145,11 @@ pub fn test_scheduled_reducer(ctx: &ReducerContext, mut row: TestScheduledTable)
     row.public_count += 1;
     // ctx.db.test_no_pk_table().insert(ViewType{ row: row.public_count, name: "Hello World".to_string() });
     ctx.db.test_scheduled_table().scheduled_id().update(row);
-    if ctx.db.test_table_datatypes().count() < 10 {
+    if ctx.db.test_table_datatypes().count() < 100 {
+        ctx.db.test_table_datatypes().insert(TestTableDatatypes::default());
+        ctx.db.test_table_datatypes().insert(TestTableDatatypes::default());
+        ctx.db.test_table_datatypes().insert(TestTableDatatypes::default());
+        ctx.db.test_table_datatypes().insert(TestTableDatatypes::default());
         ctx.db.test_table_datatypes().insert(TestTableDatatypes::default());
     }
     for row in ctx.db.test_table_datatypes().iter() {
@@ -196,8 +205,9 @@ pub fn test_scheduled_reducer(ctx: &ReducerContext, mut row: TestScheduledTable)
 }
 
 #[reducer]
-pub fn start_integration_tests(ctx: &ReducerContext) {
+pub fn start_integration_tests(ctx: &ReducerContext, test_nested_type: TestNestedType) {
     log::info!("start_integration_tests called");
+    log::info!("test: {:?}", test_nested_type);
     ctx.db.test_scheduled_table().insert(TestScheduledTable {
         scheduled_id: 0,
         h1: 1,

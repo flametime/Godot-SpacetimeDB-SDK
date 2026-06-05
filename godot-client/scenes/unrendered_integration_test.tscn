@@ -1,0 +1,74 @@
+[gd_scene format=3 uid="uid://cwronaa4blrhs"]
+
+[ext_resource type="Script" uid="uid://bg5ywsrsomvr7" path="res://example_code/integration_tests.gd" id="1_48yp7"]
+[ext_resource type="Script" uid="uid://c740d6bd5f45g" path="res://scenes/unrendered_tests_label.gd" id="2_iikab"]
+[ext_resource type="Script" uid="uid://jvk6ou7i2d4s" path="res://addons/SpacetimeDB/nodes/row_receiver/row_receiver.gd" id="3_i1b4k"]
+[ext_resource type="Script" uid="uid://bdyg80vfb67vt" path="res://spacetime_bindings/schema/types/main_test_table_datatypes.gd" id="4_i1b4k"]
+[ext_resource type="Script" uid="uid://6asbt4f8qu6s" path="res://spacetime_bindings/schema/types/main_test_enum.gd" id="5_7lrkc"]
+[ext_resource type="Script" uid="uid://5cko2kja42f7" path="res://spacetime_bindings/schema/types/main_test_type.gd" id="6_2vwu8"]
+
+[sub_resource type="Resource" id="Resource_rv3td"]
+script = ExtResource("4_i1b4k")
+metadata/_custom_type_script = "uid://bdyg80vfb67vt"
+
+[node name="UnrenderedIntegrationTest" type="Control" unique_id=10444912]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_48yp7")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=302676965]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="RichTextLabel" type="RichTextLabel" parent="VBoxContainer" unique_id=1292210814]
+layout_mode = 2
+size_flags_vertical = 3
+autowrap_mode = 0
+threaded = true
+script = ExtResource("2_iikab")
+
+[node name="Receiver [MainTestTableDatatypes]" type="Node" parent="VBoxContainer/RichTextLabel" unique_id=922586806]
+script = ExtResource("3_i1b4k")
+table_to_receive = SubResource("Resource_rv3td")
+selected_table_name = "test_table_datatypes"
+metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=695135595]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Button" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=443760364]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Start Tests"
+
+[node name="Button2" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=1632909046]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "End_tests"
+
+[node name="Button3" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=2011909452]
+layout_mode = 2
+text = "Test Procedures"
+
+[node name="Button4" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=155085604]
+layout_mode = 2
+text = "Close App"
+
+[connection signal="delete" from="VBoxContainer/RichTextLabel/Receiver [MainTestTableDatatypes]" to="VBoxContainer/RichTextLabel" method="_on_receiver_main_test_table_datatypes_delete"]
+[connection signal="insert" from="VBoxContainer/RichTextLabel/Receiver [MainTestTableDatatypes]" to="VBoxContainer/RichTextLabel" method="_on_receiver_main_test_table_datatypes_insert"]
+[connection signal="transactions_completed" from="VBoxContainer/RichTextLabel/Receiver [MainTestTableDatatypes]" to="VBoxContainer/RichTextLabel" method="_on_receiver_main_test_table_datatypes_transactions_completed"]
+[connection signal="update" from="VBoxContainer/RichTextLabel/Receiver [MainTestTableDatatypes]" to="VBoxContainer/RichTextLabel" method="_on_receiver_main_test_table_datatypes_update"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/Button" to="." method="_on_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/Button2" to="." method="_on_button_2_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/Button3" to="." method="_on_button_3_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/Button4" to="." method="_on_button_4_pressed"]
