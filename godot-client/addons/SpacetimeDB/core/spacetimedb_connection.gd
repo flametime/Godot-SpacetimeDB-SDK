@@ -47,7 +47,7 @@ func _init(options: SpacetimeDBConnectionOptions,db_name:String):
 	_websocket.outbound_buffer_size = options.outbound_buffer_size
 	set_compression_preference(options.compression)
 	self._debug_mode = options.debug_mode
-	set_physics_process(false) # Don't process until connect is called
+	set_process(false) # Don't process until connect is called
 
 func _print_log(log_message:String):
 	if _debug_mode:
@@ -154,7 +154,7 @@ func connect_to_database(base_url: String, database_name: String, connection_id:
 	else:
 		_print_log("SpacetimeDBConnection: Connection initiated.")
 		_connection_requested = true
-		set_physics_process(true)
+		set_process(true)
 
 func disconnect_from_server(code: int = 1000, reason: String = "Client initiated disconnect"):
 	if _websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED and _websocket.get_ready_state() != WebSocketPeer.STATE_CLOSING:
@@ -218,7 +218,7 @@ func _process(delta: float) -> void:
 			_is_connected = false
 			_connection_requested = false
 			get_tree().auto_accept_quit = true
-			set_physics_process(false) # Stop polling
+			set_process(false) # Stop polling
 
 
 func _handle_game_closing():

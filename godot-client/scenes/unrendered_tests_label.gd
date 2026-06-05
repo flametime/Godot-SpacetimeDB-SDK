@@ -29,7 +29,6 @@ func _on_spacetimedb_connected(identity: PackedByteArray, _token: String) -> voi
 func _on_receiver_main_test_table_datatypes_transactions_completed() -> void:
 	#clear()
 	add_text("transaction finished\n") # Replace with function body.
-	prints("transaction finished:", Time.get_ticks_usec())
 	new_tx = true
 
 func _on_receiver_main_test_table_datatypes_insert(_row: _ModuleTableType) -> void:
