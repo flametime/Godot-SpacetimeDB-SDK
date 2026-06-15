@@ -8,16 +8,8 @@ enum Options {
 	internalError,
 }
 
-func _init() -> void:
-	_reset_metadata()
-
-func _reset_metadata() -> void:
-	# Clear old metadata
-	for key : StringName in get_meta_list():
-		set_meta(key, null)
-
-	set_meta('enum_options', [&'ReducerResultOk', &'', &'vec_U8', &'String'])
-	set_meta('bsatn_enum_type', &'ReducerOutcomeEnum')
+const enum_options: Array[StringName] = [&'ReducerResultOk', &'', &'vec_U8', &'String']
+const bsatn_enum_type: StringName = &'ReducerOutcomeEnum'
 
 static func parse_enum_name(i: int) -> String:
 	match i:

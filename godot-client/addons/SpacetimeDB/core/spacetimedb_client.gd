@@ -188,7 +188,7 @@ func _save_token(token_to_save: String):
 		printerr("SpacetimeDBClient: Failed to save token to path: ", token_save_path)
 
 # --- WebSocket Message Handling ---
-func _physics_process(_delta: float) -> void:
+func _process(_delta: float) -> void:
 	_process_results_asynchronously()
 
 func _on_websocket_message_received(raw_bytes: PackedByteArray):
@@ -199,8 +199,8 @@ func _on_websocket_message_received(raw_bytes: PackedByteArray):
 		_packet_mutex.unlock()
 		_packet_semaphore.post()
 	else:
-		var message = _parse_packet_and_get_resource(_decompress_and_parse(raw_bytes))
-		_result_queue.append(message)
+		var message := _parse_packet_and_get_resource(_decompress_and_parse(raw_bytes))
+		_handle_parsed_message(message)
 
 func _thread_loop() -> void:
 	while not _thread_should_exit:
@@ -212,7 +212,8 @@ func _thread_loop() -> void:
 		if _packet_queue.is_empty():
 			_packet_mutex.unlock()
 			continue
-
+		if _packet_queue.size() >1:
+			print_log("BSATN-Thread: package_queue: " + str(_packet_queue.size()))
 		var packet_to_process: PackedByteArray = _packet_queue.pop_back()
 		_packet_mutex.unlock()
 
@@ -238,6 +239,8 @@ func _process_results_asynchronously():
 
 	while not _result_queue.is_empty() and processed_count < _message_limit_in_frame:
 		_handle_parsed_message(_result_queue.pop_front())
+		if _result_queue.size() >= 1:
+			print_log("BSATN-Thread: result_queue: " + str(_result_queue.size()))
 		processed_count += 1
 
 	if use_threading: _result_mutex.unlock()

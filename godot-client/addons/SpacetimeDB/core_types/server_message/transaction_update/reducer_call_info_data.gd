@@ -7,7 +7,7 @@ class_name ReducerCallInfoData extends Resource
 @export var request_id: int # u32
 @export var execution_time: int
 
-func _init():
-	set_meta("bsatn_type_reducer_id", "U32")
-	set_meta("bsatn_type_request_id", "U32")
-	set_meta("bsatn_type_execution_time", "I64")
+
+const bsatn_type_reducer_id: StringName = &"U32"
+const bsatn_type_request_id: StringName = &"U32"
+const bsatn_type_execution_time: StringName = &"I64"

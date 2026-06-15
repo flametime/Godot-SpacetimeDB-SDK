@@ -302,7 +302,7 @@ func read_bsatn_row_list(spb: StreamPeerBuffer) -> Array[PackedByteArray]:
 #region --- Core Deserialization Logic ---
 
 # Helper to get a primitive reader Callable based on a BSATN type string.
-func _get_primitive_reader_from_bsatn_type(bsatn_type_str: String) -> Callable:
+func _get_primitive_reader_from_bsatn_type(bsatn_type_str: StringName) -> Callable:
 	match bsatn_type_str:
 		&"U64": return Callable(self, "read_u64_le")
 		&"I64": return Callable(self, "read_i64_le")
@@ -334,7 +334,7 @@ func _get_primitive_reader_from_bsatn_type(bsatn_type_str: String) -> Callable:
 
 ## Populates the value property of a sumtype enum
 func _populate_enum_from_bytes(spb: StreamPeerBuffer, resource: Resource) -> void:
-	var enum_types: Array = resource.get_meta("enum_options")
+	var enum_types: Array = resource["enum_options"]
 	var pos = spb.get_position()
 	var enum_variant: int = spb.get_u8()
 	resource.value = enum_variant
@@ -721,7 +721,7 @@ func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 	for prop in properties:
 		if not (prop.usage & PROPERTY_USAGE_STORAGE):
 			continue
-		var bsatn_type_str: StringName = result_resource.get_meta("bsatn_type_"+prop.name)
+		var bsatn_type_str: StringName = result_resource["bsatn_type_"+prop.name]
 		var reader_callablce := _get_primitive_reader_from_bsatn_type(bsatn_type_str)
 		if reader_callablce.is_valid():
 			result_resource[prop.name] = reader_callablce.call(spb)
