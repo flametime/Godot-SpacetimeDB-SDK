@@ -32,7 +32,7 @@ const GDNATIVE_ARRAYLIKE_TYPES: Dictionary[String, String] = {
 }
 
 const GDNATIVE_DICTLIKE_TYPES: Dictionary[String, String] = {
-	"Plane": "Plane",
+	#"Plane": "Plane",
 }
 
 const BUILTIN_TYPE_NAMES: Dictionary[String, bool] = {
@@ -77,8 +77,6 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 			"name": _resolve_godot_type_hint(type_name, module_pascal),
 			"godot_type_hint": _resolve_godot_type_hint(type_name, module_pascal),
 		}
-		if _is_gd_native(type_name):
-			_set_gd_native(type_name, type_data)
 
 		var ty_idx := int(type_info.get("ty", -1))
 		if ty_idx < 0:
@@ -106,8 +104,7 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 
 			if not type_data.has("gd_native") and not _validate_struct_fields(
 				type_data.get("struct", []),
-				type_name
-			):
+				type_name):
 				return parsed_schema
 
 			parsed_types_list.append(type_data)
@@ -242,15 +239,13 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 		schema_reducers,
 		schema_types_raw,
 		parsed_types_list,
-		module_pascal,
-		false
+		module_pascal
 	)
 	var parsed_procedure_list: Array[Dictionary] = _parse_callables(
 		schema_procedures,
 		schema_types_raw,
 		parsed_types_list,
-		module_pascal,
-		true
+		module_pascal
 	)
 
 	for view: Dictionary in schema_views:
@@ -345,11 +340,6 @@ static func _source_name(value: Variant) -> String:
 			return str(value.get("some", ""))
 	return "" if value == null else str(value)
 
-static func _snake_name(value: Variant, module_pascal: StringName) -> String:
-	return (module_pascal+ "_"+_source_name(value)).to_snake_case()
-
-static func _variant_name(variant: Dictionary) -> String:
-	return str(variant.get("name", {}).get("some", ""))
 
 static func _unwrap_ref_index(node: Dictionary) -> int:
 	if node.has("Ref"):
@@ -515,23 +505,6 @@ static func _parse_type_info(
 		"godot_type_hint": _resolve_godot_type_hint(fallback_name,module_pascal),
 	}
 
-static func _parse_type_name(
-	field_type: Dictionary,
-	schema_types: Array,
-	module_pascal: String
-) -> Dictionary:
-	return _parse_type_info(field_type, schema_types, module_pascal, false)
-
-static func _parse_return_data(
-	field_type: Dictionary,
-	schema_types: Array,
-	module_pascal: String
-) -> Dictionary:
-	var data: Dictionary = _parse_type_info(field_type, schema_types, module_pascal, true)
-	if data.is_empty():
-		data["type"] = ""
-		data["godot_type_hint"] = "Variant"
-	return data
 
 static func _parse_named_elements(
 	elements: Array,
@@ -543,10 +516,11 @@ static func _parse_named_elements(
 		var data: Dictionary = {
 			"name": el.get("name", {}).get("some", null),
 		}
-		var type_info := _parse_type_name(
+		var type_info := _parse_type_info(
 			el.get("algebraic_type", {}),
 			schema_types,
-			module_pascal
+			module_pascal,
+			false
 		)
 		if not type_info.is_empty():
 			data["type"] = type_info.get("type", "")
@@ -563,7 +537,7 @@ static func _parse_sum_variants(
 	var out: Array[Dictionary] = []
 	for variant in variants:
 		var data: Dictionary = {
-			"name": _variant_name(variant),
+			"name": str(variant.get("name", {}).get("some", "")),
 		}
 		var variant_info := _parse_type_info(
 			variant.get("algebraic_type", {}),
@@ -582,7 +556,6 @@ static func _parse_callables(
 	schema_types: Array,
 	parsed_types: Array,
 	module_pascal: String,
-	include_return := false
 ) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	var type_idx_by_name: Dictionary[String, int] = {}
@@ -618,15 +591,13 @@ static func _parse_callables(
 			if type_idx_by_name.has(base_type_name):
 				param["type_idx"] = type_idx_by_name[base_type_name]
 
-		if include_return:
-			var return_data := _parse_return_data(
-				info.get("return_type", {}),
-				schema_types,
-				module_pascal
-			)
-			if not return_data.is_empty():
-				callable_data["return_type"] = return_data
-
+		var return_data := _parse_type_info(
+			info.get("return_type", {}),
+			schema_types,
+			module_pascal,
+			true
+		)
+		callable_data["return_type"] = return_data
 		out.append(callable_data)
 
 	return out
@@ -681,20 +652,6 @@ static func _validate_vector_like(
 
 	return true
 
-static func _is_gd_native(type_name: String) -> bool:
-	return GDNATIVE_PRIMITIVE_TYPES.has(type_name) \
-		or GDNATIVE_ARRAYLIKE_TYPES.has(type_name) \
-		or GDNATIVE_DICTLIKE_TYPES.has(type_name)
-
-static func _set_gd_native(type_name: String, type_data) -> void:
-	type_data["gd_native"] = true
-
-	if GDNATIVE_PRIMITIVE_TYPES.has(type_name):
-		type_data["gd_primitive"] = true
-	elif GDNATIVE_ARRAYLIKE_TYPES.has(type_name):
-		type_data["gd_arraylike"] = true
-	elif GDNATIVE_DICTLIKE_TYPES.has(type_name):
-		type_data["gd_dictlike"] = true
 
 static func _is_sum_type(sum_def) -> bool:
 	for variant in sum_def.get("variants", []):
@@ -709,27 +666,8 @@ static func _is_sum_option(sum_def) -> bool:
 	var variants = sum_def.get("variants", [])
 	if variants.size() != 2:
 		return false
-
-	var found_some := false
-	var found_none := false
-	var none_is_unit := false
-
-	for v in variants:
-		var v_name = v.get("name", {}).get("some", "")
-		if v_name == "some":
-			found_some = true
-		elif v_name == "none":
-			found_none = true
-			var none_variant_type = v.get("algebraic_type", {})
-			if none_variant_type.has("Product") and none_variant_type.Product.get(
-				"elements",
-				[]
-			).is_empty():
-				none_is_unit = true
-			elif none_variant_type.is_empty():
-				none_is_unit = true
-
-	return found_some and found_none and none_is_unit
+	return variants[0].get("name", {}).get("some", "") == "some" \
+		and variants[1].get("name", {}).get("some", "") == "none"
 
 static func _is_sum_result(sum_def) -> bool:
 	var variants = sum_def.get("variants", [])

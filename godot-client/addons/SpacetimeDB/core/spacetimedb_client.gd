@@ -339,7 +339,7 @@ func _handle_parsed_message(message_resource: Resource):
 		return
 
 	elif message_resource is ReducerResultMessage:
-		print_log("SpacetimeDBClient: Handle Reducer result message")
+		#print_log("SpacetimeDBClient: Handle Reducer result message")
 		match message_resource.reducer_result.value:
 			ReducerOutcomeEnum.Options.ok:
 				var ok_payload: ReducerResultOk = message_resource.reducer_result.get_ok()
