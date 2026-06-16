@@ -430,9 +430,20 @@ func connect_db(host_url: String, database_name: String, options: SpacetimeDBCon
 		# Already initialized, just need token and connect
 		_load_token_or_request()
 
-func disconnect_db():
-	if _connection:
-		_connection.disconnect_from_server()
+func reconnect_db(clear_db: bool = false):
+	if not _is_initialized:
+		printerr("SpacetimeDBClient: not initialized. connect with connect_db() first")
+	if _connection.is_connected_db():
+		printerr("SpacetimeDBClient: Already connected")
+	if clear_db:
+		_local_db.clear_local_db()
+	_load_token_or_request()
+
+func disconnect_db(clear_db: bool = false):
+	if not _connection.is_connected_db(): return
+	if clear_db:
+		_local_db.clear_local_db()
+	_connection.disconnect_from_server()
 
 func is_connected_db() -> bool:
 	return _connection and _connection.is_connected_db()
