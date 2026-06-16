@@ -195,7 +195,8 @@ func _save_token(token_to_save: String):
 
 # --- WebSocket Message Handling ---
 func _process(_delta: float) -> void:
-	_process_results_asynchronously()
+	if use_threading and is_connected_db():
+		_process_results_asynchronously()
 
 func _on_websocket_message_received(raw_bytes: PackedByteArray):
 	if not _is_initialized: return
