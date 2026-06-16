@@ -468,7 +468,7 @@ static func _parse_type_info(
 			"algebraic_type",
 			{}
 		)
-		prints("Sum Type failed to read", collect_all , JSON.stringify(sum_def, "\t"))
+		SpacetimePlugin.print_log("Sum Type failed to read: " + str(collect_all) + "\n" + JSON.stringify(sum_def, "\t"))
 
 		return _parse_type_info(first_variant, schema_types, module_pascal, collect_all)
 
