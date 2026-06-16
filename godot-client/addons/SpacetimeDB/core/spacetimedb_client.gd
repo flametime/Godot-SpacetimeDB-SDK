@@ -22,7 +22,6 @@ var _result_queue: Array[Resource] = []
 var _result_mutex: Mutex
 var _packet_mutex: Mutex
 var _thread_should_exit: bool = false
-var _message_limit_in_frame: int = 5
 
 var connection_options: SpacetimeDBConnectionOptions
 
@@ -51,7 +50,7 @@ var _pending_one_off_query_callbacks: Dictionary[int,SpacetimeDBPendingOneOffQue
 signal connected(identity: PackedByteArray, token: String)
 signal disconnected
 signal connection_error(code: int, reason: String)
-signal database_initialized # Emitted after InitialSubscription is processed
+signal database_initialized
 signal database_update(table_update: TableUpdateData) # Emitted for each table update
 
 # From LocalDatabase
@@ -60,7 +59,7 @@ signal row_updated(table_name: String, old_row: Resource, new_row: Resource)
 signal row_deleted(table_name: String, row: Resource)
 signal row_transactions_completed(table_name: String)
 
-signal reducer_call_response(response: Resource) # TODO: Define response resource
+signal reducer_call_response(response: ReducerResultMessage)
 signal reducer_call_timeout(request_id: int) # TODO: Implement timeout logic
 signal procedure_call_response(response: ProcedureResultMessage)
 signal transaction_update_received(update: TransactionUpdateMessage)
@@ -76,16 +75,20 @@ func _exit_tree():
 		deserializer_worker.wait_to_finish()
 		deserializer_worker = null
 
+# virtual func _init_db()
+func _init_db(local_db: LocalDatabase) -> void:
+	pass
+
 func print_log(log_message: String):
 	if debug_mode:
 		print(log_message)
 
 func initialize_and_connect():
 	if _is_initialized:
+		printerr("SpacetimeDBClient: already Initialized. something went wrong.")
 		return
 
 	print_log("SpacetimeDBClient: Initializing...")
-
 	# 1. Load Schema
 	var module_name: String = get_meta("module_name", "")
 	var schema := SpacetimeDBSchema.new(module_name, schema_path, debug_mode)
@@ -120,15 +123,16 @@ func initialize_and_connect():
 	_connection.name = "Connection"
 	add_child(_connection)
 
+	# 6. wait a frame to make sure everything is ready.
+	await get_tree().process_frame
 	_is_initialized = true
 	print_log("SpacetimeDBClient: Initialization complete.")
+	self.database_initialized.emit()
 
-	# 6. Get Token and Connect
+	# 7. Get Token and Connect
 	_load_token_or_request()
 
-# virtual func _init_db()
-func _init_db(local_db: LocalDatabase) -> void:
-	pass
+
 
 func _load_token_or_request():
 	if not _token.is_empty():
@@ -216,7 +220,7 @@ func _thread_loop() -> void:
 			continue
 		if _packet_queue.size() >1:
 			print_log("BSATN-Thread: package_queue: " + str(_packet_queue.size()))
-		var packet_to_process: PackedByteArray = _packet_queue.pop_back()
+		var packet_to_process: PackedByteArray = _packet_queue.pop_front()
 		_packet_mutex.unlock()
 
 		var message_resource: Resource = null
@@ -229,23 +233,26 @@ func _thread_loop() -> void:
 			_result_mutex.unlock()
 
 func _process_results_asynchronously():
-	if use_threading and not _result_mutex: return
+	if use_threading and not _result_mutex:
+		printerr("SpacetimeDBClient: Threading setup corrupted: _result_mutex missing")
+		return
 
 	if use_threading: _result_mutex.lock()
 
 	if _result_queue.is_empty():
 		if use_threading: _result_mutex.unlock()
 		return
-
-	var processed_count = 0
-
-	while not _result_queue.is_empty() and processed_count < _message_limit_in_frame:
-		_handle_parsed_message(_result_queue.pop_front())
-		if _result_queue.size() >= 1:
-			print_log("BSATN-Thread: result_queue: " + str(_result_queue.size()))
-		processed_count += 1
-
+	# shallow copy the queue to reduce block time.
+	var result_queue_copy := _result_queue.duplicate()
+	_result_queue.clear()
 	if use_threading: _result_mutex.unlock()
+
+	while not result_queue_copy.is_empty():
+		_handle_parsed_message(result_queue_copy.pop_front())
+		if result_queue_copy.size() >= 1:
+			print_log("BSATN-Thread: result_queue: " + str(result_queue_copy.size()))
+
+
 
 func _decompress_and_parse(raw_bytes: PackedByteArray) -> PackedByteArray:
 	var compression = raw_bytes[0]
@@ -278,15 +285,12 @@ func _handle_parsed_message(message_resource: Resource):
 
 	if message_resource is IdentityTokenMessage:
 		var identity_token: IdentityTokenMessage = message_resource
-		print_log("SpacetimeDBClient: Received Identity Token.")
+		print_log("SpacetimeDBClient: Received Identity Token Message.")
 		_identity = identity_token.identity
 		if not _token and identity_token.token:
 			_token = identity_token.token
 		_connection_id = identity_token.connection_id
 		self.connected.emit(_identity, _token)
-		if not _received_initial_subscription:
-			_received_initial_subscription = true
-			self.database_initialized.emit()
 
 	elif message_resource is SubscribeAppliedMessage:
 		var message: SubscribeAppliedMessage = message_resource
@@ -426,20 +430,21 @@ func connect_db(host_url: String, database_name: String, options: SpacetimeDBCon
 		_load_token_or_request()
 
 func disconnect_db():
-	_token = ""
 	if _connection:
 		_connection.disconnect_from_server()
-
 
 func is_connected_db() -> bool:
 	return _connection and _connection.is_connected_db()
 
-# The untyped local database instance, use the generated .Db property for querying
+## The untyped local database instance, use the generated .Db property for querying
 func get_local_database() -> LocalDatabase:
 	return _local_db
 
 func get_local_identity() -> PackedByteArray:
 	return _identity
+
+func get_token() -> StringName:
+	return _token
 
 func subscribe(queries: PackedStringArray) -> SpacetimeDBSubscription:
 	if not is_connected_db():
