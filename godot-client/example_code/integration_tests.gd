@@ -4,7 +4,7 @@ extends Control
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	var options :SpacetimeDBConnectionOptions = SpacetimeDBConnectionOptions.new()
-	options.one_time_token = true # <--- anonymous-like. set to false to persist
+	#options.one_time_token = true # <--- anonymous-like. set to false to persist
 	options.debug_mode = true # <--- enables lots of additional debug prints and warnings
 	options.compression = SpacetimeDBConnection.CompressionPreference.GZIP
 	options.threading = true

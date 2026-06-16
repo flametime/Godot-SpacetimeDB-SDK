@@ -9,6 +9,7 @@ class_name SpacetimeDBClient extends Node
 @export var auto_request_token: bool = true
 @export var token_save_path: String = "user://spacetimedb_token.dat" # Use a more specific name
 @export var one_time_token: bool = false
+@export var save_token: bool = true
 @export var compression: SpacetimeDBConnection.CompressionPreference
 @export var debug_mode: bool = true
 @export var current_subscriptions: Dictionary[int, SpacetimeDBSubscription]
@@ -130,7 +131,7 @@ func _init_db(local_db: LocalDatabase) -> void:
 	pass
 
 func _load_token_or_request():
-	if _token:
+	if not _token.is_empty():
 		# If token is already set, use it
 		_on_token_received(_token)
 		return
@@ -166,7 +167,8 @@ func _generate_connection_id() -> String:
 func _on_token_received(received_token: String):
 	print_log("SpacetimeDBClient: Token acquired.")
 	self._token = received_token
-	_save_token(received_token)
+	if save_token:
+		_save_token(received_token)
 	var conn_id = _generate_connection_id()
 	# Pass token to components that need it
 	_connection.set_token(self._token)
