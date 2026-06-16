@@ -686,7 +686,7 @@ func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 	elif bsatn_type.begins_with("vec_"):
 		var result_type_array: Array = []
 		var count = read_u32_le(spb)
-		for i in count:
+		for _i in count:
 			result_type_array.append(_parse_generic_type(spb, bsatn_type.trim_prefix("vec_")))
 		return result_type_array
 	elif bsatn_type.begins_with("ret_"):
@@ -709,7 +709,7 @@ func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 			return primitive_reader.call(spb)
 
 		_set_error("unknown bsatn_type: %s" % bsatn_type )
-	if not script or not script.can_instantiate():
+	if not script:
 		_set_error("script: %s is empty or can't instantiate" % script)
 
 	var result_resource := script.new()

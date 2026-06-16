@@ -4,10 +4,10 @@ extends Control
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	var options :SpacetimeDBConnectionOptions = SpacetimeDBConnectionOptions.new()
-	options.one_time_token = true # <--- anonymous-like. set to false to persist
+	#options.one_time_token = true # <--- anonymous-like. set to false to persist
 	options.debug_mode = true # <--- enables lots of additional debug prints and warnings
 	options.compression = SpacetimeDBConnection.CompressionPreference.GZIP
-	options.threading = true
+	options.threading = false
 	options.monitor_mode = true
 	# Increase buffer size. In general, you don't need this.
 	# options.set_all_buffer_size(1024 * 1024 * 2)
@@ -60,7 +60,7 @@ func _on_spacetimedb_database_init() -> void:
 
 
 func _on_button_pressed() -> void:
-	var call1 : SpacetimeDBReducerCall = SpacetimeDB.Main.reducers.start_integration_tests(MainTestNestedType.create(Option.none()))
+	var call1 : SpacetimeDBReducerCall = SpacetimeDB.Main.reducers.start_integration_tests(MainTestNestedType.create(Option.none(), MainTestDeepArrayType.new()))
 	call1.on_ok.connect(func(update:ReducerResultMessage) -> void: print("Reducer call1 returned Ok with %s" % update))
 	var time := Time.get_ticks_usec()
 	await call1.response

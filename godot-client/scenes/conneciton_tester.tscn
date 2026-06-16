@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://dmxc01tceue5g"]
+
+[ext_resource type="Script" uid="uid://c5he8m24e20he" path="res://scenes/conneciton_tester.gd" id="1_ghv5y"]
+
+[node name="Control" type="Control" unique_id=2009103807]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ghv5y")
+
+[node name="GridContainer" type="GridContainer" parent="." unique_id=1074322560]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Label" type="Label" parent="GridContainer" unique_id=1544555339]
+layout_mode = 2
+text = "disconnected"
+
+[node name="Button" type="Button" parent="GridContainer" unique_id=1777804442]
+layout_mode = 2
+text = "Connect"
+
+[node name="Button2" type="Button" parent="GridContainer" unique_id=1559127518]
+layout_mode = 2
+text = "Reconnect"
+
+[node name="Button3" type="Button" parent="GridContainer" unique_id=800483017]
+layout_mode = 2
+text = "Disconnect"
+
+[node name="Button4" type="Button" parent="GridContainer" unique_id=1598661236]
+layout_mode = 2
+text = "Quit"
+
+[connection signal="pressed" from="GridContainer/Button" to="." method="_on_button_pressed"]
+[connection signal="pressed" from="GridContainer/Button2" to="." method="_on_button_2_pressed"]
+[connection signal="pressed" from="GridContainer/Button3" to="." method="_on_button_3_pressed"]
+[connection signal="pressed" from="GridContainer/Button4" to="." method="_on_button_4_pressed"]
