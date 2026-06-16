@@ -411,6 +411,11 @@ static func _parse_type_info(
 			"type": "vec_%s" % inner_type,
 			"godot_type_hint": "PackedByteArray",
 		}
+		if inner_hint.begins_with("Array["):
+			return {
+			"type": "vec_%s" % inner_type,
+			"godot_type_hint": "Array[Array]",
+		}
 		return {
 			"type": "vec_%s" % inner_type,
 			"godot_type_hint": "Array[%s]" % inner_hint,
@@ -463,6 +468,8 @@ static func _parse_type_info(
 			"algebraic_type",
 			{}
 		)
+		SpacetimePlugin.print_log("Sum Type failed to read: " + str(collect_all) + "\n" + JSON.stringify(sum_def, "\t"))
+
 		return _parse_type_info(first_variant, schema_types, module_pascal, collect_all)
 
 	if node.has("Product"):
