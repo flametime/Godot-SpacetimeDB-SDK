@@ -26,20 +26,6 @@ func _write_text(path: String, body: String) -> void:
 		handle.close()
 
 
-func _type_hint(schema: SpacetimeParsedSchema, def: Dictionary, fallback: String = "Variant") -> String:
-	if def.has("godot_type_hint") and not String(def.get("godot_type_hint", "")).is_empty():
-		return String(def.get("godot_type_hint", fallback))
-
-	var raw_name := String(def.get("type", fallback))
-	for type_def in schema.types:
-		if type_def.get("name", "") == raw_name:
-			if type_def.has("godot_type_hint"):
-				return String(type_def.get("godot_type_hint", raw_name))
-			break
-
-	return fallback if raw_name.is_empty() else raw_name
-
-
 func _gd_type(schema: SpacetimeParsedSchema, raw_name: String, member_def: Dictionary = {}) -> String:
 	if member_def.has("godot_type_hint") and not String(member_def.get("godot_type_hint", "")).is_empty():
 		return String(member_def.get("godot_type_hint", "Variant"))
@@ -51,12 +37,6 @@ func _gd_type(schema: SpacetimeParsedSchema, raw_name: String, member_def: Dicti
 			break
 
 	return raw_name if not raw_name.is_empty() else "Variant"
-
-
-func _nested_label(schema: SpacetimeParsedSchema, member_def: Dictionary) -> String:
-	var parts: Array = member_def.get("nested_type", []).duplicate()
-	parts.append(_gd_type(schema, member_def.get("type", "Variant"), member_def))
-	return " of ".join(parts)
 
 
 func _member_gd_type(schema: SpacetimeParsedSchema, member_def: Dictionary) -> String:

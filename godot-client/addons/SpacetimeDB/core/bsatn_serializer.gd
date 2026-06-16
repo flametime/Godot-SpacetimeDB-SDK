@@ -557,12 +557,12 @@ func _serialize_arguments(
 		if i < bsatn_types.size():
 			bsatn_type = String(bsatn_types[i])
 
-		if debug_mode:
-			_log("DEBUG: _serialize_arguments: arg %d type=%s bsatn=%s" % [
-				i,
-				_get_value_class_name(arg_value),
-				bsatn_type,
-			])
+		#if debug_mode:
+			#_log("DEBUG: _serialize_arguments: arg %d type=%s bsatn=%s" % [
+				#i,
+				#_get_value_class_name(arg_value),
+				#bsatn_type,
+			#])
 
 		if not _write_value_from_bsatn_type(arg_value, bsatn_type, "arg[%d]" % i):
 			_spb = original_spb

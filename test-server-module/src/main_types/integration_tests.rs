@@ -37,7 +37,16 @@ pub struct  TestType {
 
 #[derive(Debug, SpacetimeType, Clone)]
 pub struct TestNestedType {
-    pub test_nest: Option<Box<TestNestedType>>
+    pub test_nest: Option<Box<TestNestedType>>,
+    pub test_deep_nested: TestDeepArrayType
+}
+
+#[derive(Debug, SpacetimeType, Clone)]
+pub struct TestDeepArrayType {
+    pub test_1_array: Vec<u64>,
+    pub test_2_array: Vec<Vec<u64>>,
+    pub test_3_array: Vec<Vec<Vec<u64>>>,
+    pub test_opt_array: Vec<Option<Vec<u64>>>,
 }
 
 #[table(accessor = test_table_datatypes, public)]
