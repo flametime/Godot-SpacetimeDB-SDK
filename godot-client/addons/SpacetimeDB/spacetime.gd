@@ -60,6 +60,8 @@ func _enter_tree():
 Name: Required
 Alias: Optional
 Hide private tables: Hides private tables from the client.
+local: http://127.0.0.1:3000
+maincloud: https://maincloud.spacetimedb.com
 [/ul]
 
 After generating schema files, please restart Godot.
