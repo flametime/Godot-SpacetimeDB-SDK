@@ -11,6 +11,7 @@ enum UnsubscribeFlags {Default, SendDroppedRows}
 
 const bsatn_type_request_id: StringName = &"U32"
 const bsatn_type_query_id: StringName = &"U32"
+const bsatn_type_flags: StringName = &"U8"
 
 func _init(p_request_id: int = -1, p_query_id:int = -1):
 	request_id = p_request_id

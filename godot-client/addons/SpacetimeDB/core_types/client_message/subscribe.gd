@@ -6,6 +6,7 @@ class_name SubscribeMessage extends Resource
 
 const bsatn_type_request_id: StringName = &"U32"
 const bsatn_type_query_id: StringName = &"U32"
+const bsatn_type_queries: StringName = &"vec_String"
 
 func _init(p_request_id: int = -1, p_query_id: int = -1, p_queries: Array[String] = []):
 	request_id = p_request_id
