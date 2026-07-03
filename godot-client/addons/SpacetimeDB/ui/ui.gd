@@ -175,3 +175,7 @@ func _is_alphanumerical(string: String)-> bool:
 		add_err("INVALID string. Alphanumeric only but found: %s" % result.get_string())
 		return false
 	return true
+
+
+func _on_uri_input_text_changed(new_text: String) -> void:
+	_plugin_config.uri = new_text
