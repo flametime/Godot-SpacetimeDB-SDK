@@ -9,7 +9,7 @@ var _connection_requested: bool = false
 var _debug_mode: bool = false
 var version: String = "v1"
 # Protocol constants
-const BSATN_PROTOCOL = "v2.bsatn.spacetimedb"
+const BSATN_PROTOCOL = "v3.bsatn.spacetimedb"
 
 enum CompressionPreference { NONE = 0, BROTLI = 1, GZIP = 2 }
 var preferred_compression: CompressionPreference = CompressionPreference.NONE # Default to None

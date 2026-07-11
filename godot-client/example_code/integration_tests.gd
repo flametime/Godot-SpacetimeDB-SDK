@@ -36,7 +36,7 @@ func _on_spacetimedb_connected(identity: PackedByteArray, _token: String) -> voi
 	sub.applied.connect(func() -> void:
 		print("User Subscription Applied")
 		await get_tree().create_timer(3).timeout
-		#sub.unsubscribe()
+		sub.unsubscribe()
 		)
 	sub.end.connect(func() -> void:
 		print("User Subscription ended")

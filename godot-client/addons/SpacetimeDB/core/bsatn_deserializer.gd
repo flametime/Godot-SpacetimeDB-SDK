@@ -758,31 +758,17 @@ func _parse_message_from_stream(spb: StreamPeerBuffer) -> Resource:
 	if message_type.is_empty():
 		_set_error("Unknown server message type: 0x%02X" % msg_type, 1)
 		return null
-
-	result_resource = _parse_generic_type(spb, message_type)
-	# Optional: Check if all bytes were consumed after parsing the message body
-	var remaining_bytes := spb.get_size() - spb.get_position()
-	if remaining_bytes > 0:
-		# This might indicate a parsing error or extra data. Warning is appropriate.
-		push_error("Bytes remaining after parsing message type 0x%02X: %d" % [msg_type, remaining_bytes])
-		spb.clear()
-	return result_resource
+	return _parse_generic_type(spb, message_type)
 
 func process_bytes_and_extract_messages(raw_data: PackedByteArray) -> Array[Resource]:
 	if raw_data.is_empty():
 		return []
-
 	var parsed_messages: Array[Resource] = []
 	var spb := StreamPeerBuffer.new()
-	var count := 0
 	while not raw_data.is_empty():
-		count += 1
-
 		clear_error()
 		spb.data_array = raw_data
-
 		var message_resource = _parse_message_from_stream(spb)
-
 		if has_error():
 			if _last_error.contains("past end of buffer"):
 				clear_error()
@@ -792,20 +778,17 @@ func process_bytes_and_extract_messages(raw_data: PackedByteArray) -> Array[Reso
 				raw_data.clear()
 				spb.clear()
 				break
-
 		if message_resource:
 			parsed_messages.append(message_resource)
 			var bytes_consumed = spb.get_position()
-
 			if bytes_consumed == 0:
 				printerr("BSATNDeserializer: Parser consumed 0 bytes. Clearing buffer to prevent infinite loop.")
+				printerr(raw_data.size())
 				raw_data.clear()
 				spb.clear()
 				break
 			raw_data = raw_data.slice(bytes_consumed)
 		else:
 			break
-	if count > 1:
-		prints("process_bytes_and_extract_messages ran %s times" % count)
 	return parsed_messages
 #endregion
