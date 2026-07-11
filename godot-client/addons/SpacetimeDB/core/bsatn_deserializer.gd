@@ -717,23 +717,21 @@ func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 		# error handling?
 		_populate_enum_from_bytes(spb,result_resource)
 		return result_resource
-	var properties: Array = script.get_script_property_list()
-	for prop in properties:
-		if not (prop.usage & PROPERTY_USAGE_STORAGE):
-			continue
-		var bsatn_type_str: StringName = result_resource["bsatn_type_"+prop.name]
+
+	for prop: StringName in result_resource.BSATN_TYPES.keys():
+		var bsatn_type_str: StringName = result_resource.BSATN_TYPES.get(prop)
 		var reader_callablce := _get_primitive_reader_from_bsatn_type(bsatn_type_str)
 		if reader_callablce.is_valid():
-			result_resource[prop.name] = reader_callablce.call(spb)
+			result_resource[prop] = reader_callablce.call(spb)
 		elif _schema.module_types.has(bsatn_type_str) or _schema.core_types.has(bsatn_type_str) or bsatn_type_str.begins_with("opt_") or bsatn_type_str.begins_with("ret_") or NATIVE_ARRAYLIKE.has(bsatn_type_str):
-			result_resource[prop.name] = _parse_generic_type(spb, bsatn_type_str)
+			result_resource[prop] = _parse_generic_type(spb, bsatn_type_str)
 		elif bsatn_type_str.begins_with("vec_"):
 			var result_type_array = _parse_generic_type(spb, bsatn_type_str)
-			var temp_arr = result_resource[prop.name]
+			var temp_arr = result_resource[prop]
 			temp_arr.append_array(result_type_array)
-			result_resource[prop.name] = temp_arr
+			result_resource[prop] = temp_arr
 		else:
-			_set_error("unknown bsatn_type: %s for prop %s in %s" % [bsatn_type_str, prop.name, bsatn_type])
+			_set_error("unknown bsatn_type: %s for prop %s in %s" % [bsatn_type_str, prop, bsatn_type])
 			return null
 	return result_resource
 
@@ -760,31 +758,17 @@ func _parse_message_from_stream(spb: StreamPeerBuffer) -> Resource:
 	if message_type.is_empty():
 		_set_error("Unknown server message type: 0x%02X" % msg_type, 1)
 		return null
-
-	result_resource = _parse_generic_type(spb, message_type)
-	# Optional: Check if all bytes were consumed after parsing the message body
-	var remaining_bytes := spb.get_size() - spb.get_position()
-	if remaining_bytes > 0:
-		# This might indicate a parsing error or extra data. Warning is appropriate.
-		push_error("Bytes remaining after parsing message type 0x%02X: %d" % [msg_type, remaining_bytes])
-		spb.clear()
-	return result_resource
+	return _parse_generic_type(spb, message_type)
 
 func process_bytes_and_extract_messages(raw_data: PackedByteArray) -> Array[Resource]:
 	if raw_data.is_empty():
 		return []
-
 	var parsed_messages: Array[Resource] = []
 	var spb := StreamPeerBuffer.new()
-	var count := 0
 	while not raw_data.is_empty():
-		count += 1
-
 		clear_error()
 		spb.data_array = raw_data
-
 		var message_resource = _parse_message_from_stream(spb)
-
 		if has_error():
 			if _last_error.contains("past end of buffer"):
 				clear_error()
@@ -794,20 +778,17 @@ func process_bytes_and_extract_messages(raw_data: PackedByteArray) -> Array[Reso
 				raw_data.clear()
 				spb.clear()
 				break
-
 		if message_resource:
 			parsed_messages.append(message_resource)
 			var bytes_consumed = spb.get_position()
-
 			if bytes_consumed == 0:
 				printerr("BSATNDeserializer: Parser consumed 0 bytes. Clearing buffer to prevent infinite loop.")
+				printerr(raw_data.size())
 				raw_data.clear()
 				spb.clear()
 				break
 			raw_data = raw_data.slice(bytes_consumed)
 		else:
 			break
-	if count > 1:
-		prints("process_bytes_and_extract_messages ran %s times" % count)
 	return parsed_messages
 #endregion
