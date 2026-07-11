@@ -5,9 +5,9 @@ class_name ReducerCallInfoData extends Resource
 @export var reducer_id: int # u32
 @export var args: PackedByteArray # Raw BSATN bytes for arguments
 @export var request_id: int # u32
-@export var execution_time: int
 
-
-const bsatn_type_reducer_id: StringName = &"U32"
-const bsatn_type_request_id: StringName = &"U32"
-const bsatn_type_execution_time: StringName = &"I64"
+const BSATN_TYPES: Dictionary[StringName, StringName] = {
+	&"reducer_id": &"U32",
+	&"request_id": &"U32",
+	&"execution_time": &"I64",
+}

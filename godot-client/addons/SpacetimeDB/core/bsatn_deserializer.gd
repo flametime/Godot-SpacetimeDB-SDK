@@ -717,23 +717,21 @@ func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 		# error handling?
 		_populate_enum_from_bytes(spb,result_resource)
 		return result_resource
-	var properties: Array = script.get_script_property_list()
-	for prop in properties:
-		if not (prop.usage & PROPERTY_USAGE_STORAGE):
-			continue
-		var bsatn_type_str: StringName = result_resource["bsatn_type_"+prop.name]
+
+	for prop: StringName in result_resource.BSATN_TYPES.keys():
+		var bsatn_type_str: StringName = result_resource.BSATN_TYPES.get(prop)
 		var reader_callablce := _get_primitive_reader_from_bsatn_type(bsatn_type_str)
 		if reader_callablce.is_valid():
-			result_resource[prop.name] = reader_callablce.call(spb)
+			result_resource[prop] = reader_callablce.call(spb)
 		elif _schema.module_types.has(bsatn_type_str) or _schema.core_types.has(bsatn_type_str) or bsatn_type_str.begins_with("opt_") or bsatn_type_str.begins_with("ret_") or NATIVE_ARRAYLIKE.has(bsatn_type_str):
-			result_resource[prop.name] = _parse_generic_type(spb, bsatn_type_str)
+			result_resource[prop] = _parse_generic_type(spb, bsatn_type_str)
 		elif bsatn_type_str.begins_with("vec_"):
 			var result_type_array = _parse_generic_type(spb, bsatn_type_str)
-			var temp_arr = result_resource[prop.name]
+			var temp_arr = result_resource[prop]
 			temp_arr.append_array(result_type_array)
-			result_resource[prop.name] = temp_arr
+			result_resource[prop] = temp_arr
 		else:
-			_set_error("unknown bsatn_type: %s for prop %s in %s" % [bsatn_type_str, prop.name, bsatn_type])
+			_set_error("unknown bsatn_type: %s for prop %s in %s" % [bsatn_type_str, prop, bsatn_type])
 			return null
 	return result_resource
 

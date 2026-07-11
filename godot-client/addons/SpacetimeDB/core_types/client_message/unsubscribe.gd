@@ -9,9 +9,12 @@ enum UnsubscribeFlags {Default, SendDroppedRows}
 @export var query_id: int
 @export var flags : UnsubscribeFlags = UnsubscribeFlags.Default
 
-const bsatn_type_request_id: StringName = &"U32"
-const bsatn_type_query_id: StringName = &"U32"
-const bsatn_type_flags: StringName = &"U8"
+const BSATN_TYPES: Dictionary[StringName, StringName] = {
+	&"request_id": &"U32",
+	&"query_id": &"U32",
+	&"flags": &"U8",
+}
+
 
 func _init(p_request_id: int = -1, p_query_id:int = -1):
 	request_id = p_request_id

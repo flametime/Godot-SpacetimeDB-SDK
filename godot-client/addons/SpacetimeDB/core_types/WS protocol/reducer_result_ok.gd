@@ -5,5 +5,7 @@ class_name ReducerResultOk extends Resource
 @export var tx_update: TransactionUpdateMessage
 
 
-const bsatn_type_ret_value: StringName = &"vec_U8"
-const bsatn_type_tx_update: StringName = &"TransactionUpdateMessage"
+const BSATN_TYPES: Dictionary[StringName, StringName] = {
+	&"ret_value": &"vec_U8",
+	&"tx_update": &"TransactionUpdateMessage"
+}
