@@ -5,7 +5,8 @@ class_name IdentityTokenMessage extends Resource
 @export var connection_id: PackedByteArray # 16 bytes
 @export var token: String
 
-func _init():
-	set_meta("bsatn_type_identity", &"__identity__")
-	set_meta("bsatn_type_connection_id", &"__connection_id__")
-	set_meta("bsatn_type_token", &"String")
+const BSATN_TYPES: Dictionary[StringName, StringName] = {
+	&"identity": &"__identity__",
+	&"connection_id": &"__connection_id__",
+	&"token": &"String",
+}

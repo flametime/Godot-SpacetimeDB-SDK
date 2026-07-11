@@ -7,7 +7,8 @@ class_name ReducerResultMessage extends Resource
 @export var timestamp: int # i64
 @export var reducer_result: ReducerOutcomeEnum # Nested Resource
 
-func _init():
-	set_meta("bsatn_type_request_id", &"U32")
-	set_meta("bsatn_type_timestamp", &"__timestamp_micros_since_unix_epoch__")
-	set_meta("bsatn_type_reducer_result", &"ReducerOutcomeEnum")
+const BSATN_TYPES: Dictionary[StringName, StringName] = {
+	&"request_id": &"U32",
+	&"timestamp": &"__timestamp_micros_since_unix_epoch__",
+	&"reducer_result": &"ReducerOutcomeEnum",
+}

@@ -77,8 +77,8 @@ func set_selected_table_name(value: String):
 		return
 	selected_table_name = value
 
-func _get_property_list() -> Array:
-	var properties: Array = []
+func _get_property_list() -> Array[Dictionary]:
+	var properties: Array[Dictionary] = []
 	if not _derived_table_names.is_empty():
 		var hint_string_for_enum = ",".join(_derived_table_names)
 		properties.append({

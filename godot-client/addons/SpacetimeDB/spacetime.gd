@@ -60,6 +60,8 @@ func _enter_tree():
 Name: Required
 Alias: Optional
 Hide private tables: Hides private tables from the client.
+local: http://127.0.0.1:3000
+maincloud: https://maincloud.spacetimedb.com
 [/ul]
 
 After generating schema files, please restart Godot.
@@ -97,14 +99,15 @@ func _on_check_uri():
 	var uri = plugin_config.uri
 	uri += "/v1/ping"
 	print_log("Pinging... " + uri)
-	http_request.request(uri)
 	var ping_start = Time.get_ticks_usec()
+	http_request.request(uri)
 	var result = await http_request.request_completed
 	if result[1] == 0:
 		print_err("Request timeout - " + uri)
 	else:
-		print_log("Response code: " + str(result[1]))
-	print_log("request took: "+ str(Time.get_ticks_usec() - ping_start) + " microseconds")
+		## get the response and read out the body. can be used to test other endpoints.
+		print_log("Result: %s, Response code: %s" % [result[3].get_string_from_utf8(), result[1]])
+	print_log("request took: "+ str(Time.get_ticks_usec() - ping_start) + " µs")
 
 func _on_generate_schema():
 	if plugin_config.uri.ends_with("/"):

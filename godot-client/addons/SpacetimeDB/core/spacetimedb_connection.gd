@@ -9,7 +9,7 @@ var _connection_requested: bool = false
 var _debug_mode: bool = false
 var version: String = "v1"
 # Protocol constants
-const BSATN_PROTOCOL = "v2.bsatn.spacetimedb"
+const BSATN_PROTOCOL = "v3.bsatn.spacetimedb"
 
 enum CompressionPreference { NONE = 0, BROTLI = 1, GZIP = 2 }
 var preferred_compression: CompressionPreference = CompressionPreference.NONE # Default to None
@@ -47,7 +47,7 @@ func _init(options: SpacetimeDBConnectionOptions,db_name:String):
 	_websocket.outbound_buffer_size = options.outbound_buffer_size
 	set_compression_preference(options.compression)
 	self._debug_mode = options.debug_mode
-	set_physics_process(false) # Don't process until connect is called
+	set_process(false) # Don't process until connect is called
 
 func _print_log(log_message:String):
 	if _debug_mode:
@@ -154,7 +154,7 @@ func connect_to_database(base_url: String, database_name: String, connection_id:
 	else:
 		_print_log("SpacetimeDBConnection: Connection initiated.")
 		_connection_requested = true
-		set_physics_process(true)
+		set_process(true)
 
 func disconnect_from_server(code: int = 1000, reason: String = "Client initiated disconnect"):
 	if _websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED and _websocket.get_ready_state() != WebSocketPeer.STATE_CLOSING:
@@ -165,7 +165,7 @@ func disconnect_from_server(code: int = 1000, reason: String = "Client initiated
 func is_connected_db() -> bool:
 	return _is_connected
 
-func _physics_process(delta: float) -> void:
+func _process(delta: float) -> void:
 	if _websocket == null: return
 
 	_websocket.poll()
@@ -181,6 +181,8 @@ func _physics_process(delta: float) -> void:
 
 			# Process incoming packets
 			while _websocket.get_available_packet_count() > 0:
+				if _websocket.get_available_packet_count() > 1:
+					_print_log("SpacetimeDBConnection: waiting packages " + str(_websocket.get_available_packet_count()))
 				var packet_bytes := _websocket.get_packet()
 				if packet_bytes.is_empty(): continue
 
@@ -188,8 +190,8 @@ func _physics_process(delta: float) -> void:
 				_second_bytes_received += packet_bytes.size()
 				_total_messages_received += 1
 				_second_messages_received += 1
-
 				message_received.emit(packet_bytes)
+
 				total_messages.emit(_total_messages_send, _total_messages_received)
 				total_bytes.emit(_total_bytes_send, _total_bytes_received)
 
@@ -216,7 +218,7 @@ func _physics_process(delta: float) -> void:
 			_is_connected = false
 			_connection_requested = false
 			get_tree().auto_accept_quit = true
-			set_physics_process(false) # Stop polling
+			set_process(false) # Stop polling
 
 
 func _handle_game_closing():

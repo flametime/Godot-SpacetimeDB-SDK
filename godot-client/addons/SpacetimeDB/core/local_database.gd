@@ -90,8 +90,8 @@ func _get_primary_key_field(table_name_lower: String) -> StringName:
 	var schema := _schema.get_type_script(table_type)
 	var instance = schema.new() # Need instance for metadata/properties
 
-	if instance and instance.has_meta("primary_key"):
-		var pk_field: StringName = instance.get_meta("primary_key")
+	if instance:
+		var pk_field: StringName = instance["primary_key"]
 		_primary_key_cache[table_name_lower] = pk_field
 		return pk_field
 
@@ -243,7 +243,18 @@ func apply_table_update(table_update: TableUpdateData) -> Dictionary[String,Arra
 				"deletes": deletes_to_emit}
 	return changes
 
-
+func clear_local_db():
+	var all_deletes_to_emit: Array[Dictionary]
+	for table in _tables:
+		var deletes_to_emit:Array
+		for row in get_all_rows(table):
+			deletes_to_emit.append([row])
+		_tables[table].clear()
+		all_deletes_to_emit.append({"table_name": [table],
+				"inserts": [],
+				"updates": [],
+				"deletes": deletes_to_emit})
+	emit_db_callbacks(all_deletes_to_emit)
 
 # --- Access Methods ---
 func get_row_by_pk(table_name: String, primary_key_value) -> _ModuleTableType:

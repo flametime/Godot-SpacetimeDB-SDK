@@ -272,9 +272,9 @@ func write_vec_u8(v: PackedByteArray) -> void:
 		write_bytes(v)
 
 
-func write_option(option_value: Option, bsatn_type: String, prop: Dictionary) -> void:
+func write_option(option_value: Option, bsatn_type: String, prop: StringName) -> void:
 	if not option_value is Option:
-		_set_error("Value for '%s' is not an Option." % prop.name)
+		_set_error("Value for '%s' is not an Option." % prop)
 		return
 
 	if option_value.is_none():
@@ -285,16 +285,16 @@ func write_option(option_value: Option, bsatn_type: String, prop: Dictionary) ->
 	if has_error():
 		return
 
-	var inner := String(bsatn_type)
-	if inner.begins_with("vec_"):
-		inner = inner.trim_prefix("vec_")
+	var inner := bsatn_type
+	if inner.begins_with("opt_"):
+		inner = inner.trim_prefix("opt_")
 
-	_write_value_from_bsatn_type(option_value.unwrap(), inner, prop.name + "[inner]")
+	_write_value_from_bsatn_type(option_value.unwrap(), inner, prop + "[inner]")
 
 
 func write_rust_enum(rust_enum: RustEnum) -> void:
 	write_u8(rust_enum.value)
-	var options = rust_enum.get_meta("enum_options")
+	var options = rust_enum["enum_options"]
 	var sub_class := String(options[rust_enum.value]).to_lower()
 	var data = rust_enum.data
 
@@ -469,7 +469,7 @@ func _write_value_from_bsatn_type(
 		if value is not Option:
 			_set_error("Expected Option for '%s'" % context_name)
 			return false
-		write_option(value, bsatn_type_str.trim_prefix("opt_"), {"name": context_name})
+		write_option(value, bsatn_type_str.trim_prefix("opt_"), context_name)
 		return not has_error()
 
 	if bsatn_type_str.begins_with("vec_") and typeof(value) == TYPE_ARRAY:
@@ -515,25 +515,16 @@ func _serialize_resource_fields(resource: Resource) -> bool:
 		write_rust_enum(resource)
 		return not has_error()
 
-	var script := resource.get_script()
-	if not script:
-		_set_error("Cannot serialize scriptless resource")
-		return false
+	for key: StringName in resource.BSATN_TYPES.keys():
+		var value = resource.get(key)
+		var bsatn_type: StringName = resource.BSATN_TYPES.get(key)
 
-	for prop in script.get_script_property_list():
-		if not (prop.usage & PROPERTY_USAGE_STORAGE):
-			continue
-
-		var value = resource.get(prop.name)
-		var bsatn_type := ""
-		var meta_key := "bsatn_type_" + String(prop.name)
-		if resource.has_meta(meta_key):
-			bsatn_type = String(resource.get_meta(meta_key))
-
-		if bsatn_type.is_empty() and prop.type == TYPE_OBJECT and value is Resource:
+		if value is Option:
+			write_option(value, bsatn_type, key)
+		elif value is Resource:
 			write_nested_resource(value)
 		else:
-			_write_value_from_bsatn_type(value, bsatn_type, prop.name)
+			_write_value_from_bsatn_type(value, bsatn_type, key)
 
 		if has_error():
 			return false
@@ -558,12 +549,12 @@ func _serialize_arguments(
 		if i < bsatn_types.size():
 			bsatn_type = String(bsatn_types[i])
 
-		if debug_mode:
-			_log("DEBUG: _serialize_arguments: arg %d type=%s bsatn=%s" % [
-				i,
-				_get_value_class_name(arg_value),
-				bsatn_type,
-			])
+		#if debug_mode:
+			#_log("DEBUG: _serialize_arguments: arg %d type=%s bsatn=%s" % [
+				#i,
+				#_get_value_class_name(arg_value),
+				#bsatn_type,
+			#])
 
 		if not _write_value_from_bsatn_type(arg_value, bsatn_type, "arg[%d]" % i):
 			_spb = original_spb

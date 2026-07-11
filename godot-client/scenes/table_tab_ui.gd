@@ -35,14 +35,14 @@ func row_insert(new_row:_ModuleTableType) -> void:
 	var row_ui:TableRowUI = TABLE_ROW_UI.instantiate()
 	row_ui.create_row(new_row)
 	table_container.add_child(row_ui)
-	var key :String = new_row.get_meta("primary_key")
+	var key :String = new_row["primary_key"]
 	if not key.is_empty():
 		row_nodes[new_row[key]] = row_ui
 	else:
 		printerr("UI row insert skipped for table: %s" % row_receiver.selected_table_name)
 
 func row_update(prev_row: _ModuleTableType, new_row: _ModuleTableType) -> void:
-	var pk :String = new_row.get_meta("primary_key")
+	var pk :String = new_row["primary_key"]
 	var row_ui: TableRowUI = row_nodes.get(new_row[pk])
 	if row_ui:
 		row_ui.update_row(new_row)
@@ -52,7 +52,7 @@ func row_update(prev_row: _ModuleTableType, new_row: _ModuleTableType) -> void:
 
 
 func row_delete(old_row:_ModuleTableType) -> void:
-	var key :String = old_row.get_meta("primary_key")
+	var key :String = old_row["primary_key"]
 	if not key.is_empty():
 		var row_ui: TableRowUI = row_nodes.get(old_row[key])
 		if row_ui:
