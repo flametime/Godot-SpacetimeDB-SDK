@@ -145,6 +145,7 @@ func _on_generate_schema():
 	var generated_files := codegen.generate_bindings()
 
 	_cleanup_unused_classes(BINDINGS_SCHEMA_PATH, generated_files)
+	_check_uid_collisions()
 
 	if DirAccess.dir_exists_absolute(LEGACY_DATA_PATH):
 		print_log("Removing legacy data directory: %s" % LEGACY_DATA_PATH)
@@ -181,6 +182,40 @@ func _cleanup_unused_classes(dir_path: String = "res://schema", files: Array[Str
 	var subfolders = dir.get_directories()
 	for folder in subfolders:
 		_cleanup_unused_classes(dir_path + "/" + folder, files)
+
+
+## Walks `dir_path` recursively and appends every file ending in `suffix` to `out`.
+func _collect_files_by_suffix(dir_path: String, suffix: String, out: Array[String]) -> void:
+	var dir := DirAccess.open(dir_path)
+	if not dir:
+		return
+	for file_name: String in dir.get_files():
+		if file_name.ends_with(suffix):
+			out.append("%s/%s" % [dir_path, file_name])
+	for sub: String in dir.get_directories():
+		_collect_files_by_suffix("%s/%s" % [dir_path, sub], suffix, out)
+
+
+## Deterministic binding uids share the full 63-bit id space with Godot's
+## randomly-minted uids, so a clash is possible (~1e-13) — and because our ids
+## are deterministic, a clash would reproduce on every clone. Scan the whole
+## project for duplicate uid ids and report any that exist. If this ever fires,
+## salt `SpacetimeCodegen._stable_uid_id` (e.g. prefix a version byte) and regenerate.
+func _check_uid_collisions() -> void:
+	var uid_files: Array[String] = []
+	_collect_files_by_suffix("res://", ".uid", uid_files)
+	var seen: Dictionary[int, String] = {}
+	for path: String in uid_files:
+		var text := FileAccess.get_file_as_string(path).strip_edges()
+		if text.is_empty():
+			continue
+		var id: int = ResourceUID.text_to_id(text)
+		if id == ResourceUID.INVALID_ID:
+			continue
+		if seen.has(id):
+			print_err("UID collision (%s): %s <-> %s" % [text, seen[id], path])
+		else:
+			seen[id] = path
 
 static func clear_logs():
 	if instance != null and is_instance_valid(instance.ui):
