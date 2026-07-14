@@ -56,6 +56,7 @@ func _set_error(msg: String, position: int = -1) -> void:
 		var pos_str := " (at approx. position %d)" % position if position >= 0 else ""
 		_last_error = "BSATNDeserializer Error: %s%s" % [msg, pos_str]
 		printerr(_last_error) # Always print errors
+
 func _check_read(spb: StreamPeerBuffer, bytes_needed: int) -> bool:
 	if has_error(): return false
 	if spb.get_position() + bytes_needed > spb.get_size():
@@ -302,34 +303,33 @@ func read_bsatn_row_list(spb: StreamPeerBuffer) -> Array[PackedByteArray]:
 #region --- Core Deserialization Logic ---
 
 # Helper to get a primitive reader Callable based on a BSATN type string.
-func _get_primitive_reader_from_bsatn_type(bsatn_type_str: StringName) -> Callable:
+func _get_primitive_reader_from_bsatn_type(spb:StreamPeerBuffer, bsatn_type_str: StringName) -> Variant:
 	match bsatn_type_str:
-		&"U64": return Callable(self, "read_u64_le")
-		&"I64": return Callable(self, "read_i64_le")
-		&"F64": return Callable(self, "read_f64_le")
-		&"U32": return Callable(self, "read_u32_le")
-		&"I32": return Callable(self, "read_i32_le")
-		&"F32": return Callable(self, "read_f32_le")
-		&"U16": return Callable(self, "read_u16_le")
-		&"I16": return Callable(self, "read_i16_le")
-		&"U8": return Callable(self, "read_u8")
-		&"I8": return Callable(self, "read_i8")
-		&"U128": return Callable(self, "read_u128")
-		&"__identity__": return Callable(self, "read_identity")
-		&"__connection_id__": return Callable(self, "read_connection_id")
-		&"__timestamp_micros_since_unix_epoch__": return Callable(self, "read_timestamp")
-		&"__time_duration_micros__": return Callable(self, "read_timestamp")
-		&"scheduled_at": return Callable(self, "read_scheduled_at")
-		&"Bool": return Callable(self, "read_bool")
-		&"String": return Callable(self, "read_string_with_u32_len")
-		&"SubscribeAppliedMessage": return Callable(self, "_read_subscripton_applied_message")
-		&"UnsubscribeAppliedMessage": return Callable(self, "_read_unsubscription_applied_message")
-		&"SubscriptionErrorMessage": return Callable(self, "_read_subscription_error_message")
-		&"TransactionUpdateMessage": return Callable(self, "_read_transaction_update_message")
-		&"OneOffQueryResponseMessage": return Callable(self, "_read_one_off_query_message")
-		#&"ReducerResultMessage": return Callable(self, "_read_reducer_result_message")
-		&"ProcedureResultMessage": return Callable(self, "_read_procedure_result_message")
-		_: return Callable() # Return invalid Callable if type is not primitive/known
+		&"U64": return read_u64_le(spb)
+		&"I64": return read_i64_le(spb)
+		&"F64": return read_f64_le(spb)
+		&"U32": return read_u32_le(spb)
+		&"I32": return read_i32_le(spb)
+		&"F32": return read_f32_le(spb)
+		&"U16": return read_u16_le(spb)
+		&"I16": return read_i16_le(spb)
+		&"U8": return read_u8(spb)
+		&"I8": return read_i8(spb)
+		&"U128": return read_u128(spb)
+		&"__identity__": return read_identity(spb)
+		&"__connection_id__": return read_connection_id(spb)
+		&"__timestamp_micros_since_unix_epoch__": return read_timestamp(spb)
+		&"__time_duration_micros__": return read_timestamp(spb)
+		&"scheduled_at": return read_scheduled_at(spb)
+		&"Bool": return read_bool(spb)
+		&"String": return read_string_with_u32_len(spb)
+		&"SubscribeAppliedMessage": return _read_subscripton_applied_message(spb)
+		&"UnsubscribeAppliedMessage": return _read_unsubscription_applied_message(spb)
+		&"SubscriptionErrorMessage": return _read_subscription_error_message(spb)
+		&"TransactionUpdateMessage": return _read_transaction_update_message(spb)
+		&"OneOffQueryResponseMessage": return _read_one_off_query_message(spb)
+		&"ProcedureResultMessage": return _read_procedure_result_message(spb)
+		_: return null
 
 
 ## Populates the value property of a sumtype enum
@@ -695,23 +695,22 @@ func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 		return _read_native_arraylike(spb, bsatn_type)
 	var script: GDScript
 	if _schema.core_types.has(bsatn_type):
-		var reader_callablce := _get_primitive_reader_from_bsatn_type(bsatn_type)
+		var core_type_result := _get_primitive_reader_from_bsatn_type(spb, bsatn_type)
 		## directly handle server messages
-		if reader_callablce.is_valid():
-			return reader_callablce.call(spb)
+		if core_type_result != null:
+			return core_type_result
 		else:
 			script = _schema.get_core_type_script(bsatn_type)
 	elif _schema.module_types.has(bsatn_type):
 		script = _schema.get_type_script(bsatn_type)
 	else:
-		var primitive_reader = _get_primitive_reader_from_bsatn_type(bsatn_type)
-		if primitive_reader.is_valid():
-			return primitive_reader.call(spb)
-
+		var primitive_type_result = _get_primitive_reader_from_bsatn_type(spb, bsatn_type)
+		if primitive_type_result != null:
+			return primitive_type_result
 		_set_error("unknown bsatn_type: %s" % bsatn_type )
+
 	if not script:
 		_set_error("script: %s is empty or can't instantiate" % script)
-
 	var result_resource := script.new()
 	if result_resource is RustEnum:
 		# error handling?
@@ -720,9 +719,9 @@ func _parse_generic_type(spb:StreamPeerBuffer, bsatn_type:StringName)-> Variant:
 
 	for prop: StringName in result_resource.BSATN_TYPES.keys():
 		var bsatn_type_str: StringName = result_resource.BSATN_TYPES.get(prop)
-		var reader_callablce := _get_primitive_reader_from_bsatn_type(bsatn_type_str)
-		if reader_callablce.is_valid():
-			result_resource[prop] = reader_callablce.call(spb)
+		var primitive_type_result := _get_primitive_reader_from_bsatn_type(spb, bsatn_type_str)
+		if primitive_type_result != null:
+			result_resource[prop] = primitive_type_result
 		elif _schema.module_types.has(bsatn_type_str) or _schema.core_types.has(bsatn_type_str) or bsatn_type_str.begins_with("opt_") or bsatn_type_str.begins_with("ret_") or NATIVE_ARRAYLIKE.has(bsatn_type_str):
 			result_resource[prop] = _parse_generic_type(spb, bsatn_type_str)
 		elif bsatn_type_str.begins_with("vec_"):
