@@ -75,12 +75,10 @@ func generate_bindings() -> Array[String]:
 	_write_text(autoload_output_file_path, autoload_content)
 	generated_files.append(autoload_output_file_path)
 
-	for generated_file in generated_files:
-		_write_deterministic_uid(generated_file)
-
-	SpacetimePlugin.print_log("Generated files:")
-	for generated_file in generated_files:
-		SpacetimePlugin.print_log(generated_file)
+    SpacetimePlugin.print_log("Generated files:")
+    for generated_file in generated_files:
+        _write_deterministic_uid(generated_file)
+        SpacetimePlugin.print_log(generated_file)
 
 	return generated_files
 
