@@ -413,11 +413,13 @@ func connect_db(host_url: String, database_name: String, options: SpacetimeDBCon
 	self.debug_mode = options.debug_mode
 	self.use_threading = options.threading
 
-	if OS.has_feature("web") and use_threading == true:
-		push_error("Threads are not supported on Web. Threading has been disabled.")
+	if use_threading == true and not OS.has_feature("threads"):
+		push_error("Threads not supported by this build (non-threaded export). Threading has been disabled.")
 		use_threading = false
 
-	if use_threading:
+	# Reuse the existing worker on reconnect (connect_db re-called) — starting a
+	# second thread would race the same packet queue.
+	if use_threading and deserializer_worker == null:
 		_packet_mutex = Mutex.new()
 		_packet_semaphore = Semaphore.new()
 		_result_mutex = Mutex.new()
