@@ -231,8 +231,13 @@ func _handle_game_closing():
 	get_tree().quit()
 
 func _exit_tree() -> void:
+	# Disconnect on node removal, but never get_tree().quit() here — _exit_tree
+	# fires whenever the connection node is freed (a transient client, a scene
+	# swap), so quitting takes down the whole app. Real app-close is handled by
+	# the notifications below.
 	_print_log("SpacetimeDBConnection: Exit Tree")
-	_handle_game_closing()
+	if _websocket != null and _websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED:
+		disconnect_from_server()
 
 func _notification(what: int) -> void:
 	match what:
