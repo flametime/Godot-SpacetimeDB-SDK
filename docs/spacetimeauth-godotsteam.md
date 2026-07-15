@@ -22,14 +22,31 @@ getAuthTicketForWebApi   ─▶  exchange(grant_type, fields)  ─▶  POST /oid
 
 ## Prerequisites
 
-1. **SDK addon enabled** (`addons/SpacetimeDB`) — gives you `SpacetimeAuth`,
-   `SpacetimeDBClient`, `SpacetimeDBConnectionOptions`, and `JwtHelper`.
-2. **GodotSteam** installed and `Steam.steamInitEx()` succeeded, with your
-   Steam **App ID** set (`steam_appid.txt` during dev, or the launched app).
-3. A **SpacetimeAuth `client_id`** for your game, and your Steam app registered
-   with SpacetimeAuth for the `steam-ticket` grant. Store the `client_id` in a
-   project setting or config — never hard-code it in a shipped scene you can't
-   rotate.
+### 1. SpacetimeAuth + Steam setup (do this FIRST)
+
+Your `client_id` **only exists after** you configure SpacetimeAuth for Steam —
+there is no client code you can run until this is done. Follow the official guide,
+[SpacetimeAuth › Steam](https://spacetimedb.com/docs/core-concepts/authentication/spacetimeauth/steam),
+which in order is:
+
+1. **Create a Steam Publisher Key** in the Steamworks dashboard — SpacetimeAuth
+   uses it to verify session tickets and read game-ownership.
+2. **Note your Steam App ID(s)** — every app / DLC whose ownership you want checked.
+3. **Configure the SpacetimeAuth dashboard** (Settings): add the Steam Publisher
+   Key and the list of **allowed App IDs**. Only session tickets issued for those
+   app IDs are accepted at exchange time.
+4. **Copy your `client_id`** from your SpacetimeAuth project settings.
+
+Until step 4 you have no `client_id`, and the exchange below cannot run. Store it
+in a project setting / config (e.g. `spacetimeauth/client_id`) — never hard-code
+it in a shipped scene you can't rotate.
+
+### 2. Godot side
+
+- **SDK addon enabled** (`addons/SpacetimeDB`) — gives you `SpacetimeAuth`,
+  `SpacetimeDBClient`, `SpacetimeDBConnectionOptions`, and `JwtHelper`.
+- **GodotSteam** installed and `Steam.steamInitEx()` succeeded, with your Steam
+  **App ID** set (`steam_appid.txt` during dev, or the launched app).
 
 ---
 
