@@ -9,7 +9,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-spacetimedb = { version = "2.5.0", features = ["unstable"] }
+spacetimedb = { version = "2.6.1", features = ["unstable"] }
 log = "0.4"
 
 #[build-dependencies]
