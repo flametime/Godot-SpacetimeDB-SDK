@@ -13,6 +13,7 @@ This SDK provides the necessary tools to integrate your Godot Engine project wit
 -   [How to install the SpacetimeDB SDK addon](docs/installation.md)
 -   [Quick Start guide](docs/quickstart.md)
 -   [API Reference](docs/api.md)
+-   [Steam sign-in with GodotSteam (SpacetimeAuth)](docs/spacetimeauth-godotsteam.md)
 
 ## Limitations & TODO
 
