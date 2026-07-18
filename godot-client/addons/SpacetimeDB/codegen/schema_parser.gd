@@ -40,6 +40,7 @@ const BUILTIN_TYPE_NAMES: Dictionary[String, bool] = {
 	"__connection_id__": true,
 	"__timestamp_micros_since_unix_epoch__": true,
 	"__time_duration_micros__": true,
+	"__uuid__": true,
 	"U128": true,
 }
 
@@ -387,6 +388,8 @@ static func _resolve_godot_type_hint(type_name: String,module_name: String) -> S
 			return "int"
 		"__time_duration_micros__":
 			return "int"
+		"__uuid__":
+			return "String"
 		"U128":
 			return "PackedByteArray"
 		_:

@@ -132,6 +132,7 @@ pub struct TestNativeArrayLikes{
     pub color: Color,
     pub vector3: Vector3,
     pub vector4: Vector4,
+    pub uuid: Uuid,
 
 }
 
@@ -507,12 +508,27 @@ pub fn trigger_event(ctx:&ReducerContext){
 }
 
 #[reducer]
-pub fn test_native_array_like_reducer(ctx:&ReducerContext, vector2: Vector2, color: Color){//, vector3: Vector3, vector4: Vector4){
+pub fn test_native_array_like_reducer(ctx:&ReducerContext, vector2: Vector2, color: Color, uuid: Uuid){
     ctx.db.test_native_array_like().vector2().insert_or_update(TestNativeArrayLikes{
         vector2,
         vector3: Vector3{x:10.0,y:10.0, z:10.0},
         vector4: Vector4{x:10.0,y:10.0, z:10.0, w: 10.0},
         color,
+        uuid
+    });
+    ctx.db.test_native_array_like().vector2().insert_or_update(TestNativeArrayLikes{
+        vector2: vector2+ Vector2{x:1.0,y:1.0},
+        vector3: Vector3{x:10.0,y:10.0, z:10.0},
+        vector4: Vector4{x:10.0,y:10.0, z:10.0, w: 10.0},
+        color,
+        uuid: ctx.new_uuid_v7().unwrap()
+    });
+    ctx.db.test_native_array_like().vector2().insert_or_update(TestNativeArrayLikes{
+        vector2: vector2+ Vector2{x:2.0,y:2.0},
+        vector3: Vector3{x:10.0,y:10.0, z:10.0},
+        vector4: Vector4{x:10.0,y:10.0, z:10.0, w: 10.0},
+        color,
+        uuid: ctx.new_uuid_v4().unwrap()
     });
 
 }

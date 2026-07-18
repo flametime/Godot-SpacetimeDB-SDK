@@ -320,6 +320,8 @@ func _get_primitive_reader_from_bsatn_type(spb:StreamPeerBuffer, bsatn_type_str:
 		&"__connection_id__": return read_connection_id(spb)
 		&"__timestamp_micros_since_unix_epoch__": return read_timestamp(spb)
 		&"__time_duration_micros__": return read_timestamp(spb)
+		# PackedByteArray.reverse() acts on the array and returns void. thus it can't be chained.
+		&"__uuid__": var value:= read_bytes(spb, 16); value.reverse(); return value.hex_encode()
 		&"scheduled_at": return read_scheduled_at(spb)
 		&"Bool": return read_bool(spb)
 		&"String": return read_string_with_u32_len(spb)

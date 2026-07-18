@@ -32,8 +32,9 @@ region_rect = Rect2(0, 0, 64, 64)
 [sub_resource type="Theme" id="Theme_7ntsj"]
 Label/styles/normal = SubResource("StyleBoxTexture_m5x7f")
 
-[sub_resource type="Resource" id="Resource_qx5ds"]
+[sub_resource type="Resource" id="Resource_l1dmy"]
 script = ExtResource("4_ruhfi")
+uuid = PackedByteArray()
 metadata/_custom_type_script = "uid://mjoi04hxqdfp"
 
 [sub_resource type="Resource" id="Resource_3ljp4"]
@@ -110,21 +111,21 @@ theme_override_constants/separation = 0
 [node name="TabContainer" type="TabContainer" parent="VBoxContainer" unique_id=1530080011]
 layout_mode = 2
 size_flags_vertical = 3
-current_tab = 1
+current_tab = 0
 
 [node name="Control2" parent="VBoxContainer/TabContainer" unique_id=1146099436 node_paths=PackedStringArray("row_receiver") instance=ExtResource("2_p8i4h")]
-visible = false
 layout_mode = 2
 row_receiver = NodePath("Receiver [MainTestNativeArrayLikes]")
 metadata/_tab_index = 0
 
 [node name="Receiver [MainTestNativeArrayLikes]" type="Node" parent="VBoxContainer/TabContainer/Control2" unique_id=1698407885]
 script = ExtResource("2_3ljp4")
-table_to_receive = SubResource("Resource_qx5ds")
+table_to_receive = SubResource("Resource_l1dmy")
 selected_table_name = "test_native_array_like"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
 [node name="ViewDatatypesFirstRow" parent="VBoxContainer/TabContainer" unique_id=1825902961 node_paths=PackedStringArray("row_receiver") instance=ExtResource("2_p8i4h")]
+visible = false
 layout_mode = 2
 row_receiver = NodePath("Receiver [MainTestTableDatatypes]")
 metadata/_tab_index = 1

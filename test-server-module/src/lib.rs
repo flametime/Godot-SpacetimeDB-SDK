@@ -217,7 +217,8 @@ pub fn test_option_vec(_ctx: &ReducerContext, option: Option<Vec<String>>) -> Re
 
 #[reducer]
 pub fn test_option_single(_ctx: &ReducerContext, option: Option<String>) -> Result<(), String> {
-    Err(format!("{:?}", option))
+    Ok(())
+    //Err(format!("{:?}", option))
 }
 #[reducer]
 pub fn save_my_bytes(ctx: &ReducerContext, bytes: Vec<u8>) {

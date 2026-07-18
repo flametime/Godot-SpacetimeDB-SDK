@@ -130,6 +130,8 @@ func _get_primitive_writer_from_bsatn_type(bsatn_type_str: String) -> Callable:
 			return Callable(self, "write_connection_id")
 		"__timestamp_micros_since_unix_epoch__":
 			return Callable(self, "write_timestamp")
+		"__uuid__":
+			return Callable(self, "write_hex_string")
 		"scheduled_at":
 			return Callable(self, "write_timestamp")
 		"Bool":
@@ -214,6 +216,14 @@ func write_bytes(v: PackedByteArray) -> void:
 	if result != OK:
 		_set_error("StreamPeerBuffer.put_data failed with code %d" % result)
 
+func write_hex_string(v: String) -> void:
+	if v.is_empty():
+		return
+	var v2 := v.hex_decode()
+	v2.reverse()
+	var result := _spb.put_data(v2)
+	if result != OK:
+		_set_error("StreamPeerBuffer.put_data failed with code %d" % result)
 
 func write_u128(v: PackedByteArray) -> void:
 	if v == null or v.size() != U128_SIZE:
