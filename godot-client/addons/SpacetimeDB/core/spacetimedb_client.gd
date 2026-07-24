@@ -193,6 +193,15 @@ func _save_token(token_to_save: String):
 	else:
 		printerr("SpacetimeDBClient: Failed to save token to path: ", token_save_path)
 
+func _clear_saved_token():
+	var file := FileAccess.open(token_save_path, FileAccess.WRITE)
+	if file:
+		file.store_string("")
+		file.close()
+	else:
+		printerr("SpacetimeDBClient: Failed to save token to path: ", token_save_path)
+
+
 # --- WebSocket Message Handling ---
 func _process(_delta: float) -> void:
 	if use_threading and is_connected_db():

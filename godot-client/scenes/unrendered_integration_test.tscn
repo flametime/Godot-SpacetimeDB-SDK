@@ -7,7 +7,7 @@
 [ext_resource type="Script" uid="uid://6asbt4f8qu6s" path="res://spacetime_bindings/schema/types/main_test_enum.gd" id="5_7lrkc"]
 [ext_resource type="Script" uid="uid://5cko2kja42f7" path="res://spacetime_bindings/schema/types/main_test_type.gd" id="6_2vwu8"]
 
-[sub_resource type="Resource" id="Resource_rv3td"]
+[sub_resource type="Resource" id="Resource_i1b4k"]
 script = ExtResource("4_i1b4k")
 metadata/_custom_type_script = "uid://bdyg80vfb67vt"
 
@@ -38,7 +38,7 @@ script = ExtResource("2_iikab")
 
 [node name="Receiver [MainTestTableDatatypes]" type="Node" parent="VBoxContainer/RichTextLabel" unique_id=922586806]
 script = ExtResource("3_i1b4k")
-table_to_receive = SubResource("Resource_rv3td")
+table_to_receive = SubResource("Resource_i1b4k")
 selected_table_name = "test_table_datatypes"
 metadata/_custom_type_script = "uid://jvk6ou7i2d4s"
 
