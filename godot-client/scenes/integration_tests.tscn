@@ -34,7 +34,6 @@ Label/styles/normal = SubResource("StyleBoxTexture_m5x7f")
 
 [sub_resource type="Resource" id="Resource_l1dmy"]
 script = ExtResource("4_ruhfi")
-uuid = PackedByteArray()
 metadata/_custom_type_script = "uid://mjoi04hxqdfp"
 
 [sub_resource type="Resource" id="Resource_3ljp4"]
