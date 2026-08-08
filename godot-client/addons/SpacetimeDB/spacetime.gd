@@ -153,7 +153,9 @@ func _on_generate_schema():
 	var setting_name := "autoload/" + AUTOLOAD_NAME
 	if ProjectSettings.has_setting(setting_name):
 		var current_autoload: String = ProjectSettings.get_setting(setting_name)
-		if current_autoload != "*%s" % AUTOLOAD_PATH:
+		if _autoload_points_to(current_autoload, AUTOLOAD_PATH):
+			print_log("Autoload already registered: %s" % current_autoload)
+		else:
 			print_log("Removing old autoload path: %s" % current_autoload)
 			ProjectSettings.set_setting(setting_name, null)
 
@@ -209,3 +211,16 @@ func _exit_tree():
 
 	if ProjectSettings.has_setting("autoload/" + AUTOLOAD_NAME):
 		remove_autoload_singleton(AUTOLOAD_NAME)
+
+
+## Returns true if an autoload setting value (e.g. "*res://path.gd" or
+## "*uid://xxxx") refers to the given res:// path. Autoload entries may be
+## stored by UID since Godot 4.4 generalized UIDs to scripts.
+static func _autoload_points_to(setting_value: String, expected_path: String) -> bool:
+	var path := setting_value.trim_prefix("*")
+	if path.begins_with("uid://"):
+		var id := ResourceUID.text_to_id(path)
+		if id == ResourceUID.INVALID_ID or not ResourceUID.has_id(id):
+			return false
+		path = ResourceUID.get_id_path(id)
+	return path == expected_path
