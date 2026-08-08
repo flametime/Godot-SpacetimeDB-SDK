@@ -35,7 +35,9 @@ func _on_spacetimedb_connected(identity: PackedByteArray, _token: String) -> voi
 	var sub := SpacetimeDB.Main.subscribe(query_string)
 	sub.applied.connect(func() -> void:
 		print("User Subscription Applied")
+		print(error_string(DBImExporter.save_db_data(SpacetimeDB.Main._local_db, "user://db_data", "user")))
 		await get_tree().create_timer(3).timeout
+		print(error_string(DBImExporter.load_db_data(SpacetimeDB.Main._local_db, "user://db_data", "user")))
 		sub.unsubscribe()
 		)
 	sub.end.connect(func() -> void:
