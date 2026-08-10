@@ -55,6 +55,13 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 	var schema_procedures: Array = sections.get("Procedures", [])
 	var schema_views: Array = sections.get("Views", [])
 
+	# Server schema sections are HashMap-backed; iteration order varies per publish.
+	# Sort once at parse time so downstream codegen output is deterministic.
+	_sort_by_source_name(schema_tables)
+	_sort_by_source_name(schema_reducers)
+	_sort_by_source_name(schema_procedures)
+	_sort_by_source_name(schema_views)
+
 	var parsed_schema := SpacetimeParsedSchema.new()
 	parsed_schema.module = module_pascal
 
@@ -225,6 +232,9 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 					% [unique_field_idx, table_name, target_type_def.struct.size()]
 				)
 
+		parsed_unique_indexes.sort_custom(func(a, b):
+			return String(a["constraint_name"]) < String(b["constraint_name"])
+		)
 		table_data["unique_indexes"] = parsed_unique_indexes
 
 		var is_public: bool = not table_info.get("table_access", {}).has("Private")
@@ -310,6 +320,10 @@ static func parse_schema(p_schema: Dictionary, module_name: String) -> Spacetime
 
 		parsed_tables_list.append(new_table_dict)
 
+	parsed_tables_list.sort_custom(func(a, b):
+		return String(a["name"]) < String(b["name"])
+	)
+
 	SpacetimePlugin.print_log("Schema parser finished")
 	parsed_schema.types = parsed_types_list
 	parsed_schema.tables = parsed_tables_list
@@ -329,6 +343,10 @@ static func _section_typespace(sections: Dictionary) -> Array:
 	if typespace_section is Dictionary:
 		return typespace_section.get("types", [])
 	return []
+
+static func _sort_by_source_name(arr: Array) -> void:
+	arr.sort_custom(func(a, b): return _source_name(a) < _source_name(b))
+
 
 static func _source_name(value: Variant) -> String:
 	if value is Dictionary:

@@ -61,12 +61,13 @@ func _param_bsatn_literal(raw_type: String) -> String:
 func generate_bindings() -> Array[String]:
 	var generated_files: Array[String] = []
 
-	for module_name: String in _plugin_config.module_configs:
+	var sorted_module_names: Array[String] = _plugin_config.module_configs.keys()
+	sorted_module_names.sort()
+
+	for module_name: String in sorted_module_names:
 		generated_files.append_array(_generate_module_bindings(module_name))
 
-	var autoload_content := _generate_autoload_gdscript(
-		_plugin_config.module_configs.keys()
-	)
+	var autoload_content := _generate_autoload_gdscript(sorted_module_names)
 	var autoload_output_file_path := "%s/%s" % [
 		_schema_path,
 		SpacetimePlugin.AUTOLOAD_FILE_NAME,
@@ -74,11 +75,35 @@ func generate_bindings() -> Array[String]:
 	_write_text(autoload_output_file_path, autoload_content)
 	generated_files.append(autoload_output_file_path)
 
-	SpacetimePlugin.print_log("Generated files:")
-	for generated_file in generated_files:
-		SpacetimePlugin.print_log(generated_file)
+    SpacetimePlugin.print_log("Generated files:")
+    for generated_file in generated_files:
+        _write_deterministic_uid(generated_file)
+        SpacetimePlugin.print_log(generated_file)
 
 	return generated_files
+
+
+## Derive a stable ResourceUID id from the script's res:// path via FNV-1a 64-bit.
+## Same path -> same id on every machine and every regen, so the generated
+## bindings can be gitignored: scene/.tres `ext_resource uid="..."` references
+## stay valid after a fresh clone + regenerate, with no diff churn. The 63-bit
+## mask keeps the id positive and away from ResourceUID.INVALID_ID (-1).
+func _stable_uid_id(res_path: String) -> int:
+	var hash: int = -3750763034362895579  # 0xcbf29ce484222325 (FNV offset basis as i64)
+	for byte: int in res_path.to_utf8_buffer():
+		hash = (hash ^ byte) * 0x100000001b3  # FNV prime; wraps at i64, that's fine
+	return hash & 0x7FFFFFFFFFFFFFFF
+
+
+## Write a `<path>.uid` sidecar with the deterministic id and sync the editor's
+## in-memory uid cache so a live regen doesn't re-mint a random uid.
+func _write_deterministic_uid(gd_path: String) -> void:
+	var id: int = _stable_uid_id(gd_path)
+	_write_text("%s.uid" % gd_path, ResourceUID.id_to_text(id))
+	if ResourceUID.has_id(id):
+		ResourceUID.set_id(id, gd_path)
+	else:
+		ResourceUID.add_id(id, gd_path)
 
 
 func _generate_module_bindings(module_name: String) -> Array[String]:
